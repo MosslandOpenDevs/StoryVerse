@@ -1,0 +1,47 @@
+{
+  "name": "storyverse-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "check": "npm run lint && npm run test:parser && npm run build",
+    "lint": "eslint",
+    "test:parser": "npm run test:parser:build && npm run test:parser:run",
+    "test:parser:build": "tsc -p tsconfig.parser-tests.json && node -e \"require('node:fs').writeFileSync('.parser-tests/package.json', '{\\\"type\\\":\\\"commonjs\\\"}\\n')\"",
+    "test:parser:run": "node --test .parser-tests/*.test.js"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.29",
+    "@langchain/langgraph": "^1.1.4",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "ai": "^6.0.86",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "leva": "^0.10.1",
+    "lucide-react": "^0.564.0",
+    "neo4j-driver": "^6.0.1",
+    "next": "^15.5.6",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tailwind-merge": "^3.4.0",
+    "three": "^0.182.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.182.0",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

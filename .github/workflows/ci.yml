@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "storyverse-web/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "storyverse-web/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+jobs:
+  storyverse-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: storyverse-web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: storyverse-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check
+        run: npm run check

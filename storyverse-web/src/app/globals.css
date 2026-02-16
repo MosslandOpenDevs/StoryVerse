@@ -1,0 +1,43 @@
+@config "../../tailwind.config.ts";
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #dbeafe;
+  --panel: #0b1228;
+  --panel-foreground: #e0ecff;
+  --muted: #8aa0d1;
+  --neon-cyan: #22d3ee;
+  --neon-violet: #a855f7;
+  --neon-rose: #f472b6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-muted: var(--muted);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-violet: var(--neon-violet);
+  --color-neon-rose: var(--neon-rose);
+  --font-display: var(--font-orbitron);
+  --font-sans: var(--font-space-grotesk);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-space-grotesk), sans-serif;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.16), transparent 42%),
+    radial-gradient(circle at 75% 10%, rgba(168, 85, 247, 0.2), transparent 34%),
+    radial-gradient(circle at 90% 85%, rgba(244, 114, 182, 0.14), transparent 30%),
+    linear-gradient(160deg, #020617 0%, #0a1230 55%, #130b2c 100%);
+}
+
+::selection {
+  background-color: rgba(34, 211, 238, 0.28);
+  color: #f8fafc;
+}

@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "src/lib/agents",
+    "outDir": ".parser-tests",
+    "incremental": false,
+    "tsBuildInfoFile": ".parser-tests/.tsbuildinfo"
+  },
+  "include": [
+    "src/lib/agents/catalog.ts",
+    "src/lib/agents/navigatorAgent.ts",
+    "src/lib/agents/storytellerAgent.ts",
+    "src/lib/agents/orchestrator.ts",
+    "src/lib/agents/queryParser.ts",
+    "src/lib/agents/queryParser.test.ts",
+    "src/lib/agents/orchestrator.test.ts"
+  ]
+}
