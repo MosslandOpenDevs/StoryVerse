@@ -233,6 +233,16 @@ export function CommandDeck({ canvasSelectionSignal }: CommandDeckProps) {
   const runNodeSelectionQueryRef = useRef<
     (sourceId: string, targetId: string, prompt: string) => void
   >(() => {});
+  const isManualRunReady =
+    manualSourceId !== "" &&
+    manualTargetId !== "" &&
+    manualSourceId !== manualTargetId;
+  const isCorrectedRunReady =
+    selectedSourceId !== "" &&
+    selectedTargetId !== "" &&
+    selectedSourceId !== selectedTargetId;
+  const manualSourceTitle = findCatalogNode(manualSourceId)?.title ?? "";
+  const manualTargetTitle = findCatalogNode(manualTargetId)?.title ?? "";
 
   useEffect(() => {
     try {
@@ -689,12 +699,7 @@ export function CommandDeck({ canvasSelectionSignal }: CommandDeckProps) {
                   size="sm"
                   className="gap-1.5"
                   onClick={runCorrectedQuery}
-                  disabled={
-                    isPending ||
-                    !selectedSourceId ||
-                    !selectedTargetId ||
-                    selectedSourceId === selectedTargetId
-                  }
+                  disabled={isPending || !isCorrectedRunReady}
                 >
                   {uiLocale === "ko" ? "교정 질의 실행" : "Run corrected query"}
                 </Button>
@@ -710,6 +715,11 @@ export function CommandDeck({ canvasSelectionSignal }: CommandDeckProps) {
                 {uiLocale === "ko"
                   ? "캔버스의 강조된 카탈로그 노드를 클릭하면 Source/Target이 순서대로 채워집니다."
                   : "Click highlighted catalog nodes in the canvas to fill source/target in order."}
+              </p>
+              <p className="text-[11px] text-cosmos-100/85">
+                {uiLocale === "ko"
+                  ? `현재 선택: ${manualSourceTitle || "-"} → ${manualTargetTitle || "-"}`
+                  : `Current pair: ${manualSourceTitle || "-"} → ${manualTargetTitle || "-"}`}
               </p>
               <div className="flex items-center justify-between gap-2 rounded-md border border-cosmos-700/70 bg-cosmos-950/55 px-2 py-1.5">
                 <p className="text-[10px] text-cosmos-200/75">
@@ -777,12 +787,7 @@ export function CommandDeck({ canvasSelectionSignal }: CommandDeckProps) {
                   size="sm"
                   className="gap-1.5"
                   onClick={runManualSelectionQuery}
-                  disabled={
-                    isPending ||
-                    !manualSourceId ||
-                    !manualTargetId ||
-                    manualSourceId === manualTargetId
-                  }
+                  disabled={isPending || !isManualRunReady}
                 >
                   {uiLocale === "ko"
                     ? "수동 선택으로 실행"
@@ -793,7 +798,17 @@ export function CommandDeck({ canvasSelectionSignal }: CommandDeckProps) {
           ) : null}
           <div className="flex items-center justify-between gap-3">
             <p className="truncate text-xs text-cosmos-200/70">
-              {isPending ? "Running agents..." : "Tap a prompt or type your own."}
+              {isPending
+                ? uiLocale === "ko"
+                  ? "명령 실행 중..."
+                  : "Running bridge synthesis..."
+                : nextCanvasSlot === "target"
+                  ? uiLocale === "ko"
+                    ? "캔버스에서 목표 노드를 1개 더 선택하면 자동 실행됩니다."
+                    : "Pick a target node next in canvas for auto-run."
+                  : uiLocale === "ko"
+                    ? "빠른 실행이 필요하면 캔버스에서 노드를 연달아 2번 클릭해 주세요."
+                    : "Need quick run? Click two catalog nodes in sequence on canvas."}
             </p>
             <Button
               type="submit"
@@ -801,8 +816,21 @@ export function CommandDeck({ canvasSelectionSignal }: CommandDeckProps) {
               className="gap-1.5"
               disabled={isPending}
             >
-              Run
-              <SendHorizontal className="h-3.5 w-3.5" />
+              {isPending
+                ? uiLocale === "ko"
+                  ? "실행 중..."
+                  : "Running..."
+                : uiLocale === "ko"
+                  ? "실행"
+                  : "Run"}
+              {isPending ? (
+                <span
+                  className="inline-block h-3.5 w-3.5 rounded-full border-2 border-cosmos-100/40 border-t-cosmos-100/90 align-middle animate-spin"
+                  aria-hidden
+                />
+              ) : (
+                <SendHorizontal className="h-3.5 w-3.5" />
+              )}
             </Button>
           </div>
         </form>

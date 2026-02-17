@@ -169,6 +169,8 @@ export default function UniverseCanvas({ onCatalogNodeSelect }: UniverseCanvasPr
   const [focusedNodeId, setFocusedNodeId] = useState<number | null>(null);
   const [hoveredFeaturedNodeId, setHoveredFeaturedNodeId] = useState<string | null>(null);
   const [focusedFeaturedNodeId, setFocusedFeaturedNodeId] = useState<string | null>(null);
+  const hoverClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const featuredHoverClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const mesh = meshRef.current;
@@ -202,8 +204,36 @@ export default function UniverseCanvas({ onCatalogNodeSelect }: UniverseCanvasPr
     (node) => node.id === hoveredFeaturedNodeId,
   );
 
+  const clearHoveredNode = () => {
+    if (hoverClearTimer.current) {
+      clearTimeout(hoverClearTimer.current);
+      hoverClearTimer.current = null;
+    }
+
+    hoverClearTimer.current = setTimeout(() => {
+      setHoveredNodeId(null);
+      hoverClearTimer.current = null;
+    }, 45);
+  };
+
+  const clearHoveredFeaturedNode = () => {
+    if (featuredHoverClearTimer.current) {
+      clearTimeout(featuredHoverClearTimer.current);
+      featuredHoverClearTimer.current = null;
+    }
+
+    featuredHoverClearTimer.current = setTimeout(() => {
+      setHoveredFeaturedNodeId(null);
+      featuredHoverClearTimer.current = null;
+    }, 45);
+  };
+
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
+    if (hoverClearTimer.current) {
+      clearTimeout(hoverClearTimer.current);
+      hoverClearTimer.current = null;
+    }
     if (typeof event.instanceId === "number") {
       setHoveredNodeId(event.instanceId);
     }
@@ -239,7 +269,7 @@ export default function UniverseCanvas({ onCatalogNodeSelect }: UniverseCanvasPr
           ref={meshRef}
           args={[undefined, undefined, nodes.length]}
           onPointerMove={handlePointerMove}
-          onPointerOut={() => setHoveredNodeId(null)}
+          onPointerOut={clearHoveredNode}
           onClick={handleNodeClick}
         >
           <sphereGeometry args={[1, 4, 4]} />
@@ -261,13 +291,15 @@ export default function UniverseCanvas({ onCatalogNodeSelect }: UniverseCanvasPr
               position={node.position}
               onPointerOver={(event: ThreeEvent<PointerEvent>) => {
                 event.stopPropagation();
+                if (featuredHoverClearTimer.current) {
+                  clearTimeout(featuredHoverClearTimer.current);
+                  featuredHoverClearTimer.current = null;
+                }
                 setHoveredFeaturedNodeId(node.id);
               }}
               onPointerOut={(event: ThreeEvent<PointerEvent>) => {
                 event.stopPropagation();
-                setHoveredFeaturedNodeId((previous) =>
-                  previous === node.id ? null : previous,
-                );
+                clearHoveredFeaturedNode();
               }}
               onClick={(event: ThreeEvent<MouseEvent>) => {
                 event.stopPropagation();
@@ -289,7 +321,7 @@ export default function UniverseCanvas({ onCatalogNodeSelect }: UniverseCanvasPr
 
         {hoveredFeaturedNode ? (
           <Html position={hoveredFeaturedNode.position} center distanceFactor={16}>
-            <div className="w-60 rounded-md border border-neon-cyan/45 bg-cosmos-950/90 p-2 text-xs text-cosmos-100 shadow-nebula backdrop-blur">
+            <div className="pointer-events-none w-72 rounded-xl border border-neon-cyan/45 bg-cosmos-950/90 px-3 py-2 text-sm text-cosmos-100 shadow-nebula backdrop-blur">
               <p className="font-semibold text-neon-cyan">{hoveredFeaturedNode.title}</p>
               <p className="mt-1 text-cosmos-200/80">{hoveredFeaturedNode.domain}</p>
               <p className="mt-1 text-cosmos-100/80">{hoveredFeaturedNode.summary}</p>
@@ -297,7 +329,7 @@ export default function UniverseCanvas({ onCatalogNodeSelect }: UniverseCanvasPr
           </Html>
         ) : hoveredNode ? (
           <Html position={hoveredNode.position} center distanceFactor={26}>
-            <div className="w-56 rounded-md border border-cosmos-200/30 bg-cosmos-950/90 p-2 text-xs text-cosmos-100 shadow-nebula backdrop-blur">
+            <div className="pointer-events-none w-64 rounded-xl border border-cosmos-200/30 bg-cosmos-950/90 px-3 py-2 text-sm text-cosmos-100 shadow-nebula backdrop-blur">
               <p className="font-semibold text-neon-cyan">{hoveredNode.title}</p>
               <p className="mt-1 text-cosmos-200/80">
                 {hoveredNode.domain} | {hoveredNode.year}
@@ -307,7 +339,7 @@ export default function UniverseCanvas({ onCatalogNodeSelect }: UniverseCanvasPr
           </Html>
         ) : null}
       </Canvas>
-      <div className="pointer-events-none absolute left-3 top-3 rounded-md border border-cosmos-700/70 bg-cosmos-950/75 px-2 py-1 text-[10px] text-cosmos-200/80 backdrop-blur">
+      <div className="pointer-events-none absolute left-3 top-3 rounded-md border border-cosmos-700/70 bg-cosmos-950/75 px-2 py-1 text-xs text-cosmos-200/80 backdrop-blur">
         Highlighted nodes are catalog anchors. Click to stage source/target in Command Deck.
       </div>
       <Leva hidden={process.env.NODE_ENV !== "development"} collapsed />
