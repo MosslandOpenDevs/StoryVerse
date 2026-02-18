@@ -11,7 +11,8 @@
     "lint": "eslint",
     "test:parser": "npm run test:parser:build && npm run test:parser:run",
     "test:parser:build": "tsc -p tsconfig.parser-tests.json && node -e \"require('node:fs').writeFileSync('.parser-tests/package.json', '{\\\"type\\\":\\\"commonjs\\\"}\\n')\"",
-    "test:parser:run": "node --test .parser-tests/*.test.js"
+    "test:parser:run": "node --test .parser-tests/*.test.js",
+    "ops:check": "bash ./scripts/ops-check.sh"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.29",
