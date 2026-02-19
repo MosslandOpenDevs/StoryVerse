@@ -14,17 +14,28 @@ run_check() {
     local path="$1"
     local tmp
     tmp="$(mktemp)"
-    local code
-    code=$(curl -sS -o "$tmp" -w '%{http_code}' -m 12 "$base_url$path" || echo 000)
+    local code="000"
+    local curl_rc=0
+
+    code=$(curl -sS -o "$tmp" -w '%{http_code}' --connect-timeout 3 -m 12 "$base_url$path" 2>/dev/null) || curl_rc=$?
+
     local len=0
     if [ -s "$tmp" ]; then
       len=$(wc -c < "$tmp")
     fi
+
     printf "  %s => %s (%s bytes)\n" "$path" "$code" "$len"
     if [[ "$code" != 2* && "$code" != 3* ]]; then
-      echo "  !! non-2xx/3xx detected"
+      if [[ "$curl_rc" -eq 28 ]]; then
+        echo "  !! timeout detected"
+      elif [[ "$curl_rc" -ne 0 ]]; then
+        echo "  !! curl error detected (rc=$curl_rc)"
+      else
+        echo "  !! non-2xx/3xx detected"
+      fi
       failures=$((failures + 1))
     fi
+
     rm -f "$tmp"
   }
 
