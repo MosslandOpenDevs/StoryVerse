@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BASE_URLS_RAW="${OPERATIONS_BASE_URLS:-${OPERATIONS_BASE_URL:-https://sv.moss.land} http://localhost:6100}"
-ENDPOINTS=("/" "/universe")
+ENDPOINTS=("/" "/universe" "/api/health")
 
 IFS=' ' read -r -a BASE_URLS <<< "$BASE_URLS_RAW"
 
