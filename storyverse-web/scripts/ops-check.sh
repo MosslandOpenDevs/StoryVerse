@@ -3,6 +3,9 @@ set -euo pipefail
 
 BASE_URLS_RAW="${OPERATIONS_BASE_URLS:-${OPERATIONS_BASE_URL:-https://sv.moss.land} http://localhost:6100}"
 ENDPOINTS=("/" "/universe" "/api/health")
+RETRIES="${OPERATIONS_RETRIES:-2}"
+RETRY_DELAY_SECS="${OPERATIONS_RETRY_DELAY_SECS:-1}"
+REQUIRE_PRIMARY="${OPERATIONS_REQUIRE_PRIMARY:-0}"
 
 IFS=' ' read -r -a BASE_URLS <<< "$BASE_URLS_RAW"
 
@@ -12,31 +15,51 @@ run_check() {
 
   check_path() {
     local path="$1"
-    local tmp
-    tmp="$(mktemp)"
-    local code="000"
-    local curl_rc=0
+    local attempts=0
+    local success=0
 
-    code=$(curl -sS -o "$tmp" -w '%{http_code}' --connect-timeout 3 -m 12 "$base_url$path" 2>/dev/null) || curl_rc=$?
+    while (( attempts <= RETRIES )); do
+      attempts=$((attempts + 1))
 
-    local len=0
-    if [ -s "$tmp" ]; then
-      len=$(wc -c < "$tmp")
-    fi
+      local tmp
+      tmp="$(mktemp)"
+      local code="000"
+      local curl_rc=0
 
-    printf "  %s => %s (%s bytes)\n" "$path" "$code" "$len"
-    if [[ "$code" != 2* && "$code" != 3* ]]; then
-      if [[ "$curl_rc" -eq 28 ]]; then
-        echo "  !! timeout detected"
-      elif [[ "$curl_rc" -ne 0 ]]; then
-        echo "  !! curl error detected (rc=$curl_rc)"
-      else
-        echo "  !! non-2xx/3xx detected"
+      code=$(curl -sS -o "$tmp" -w '%{http_code}' --connect-timeout 3 -m 12 "$base_url$path" 2>/dev/null) || curl_rc=$?
+
+      local len=0
+      if [ -s "$tmp" ]; then
+        len=$(wc -c < "$tmp")
       fi
+
+      if [[ "$code" == 2* || "$code" == 3* ]]; then
+        printf "  %s => %s (%s bytes) [attempt %d/%d]\n" "$path" "$code" "$len" "$attempts" "$((RETRIES + 1))"
+        rm -f "$tmp"
+        success=1
+        break
+      fi
+
+      if (( attempts > RETRIES )); then
+        printf "  %s => %s (%s bytes) [attempt %d/%d]\n" "$path" "$code" "$len" "$attempts" "$((RETRIES + 1))"
+        if [[ "$curl_rc" -eq 28 ]]; then
+          echo "  !! timeout detected"
+        elif [[ "$curl_rc" -ne 0 ]]; then
+          echo "  !! curl error detected (rc=$curl_rc)"
+        else
+          echo "  !! non-2xx/3xx detected"
+        fi
+      else
+        printf "  %s => %s (%s bytes) [attempt %d/%d, retrying]\n" "$path" "$code" "$len" "$attempts" "$((RETRIES + 1))"
+        sleep "$RETRY_DELAY_SECS"
+      fi
+
+      rm -f "$tmp"
+    done
+
+    if (( success == 0 )); then
       failures=$((failures + 1))
     fi
-
-    rm -f "$tmp"
   }
 
   printf "[storyverse-web] checking %s\n" "$base_url"
@@ -53,10 +76,27 @@ run_check() {
   return 1
 }
 
-for base_url in "${BASE_URLS[@]}"; do
+primary_url="${BASE_URLS[0]}"
+primary_failed=0
+
+for idx in "${!BASE_URLS[@]}"; do
+  base_url="${BASE_URLS[$idx]}"
+
   if run_check "$base_url"; then
+    if (( idx > 0 && primary_failed == 1 )); then
+      echo "[storyverse-web] warning: primary endpoint degraded (${primary_url}), fallback healthy (${base_url})"
+      if [[ "$REQUIRE_PRIMARY" == "1" ]]; then
+        echo "[storyverse-web] failing because OPERATIONS_REQUIRE_PRIMARY=1"
+        exit 1
+      fi
+    fi
     exit 0
   fi
+
+  if (( idx == 0 )); then
+    primary_failed=1
+  fi
+
   echo "[storyverse-web] fallback to next endpoint..."
 done
 
