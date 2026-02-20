@@ -6,8 +6,24 @@ ENDPOINTS=("/" "/universe" "/api/health")
 RETRIES="${OPERATIONS_RETRIES:-2}"
 RETRY_DELAY_SECS="${OPERATIONS_RETRY_DELAY_SECS:-1}"
 REQUIRE_PRIMARY="${OPERATIONS_REQUIRE_PRIMARY:-0}"
+REPORT_FILE="${OPERATIONS_REPORT_FILE:-}"
 
 IFS=' ' read -r -a BASE_URLS <<< "$BASE_URLS_RAW"
+
+write_report() {
+  local status="$1"
+  local primary_status="$2"
+  local selected_base="$3"
+  local note="$4"
+
+  if [[ -z "$REPORT_FILE" ]]; then
+    return 0
+  fi
+
+  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","note":"%s","ts":"%s"}\n' \
+    "$status" "$primary_status" "$selected_base" "$note" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
+  echo "[storyverse-web] wrote report: ${REPORT_FILE}"
+}
 
 run_check() {
   local base_url="$1"
@@ -87,8 +103,12 @@ for idx in "${!BASE_URLS[@]}"; do
       echo "[storyverse-web] warning: primary endpoint degraded (${primary_url}), fallback healthy (${base_url})"
       if [[ "$REQUIRE_PRIMARY" == "1" ]]; then
         echo "[storyverse-web] failing because OPERATIONS_REQUIRE_PRIMARY=1"
+        write_report "fail" "degraded" "$base_url" "primary_degraded_require_primary"
         exit 1
       fi
+      write_report "ok" "degraded" "$base_url" "fallback_healthy"
+    else
+      write_report "ok" "healthy" "$base_url" "primary_healthy"
     fi
     exit 0
   fi
@@ -101,4 +121,5 @@ for idx in "${!BASE_URLS[@]}"; do
 done
 
 echo "[storyverse-web] all base URLs failed"
+write_report "fail" "down" "none" "all_bases_failed"
 exit 1
