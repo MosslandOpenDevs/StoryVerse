@@ -8,6 +8,10 @@ RETRY_DELAY_SECS="${OPERATIONS_RETRY_DELAY_SECS:-1}"
 REQUIRE_PRIMARY="${OPERATIONS_REQUIRE_PRIMARY:-0}"
 REPORT_FILE="${OPERATIONS_REPORT_FILE:-}"
 
+if [[ "$REQUIRE_PRIMARY" == "1" ]]; then
+  echo "[storyverse-web] policy notice: OPERATIONS_REQUIRE_PRIMARY=1 is ignored (Policy A: warn + fallback allowed)"
+fi
+
 IFS=' ' read -r -a BASE_URLS <<< "$BASE_URLS_RAW"
 
 write_report() {
@@ -101,12 +105,7 @@ for idx in "${!BASE_URLS[@]}"; do
   if run_check "$base_url"; then
     if (( idx > 0 && primary_failed == 1 )); then
       echo "[storyverse-web] warning: primary endpoint degraded (${primary_url}), fallback healthy (${base_url})"
-      if [[ "$REQUIRE_PRIMARY" == "1" ]]; then
-        echo "[storyverse-web] failing because OPERATIONS_REQUIRE_PRIMARY=1"
-        write_report "fail" "degraded" "$base_url" "primary_degraded_require_primary"
-        exit 1
-      fi
-      write_report "ok" "degraded" "$base_url" "fallback_healthy"
+      write_report "ok" "degraded" "$base_url" "fallback_healthy_policy_a"
     else
       write_report "ok" "healthy" "$base_url" "primary_healthy"
     fi
