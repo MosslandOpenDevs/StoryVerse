@@ -14,18 +14,38 @@ fi
 
 IFS=' ' read -r -a BASE_URLS <<< "$BASE_URLS_RAW"
 
+probe_latency_ms() {
+  local base_url="$1"
+  local path="${2:-/api/health}"
+  local out
+
+  out="$(curl -sS -o /dev/null -w '%{http_code} %{time_total}' --connect-timeout 3 -m 12 "${base_url}${path}" 2>/dev/null || echo '000 0')"
+  local code
+  local sec
+  code="$(awk '{print $1}' <<<"$out")"
+  sec="$(awk '{print $2}' <<<"$out")"
+
+  if [[ "$code" == 2* || "$code" == 3* ]]; then
+    awk -v s="$sec" 'BEGIN { printf "%.0f", s * 1000 }'
+  else
+    echo "null"
+  fi
+}
+
 write_report() {
   local status="$1"
   local primary_status="$2"
   local selected_base="$3"
   local note="$4"
+  local primary_latency_ms="$5"
+  local selected_latency_ms="$6"
 
   if [[ -z "$REPORT_FILE" ]]; then
     return 0
   fi
 
-  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","note":"%s","ts":"%s"}\n' \
-    "$status" "$primary_status" "$selected_base" "$note" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
+  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","note":"%s","primary_api_latency_ms":%s,"selected_api_latency_ms":%s,"ts":"%s"}\n' \
+    "$status" "$primary_status" "$selected_base" "$note" "$primary_latency_ms" "$selected_latency_ms" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
   echo "[storyverse-web] wrote report: ${REPORT_FILE}"
 }
 
@@ -103,11 +123,14 @@ for idx in "${!BASE_URLS[@]}"; do
   base_url="${BASE_URLS[$idx]}"
 
   if run_check "$base_url"; then
+    primary_latency_ms="$(probe_latency_ms "$primary_url")"
+    selected_latency_ms="$(probe_latency_ms "$base_url")"
+
     if (( idx > 0 && primary_failed == 1 )); then
       echo "[storyverse-web] warning: primary endpoint degraded (${primary_url}), fallback healthy (${base_url})"
-      write_report "ok" "degraded" "$base_url" "fallback_healthy_policy_a"
+      write_report "ok" "degraded" "$base_url" "fallback_healthy_policy_a" "$primary_latency_ms" "$selected_latency_ms"
     else
-      write_report "ok" "healthy" "$base_url" "primary_healthy"
+      write_report "ok" "healthy" "$base_url" "primary_healthy" "$primary_latency_ms" "$selected_latency_ms"
     fi
     exit 0
   fi
@@ -120,5 +143,5 @@ for idx in "${!BASE_URLS[@]}"; do
 done
 
 echo "[storyverse-web] all base URLs failed"
-write_report "fail" "down" "none" "all_bases_failed"
+write_report "fail" "down" "none" "all_bases_failed" "null" "null"
 exit 1
