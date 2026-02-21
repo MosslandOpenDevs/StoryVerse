@@ -14,6 +14,20 @@ fi
 
 IFS=' ' read -r -a BASE_URLS <<< "$BASE_URLS_RAW"
 
+probe_endpoint_code() {
+  local base_url="$1"
+  local path="$2"
+  local out
+
+  out="$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 3 -m 12 "${base_url}${path}" 2>/dev/null || true)"
+  if [[ -z "$out" ]]; then
+    echo "000"
+    return
+  fi
+
+  echo "$out" | tail -n 1
+}
+
 probe_latency_ms() {
   local base_url="$1"
   local path="${2:-/api/health}"
@@ -39,13 +53,17 @@ write_report() {
   local note="$4"
   local primary_latency_ms="$5"
   local selected_latency_ms="$6"
+  local primary_home_code="$7"
+  local primary_universe_code="$8"
+  local selected_home_code="$9"
+  local selected_universe_code="${10}"
 
   if [[ -z "$REPORT_FILE" ]]; then
     return 0
   fi
 
-  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","note":"%s","primary_api_latency_ms":%s,"selected_api_latency_ms":%s,"ts":"%s"}\n' \
-    "$status" "$primary_status" "$selected_base" "$note" "$primary_latency_ms" "$selected_latency_ms" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
+  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","note":"%s","primary_api_latency_ms":%s,"selected_api_latency_ms":%s,"primary_home_code":"%s","primary_universe_code":"%s","selected_home_code":"%s","selected_universe_code":"%s","ts":"%s"}\n' \
+    "$status" "$primary_status" "$selected_base" "$note" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$selected_home_code" "$selected_universe_code" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
   echo "[storyverse-web] wrote report: ${REPORT_FILE}"
 }
 
@@ -125,12 +143,16 @@ for idx in "${!BASE_URLS[@]}"; do
   if run_check "$base_url"; then
     primary_latency_ms="$(probe_latency_ms "$primary_url")"
     selected_latency_ms="$(probe_latency_ms "$base_url")"
+    primary_home_code="$(probe_endpoint_code "$primary_url" "/")"
+    primary_universe_code="$(probe_endpoint_code "$primary_url" "/universe")"
+    selected_home_code="$(probe_endpoint_code "$base_url" "/")"
+    selected_universe_code="$(probe_endpoint_code "$base_url" "/universe")"
 
     if (( idx > 0 && primary_failed == 1 )); then
       echo "[storyverse-web] warning: primary endpoint degraded (${primary_url}), fallback healthy (${base_url})"
-      write_report "ok" "degraded" "$base_url" "fallback_healthy_policy_a" "$primary_latency_ms" "$selected_latency_ms"
+      write_report "ok" "degraded" "$base_url" "fallback_healthy_policy_a" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$selected_home_code" "$selected_universe_code"
     else
-      write_report "ok" "healthy" "$base_url" "primary_healthy" "$primary_latency_ms" "$selected_latency_ms"
+      write_report "ok" "healthy" "$base_url" "primary_healthy" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$selected_home_code" "$selected_universe_code"
     fi
     exit 0
   fi
@@ -143,5 +165,5 @@ for idx in "${!BASE_URLS[@]}"; do
 done
 
 echo "[storyverse-web] all base URLs failed"
-write_report "fail" "down" "none" "all_bases_failed" "null" "null"
+write_report "fail" "down" "none" "all_bases_failed" "null" "null" "000" "000" "000" "000"
 exit 1
