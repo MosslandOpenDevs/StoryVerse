@@ -10,6 +10,9 @@
   --neon-cyan: #22d3ee;
   --neon-violet: #a855f7;
   --neon-rose: #f472b6;
+  --domain-movie: #60a5fa;
+  --domain-history: #34d399;
+  --domain-novel: #f472b6;
 }
 
 @theme inline {
@@ -21,6 +24,9 @@
   --color-neon-cyan: var(--neon-cyan);
   --color-neon-violet: var(--neon-violet);
   --color-neon-rose: var(--neon-rose);
+  --color-domain-movie: var(--domain-movie);
+  --color-domain-history: var(--domain-history);
+  --color-domain-novel: var(--domain-novel);
   --font-display: var(--font-orbitron);
   --font-sans: var(--font-space-grotesk);
 }
@@ -40,4 +46,52 @@ body {
 ::selection {
   background-color: rgba(34, 211, 238, 0.28);
   color: #f8fafc;
+}
+
+/* Dark theme scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.25);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.45);
+}
+
+/* Glowing border animation */
+.glow-border-cyan {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.5), 0 0 15px rgba(34, 211, 238, 0.25);
+}
+
+.glow-border-violet {
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.5), 0 0 15px rgba(168, 85, 247, 0.25);
+}
+
+/* Domain gradient utilities */
+.gradient-movie {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+.gradient-history {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.gradient-novel {
+  background: linear-gradient(135deg, #f472b6, #ec4899);
+}
+
+.gradient-text-hero {
+  background: linear-gradient(135deg, #22d3ee, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
