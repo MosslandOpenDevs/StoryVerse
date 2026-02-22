@@ -4,15 +4,20 @@ import { HeroSection } from "@/components/marketing/HeroSection";
 import { HowItWorksSection } from "@/components/marketing/HowItWorksSection";
 import { CatalogPreviewSection } from "@/components/marketing/CatalogPreviewSection";
 import { CtaSection } from "@/components/marketing/CtaSection";
+import { getFullCatalog } from "@/lib/agents/catalog";
 
-export default function MarketingPage() {
+export const dynamic = "force-dynamic";
+
+export default async function MarketingPage() {
+  const catalog = await getFullCatalog();
+
   return (
     <>
       <Header />
       <main className="pt-14">
         <HeroSection />
         <HowItWorksSection />
-        <CatalogPreviewSection />
+        <CatalogPreviewSection catalog={catalog} />
         <CtaSection />
       </main>
       <Footer />

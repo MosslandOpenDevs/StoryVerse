@@ -5,10 +5,7 @@ import {
   runUniverseCommandAction,
   runUniverseCommandByNodeIdsAction,
 } from "@/app/(universe)/universe/actions";
-import {
-  STORY_CATALOG,
-  type StoryCatalogItem,
-} from "@/lib/agents/catalog";
+import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import type { QueryResolutionStrategy } from "@/lib/agents/queryParser";
 
 type UniverseCommandActionResult = Awaited<
@@ -136,11 +133,17 @@ function createMessage(role: MessageRole, content: string): ChatMessage {
   };
 }
 
-export function findCatalogNode(nodeId: string): StoryCatalogItem | null {
-  return STORY_CATALOG.find((item) => item.id === nodeId) ?? null;
+export function findCatalogNodeIn(
+  catalog: StoryCatalogItem[],
+  nodeId: string,
+): StoryCatalogItem | null {
+  return catalog.find((item) => item.id === nodeId) ?? null;
 }
 
-export function useUniverseState(initialStoryId?: string) {
+export function useUniverseState(
+  catalog: StoryCatalogItem[],
+  initialStoryId?: string,
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     createMessage(
       "assistant",
@@ -343,8 +346,8 @@ export function useUniverseState(initialStoryId?: string) {
 
   const generateBridge = () => {
     if (isPending) return;
-    const source = findCatalogNode(selectedSourceId);
-    const target = findCatalogNode(selectedTargetId);
+    const source = findCatalogNodeIn(catalog, selectedSourceId);
+    const target = findCatalogNodeIn(catalog, selectedTargetId);
     if (!source || !target || source.id === target.id) return;
 
     const prompt =
@@ -366,6 +369,7 @@ export function useUniverseState(initialStoryId?: string) {
 
   return {
     // State
+    catalog,
     messages,
     query,
     setQuery,

@@ -1,6 +1,6 @@
 import { type LanguageModel } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { STORY_CATALOG } from "./catalog";
+import { getFullCatalog } from "./catalog";
 import {
   navigatorAgent,
   type StoryNodeContext,
@@ -153,15 +153,12 @@ async function runUniverseCommandFromResolved(
   };
 }
 
-function findCatalogNodeById(nodeId: string): StoryNodeContext | null {
-  return STORY_CATALOG.find((item) => item.id === nodeId) ?? null;
-}
-
 export async function runUniverseCommand(
   query: string,
 ): Promise<UniverseCommandResult> {
+  const catalog = await getFullCatalog();
   const parserOptions = resolveParserOptions();
-  const resolved = resolveQueryNodes(query, undefined, parserOptions);
+  const resolved = resolveQueryNodes(query, catalog, parserOptions);
   const { source, target, ...resolution } = resolved;
 
   return runUniverseCommandFromResolved(query, source, target, resolution);
@@ -172,12 +169,13 @@ export async function runUniverseCommandByNodeIds(
   targetId: string,
   query?: string,
 ): Promise<UniverseCommandResult> {
-  const source = findCatalogNodeById(sourceId);
+  const catalog = await getFullCatalog();
+  const source = catalog.find((item) => item.id === sourceId) ?? null;
   if (!source) {
     throw new Error(`Unknown source node id: ${sourceId}`);
   }
 
-  const target = findCatalogNodeById(targetId);
+  const target = catalog.find((item) => item.id === targetId) ?? null;
   if (!target) {
     throw new Error(`Unknown target node id: ${targetId}`);
   }

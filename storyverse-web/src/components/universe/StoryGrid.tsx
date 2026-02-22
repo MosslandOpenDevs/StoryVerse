@@ -1,15 +1,17 @@
 "use client";
 
-import { STORY_CATALOG } from "@/lib/agents/catalog";
+import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import { StoryCard } from "./StoryCard";
 
 interface StoryGridProps {
+  catalog: StoryCatalogItem[];
   selectedSourceId: string;
   selectedTargetId: string;
   onStoryClick: (storyId: string) => void;
 }
 
 export function StoryGrid({
+  catalog,
   selectedSourceId,
   selectedTargetId,
   onStoryClick,
@@ -25,7 +27,7 @@ export function StoryGrid({
     <div>
       <p className="mb-4 text-xs text-cosmos-200/60">{guideText}</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {STORY_CATALOG.map((story) => {
+        {catalog.map((story) => {
           const selectionState =
             story.id === selectedSourceId
               ? "source"

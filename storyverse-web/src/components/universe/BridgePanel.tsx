@@ -36,6 +36,7 @@ export function BridgePanel({ state }: BridgePanelProps) {
       <div className="space-y-4">
         {/* Selected pair bar */}
         <SelectedPairBar
+          catalog={state.catalog}
           selectedSourceId={state.selectedSourceId}
           selectedTargetId={state.selectedTargetId}
           onSwap={state.swapSelection}

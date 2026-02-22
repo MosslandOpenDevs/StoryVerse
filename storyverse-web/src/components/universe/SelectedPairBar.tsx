@@ -2,7 +2,8 @@
 
 import { ArrowLeftRight, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { findCatalogNode } from "./useUniverseState";
+import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
+import { findCatalogNodeIn } from "./useUniverseState";
 import type { StoryMedium } from "@/lib/agents/navigatorAgent";
 
 const DOMAIN_DOT_COLORS: Record<StoryMedium, string> = {
@@ -12,6 +13,7 @@ const DOMAIN_DOT_COLORS: Record<StoryMedium, string> = {
 };
 
 interface SelectedPairBarProps {
+  catalog: StoryCatalogItem[];
   selectedSourceId: string;
   selectedTargetId: string;
   onSwap: () => void;
@@ -21,6 +23,7 @@ interface SelectedPairBarProps {
 }
 
 export function SelectedPairBar({
+  catalog,
   selectedSourceId,
   selectedTargetId,
   onSwap,
@@ -28,8 +31,8 @@ export function SelectedPairBar({
   onGenerate,
   isPending,
 }: SelectedPairBarProps) {
-  const source = findCatalogNode(selectedSourceId);
-  const target = findCatalogNode(selectedTargetId);
+  const source = findCatalogNodeIn(catalog, selectedSourceId);
+  const target = findCatalogNodeIn(catalog, selectedTargetId);
 
   if (!source && !target) return null;
 

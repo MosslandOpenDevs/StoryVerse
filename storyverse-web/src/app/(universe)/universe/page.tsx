@@ -1,16 +1,25 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
 import { useUniverseState } from "@/components/universe/useUniverseState";
+import { SEED_CATALOG, type StoryCatalogItem } from "@/lib/agents/catalogSeed";
+import { fetchCatalogAction } from "./actions";
 
 function UniverseContent() {
   const searchParams = useSearchParams();
   const initialStoryId = searchParams.get("story") ?? undefined;
-  const state = useUniverseState(initialStoryId);
+  const [catalog, setCatalog] = useState<StoryCatalogItem[]>(SEED_CATALOG);
+
+  // Fetch full dynamic catalog on mount
+  useEffect(() => {
+    void fetchCatalogAction().then(setCatalog);
+  }, []);
+
+  const state = useUniverseState(catalog, initialStoryId);
 
   return (
     <main className="min-h-dvh bg-cosmos-950 pt-14 text-cosmos-100">
@@ -22,10 +31,16 @@ function UniverseContent() {
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:flex-row">
         {/* Story Grid — left side */}
         <section className="w-full lg:w-[55%]">
-          <h2 className="mb-4 font-display text-lg tracking-wide text-cosmos-100">
-            Story Universe
-          </h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-lg tracking-wide text-cosmos-100">
+              Story Universe
+            </h2>
+            <span className="text-xs text-cosmos-200/40">
+              {catalog.length} stories
+            </span>
+          </div>
           <StoryGrid
+            catalog={catalog}
             selectedSourceId={state.selectedSourceId}
             selectedTargetId={state.selectedTargetId}
             onStoryClick={state.handleStoryCardClick}

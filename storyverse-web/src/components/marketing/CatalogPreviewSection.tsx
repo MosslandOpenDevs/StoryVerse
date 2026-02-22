@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { STORY_CATALOG } from "@/lib/agents/catalog";
+import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import { Badge } from "@/components/ui/badge";
 import type { StoryMedium } from "@/lib/agents/navigatorAgent";
 
@@ -21,7 +21,11 @@ const DOMAIN_BG_RADIALS: Record<StoryMedium, string> = {
   Novel: "bg-[radial-gradient(circle_at_50%_0%,rgba(244,114,182,0.06),transparent_70%)]",
 };
 
-export function CatalogPreviewSection() {
+interface CatalogPreviewSectionProps {
+  catalog: StoryCatalogItem[];
+}
+
+export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
   return (
     <section className="relative px-6 py-24">
       <div className="mx-auto max-w-5xl">
@@ -29,11 +33,11 @@ export function CatalogPreviewSection() {
           Story Catalog
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-sm text-muted">
-          Eight foundational stories waiting to be connected
+          {catalog.length} stories waiting to be connected
         </p>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {STORY_CATALOG.map((story) => (
+          {catalog.map((story) => (
             <Link
               key={story.id}
               href={`/universe?story=${story.id}`}

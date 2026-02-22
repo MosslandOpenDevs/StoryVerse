@@ -1,6 +1,6 @@
 "use client";
 
-import type { StoryCatalogItem } from "@/lib/agents/catalog";
+import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import type { StoryMedium } from "@/lib/agents/navigatorAgent";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";

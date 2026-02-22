@@ -5,7 +5,7 @@ import {
   runUniverseCommandByNodeIds,
   type UniverseCommandResult,
 } from "@/lib/agents/orchestrator";
-import { STORY_CATALOG } from "@/lib/agents/catalog";
+import { getFullCatalog, type StoryCatalogItem } from "@/lib/agents/catalog";
 
 const ACTION_TIMEOUT_MS = 15000;
 const ACTION_MAX_ATTEMPTS = 2;
@@ -65,8 +65,9 @@ export type UniverseCommandActionResult =
   | UniverseCommandActionSuccess
   | UniverseCommandActionFailure;
 
-function isValidCatalogNodeId(nodeId: string): boolean {
-  return STORY_CATALOG.some((item) => item.id === nodeId);
+async function isValidCatalogNodeId(nodeId: string): Promise<boolean> {
+  const catalog = await getFullCatalog();
+  return catalog.some((item) => item.id === nodeId);
 }
 
 async function executeCommand(
@@ -158,8 +159,8 @@ export async function runUniverseCommandByNodeIdsAction(
   }
 
   if (
-    !isValidCatalogNodeId(normalizedSourceId) ||
-    !isValidCatalogNodeId(normalizedTargetId)
+    !(await isValidCatalogNodeId(normalizedSourceId)) ||
+    !(await isValidCatalogNodeId(normalizedTargetId))
   ) {
     return {
       ok: false,
@@ -182,4 +183,8 @@ export async function runUniverseCommandByNodeIdsAction(
       query,
     },
   );
+}
+
+export async function fetchCatalogAction(): Promise<StoryCatalogItem[]> {
+  return getFullCatalog();
 }

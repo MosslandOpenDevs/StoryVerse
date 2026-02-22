@@ -1,72 +1,102 @@
+import neo4j from "neo4j-driver";
 import type { StoryNodeContext } from "./navigatorAgent";
+import { SEED_CATALOG } from "./catalogSeed";
 
-export type StoryCatalogItem = StoryNodeContext & {
-  aliases: string[];
-};
+// Re-export for server-side consumers
+export { SEED_CATALOG };
+export type { StoryCatalogItem } from "./catalogSeed";
 
-export const STORY_CATALOG: StoryCatalogItem[] = [
-  {
-    id: "sherlock-holmes",
-    title: "Sherlock Holmes",
-    medium: "Novel",
-    summary:
-      "Victorian-era detective canon centered on forensic deduction, logic, and criminal networks.",
-    aliases: ["sherlock", "holmes", "arthur conan doyle", "셜록 홈즈"],
-  },
-  {
-    id: "star-wars",
-    title: "Star Wars",
-    medium: "Movie",
-    summary:
-      "Space-opera saga of empire, rebellion, mystic force traditions, and dynastic conflict.",
-    aliases: ["sw", "jedi", "skywalker", "starwars", "스타워즈", "스타 워즈"],
-  },
-  {
-    id: "cleopatra",
-    title: "Cleopatra",
-    medium: "History",
-    summary:
-      "Hellenistic ruler navigating Roman power struggles, propaganda warfare, and imperial succession.",
-    aliases: ["queen cleopatra", "ptolemaic egypt", "egyptian queen", "클레오파트라"],
-  },
-  {
-    id: "blade-runner",
-    title: "Blade Runner",
-    medium: "Movie",
-    summary:
-      "Neo-noir future where synthetic humans challenge identity, memory, and moral jurisdiction.",
-    aliases: ["replicant", "deckard", "blade runner 2049", "블레이드 러너", "블레이드러너"],
-  },
-  {
-    id: "dune",
-    title: "Dune",
-    medium: "Novel",
-    summary:
-      "Feudal interstellar politics shaped by ecology, prophecy, insurgency, and resource monopolies.",
-    aliases: ["arrakis", "atreides", "fremen", "듄"],
-  },
-  {
-    id: "roman-empire",
-    title: "Roman Empire",
-    medium: "History",
-    summary:
-      "Transcontinental imperial system driven by military expansion, law, civic administration, and succession crises.",
-    aliases: ["rome", "caesar", "senate", "imperial rome", "로마 제국"],
-  },
-  {
-    id: "napoleon",
-    title: "Napoleon Bonaparte",
-    medium: "History",
-    summary:
-      "Post-revolutionary military leader whose campaigns reshaped statecraft, warfare, and legal codification.",
-    aliases: ["napoleon bonaparte", "french empire", "나폴레옹", "나폴레옹 보나파르트"],
-  },
-  {
-    id: "lord-of-the-rings",
-    title: "The Lord of the Rings",
-    medium: "Novel",
-    summary:
-      "Epic mythic war narrative exploring power corruption, fellowship bonds, and civilizational memory.",
-    aliases: ["lotr", "middle earth", "gandalf", "sauron", "반지의 제왕"],
-  },
-];
+/** @deprecated Use getFullCatalog() for dynamic catalog. */
+export const STORY_CATALOG = SEED_CATALOG;
+
+// ---------------------------------------------------------------------------
+// Dynamic catalog: SEED + generated stories from Neo4j (server-only)
+// ---------------------------------------------------------------------------
+
+type StoryCatalogItem = StoryNodeContext & { aliases: string[] };
+
+const SEED_IDS = new Set(SEED_CATALOG.map((item) => item.id));
+
+let cachedCatalog: StoryCatalogItem[] | null = null;
+let cachedAt = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function createDriver() {
+  const uri = process.env["NEO4J_URI"];
+  const username = process.env["NEO4J_USERNAME"];
+  const password = process.env["NEO4J_PASSWORD"];
+
+  if (!uri || !username || !password) {
+    return null;
+  }
+
+  return neo4j.driver(uri, neo4j.auth.basic(username, password));
+}
+
+function normalizeMedium(value: unknown): StoryNodeContext["medium"] {
+  if (value === "Movie" || value === "History" || value === "Novel") {
+    return value;
+  }
+  return "Novel";
+}
+
+function parseAliases(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((v): v is string => typeof v === "string");
+  }
+  return [];
+}
+
+async function fetchGeneratedCatalogItems(): Promise<StoryCatalogItem[]> {
+  const driver = createDriver();
+  if (!driver) {
+    return [];
+  }
+
+  const session = driver.session({ defaultAccessMode: neo4j.session.READ });
+  try {
+    const result = await session.run(
+      `MATCH (s:Story {isCatalog: true})
+       RETURN s.id AS id, s.title AS title, s.medium AS medium,
+              coalesce(s.summary, '') AS summary,
+              coalesce(s.aliases, []) AS aliases
+       ORDER BY s.createdAt DESC`,
+    );
+
+    return result.records
+      .map((record) => ({
+        id: String(record.get("id")),
+        title: String(record.get("title")),
+        medium: normalizeMedium(record.get("medium")),
+        summary: String(record.get("summary")),
+        aliases: parseAliases(record.get("aliases")),
+      }))
+      .filter((item) => !SEED_IDS.has(item.id));
+  } catch {
+    return [];
+  } finally {
+    await session.close();
+    await driver.close();
+  }
+}
+
+/**
+ * Returns seed catalog + AI-generated stories from Neo4j.
+ * Results are cached for 5 minutes. Server-only.
+ */
+export async function getFullCatalog(): Promise<StoryCatalogItem[]> {
+  if (cachedCatalog && Date.now() - cachedAt < CACHE_TTL_MS) {
+    return cachedCatalog;
+  }
+
+  const generated = await fetchGeneratedCatalogItems();
+  cachedCatalog = [...SEED_CATALOG, ...generated];
+  cachedAt = Date.now();
+  return cachedCatalog;
+}
+
+/** Invalidate the in-memory cache (called after generation). */
+export function invalidateCatalogCache(): void {
+  cachedCatalog = null;
+  cachedAt = 0;
+}
