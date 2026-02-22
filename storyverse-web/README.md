@@ -1,6 +1,6 @@
 # StoryVerse Web
 
-StoryVerse is an agentic storytelling interface where users connect movies, history, and novels through a 3D universe graph.
+Next.js application for StoryVerse — an agentic storytelling interface where users connect movies, history, and novels through AI-powered narrative bridges.
 
 ## Run Locally
 
@@ -9,12 +9,12 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:16100`.
 
 ## Quality Checks
 
 ```bash
-npm run check
+npm run check    # lint + test:parser + build
 npm run lint
 npm run test:parser
 npm run build
@@ -24,40 +24,139 @@ npm run build
 - `src/lib/agents/queryParser.test.ts`
 - `src/lib/agents/orchestrator.test.ts`
 
-## Key Paths
+---
 
-- `src/app/(marketing)/page.tsx`: marketing landing page (`/`)
-- `src/app/(universe)/universe/page.tsx`: main exploration UI (`/universe`)
-- `src/components/universe/UniverseCanvas.tsx`: 3D node rendering and interactions
-- `src/components/universe/CommandDeck.tsx`: query input + response panel
-- `src/lib/agents/queryParser.ts`: natural-language query -> source/target node resolution
-- `src/lib/agents/orchestrator.ts`: calls navigator/storyteller agents and composes result
-- `src/lib/agents/navigatorAgent.ts`: neighbor suggestion logic (Neo4j + optional model ranking)
-- `src/lib/agents/storytellerAgent.ts`: what-if scenario generation workflow
-- `src/lib/agents/catalog.ts`: canonical story nodes and aliases
-- `src/lib/agents/queryParser.test.ts`: parser regression tests (English/Korean + ambiguity)
-- `src/lib/agents/orchestrator.test.ts`: orchestration regression tests (manual selection + parser policy env)
+## Architecture
+
+### Pages
+
+| Route | File | Description |
+|-------|------|-------------|
+| `/` | `src/app/(marketing)/page.tsx` | Marketing landing page — Hero, How It Works, Catalog Preview, CTA |
+| `/universe` | `src/app/(universe)/universe/page.tsx` | Main exploration UI — split grid + bridge panel layout |
+
+### Component Structure
+
+```
+src/components/
+├── layout/
+│   ├── Header.tsx              # Fixed glassmorphism navigation bar
+│   └── Footer.tsx              # Marketing page footer
+├── marketing/
+│   ├── HeroSection.tsx         # Constellation SVG + gradient headline + CTAs
+│   ├── HowItWorksSection.tsx   # 3-step feature cards
+│   ├── CatalogPreviewSection.tsx  # Dynamic story catalog grid
+│   └── CtaSection.tsx          # Final call-to-action block
+├── universe/
+│   ├── useUniverseState.ts     # Central state hook (selection, queries, results)
+│   ├── StoryCard.tsx           # Domain-colored card with source/target glow states
+│   ├── StoryGrid.tsx           # 2-column responsive story grid
+│   ├── SelectedPairBar.tsx     # Source → Target bar with swap/clear/generate
+│   ├── BridgePanel.tsx         # Right panel orchestrator
+│   ├── QueryInput.tsx          # Search input + starter prompts + recent queries
+│   ├── BridgeResultCard.tsx    # Scenario narrative with gradient border
+│   ├── TimelineBeats.tsx       # Vertical timeline with neon dots
+│   ├── RiskBadge.tsx           # Risk assessment card (neon-rose)
+│   ├── NeighborSuggestions.tsx  # Clickable suggestion cards
+│   ├── ClarificationPanel.tsx  # Disambiguation UI for ambiguous queries
+│   └── ChatHistory.tsx         # Collapsible query/result log
+└── ui/
+    ├── badge.tsx               # Domain-aware badge (Movie/History/Novel)
+    ├── button.tsx              # Button variants (default/outline/secondary/ghost)
+    ├── card.tsx                # CVA card (glass/solid variants)
+    └── input.tsx               # Text input primitive
+```
+
+### Agent Pipeline
+
+| File | Role |
+|------|------|
+| `src/lib/agents/orchestrator.ts` | Calls navigator/storyteller agents, composes result |
+| `src/lib/agents/queryParser.ts` | Natural-language query → source/target node resolution |
+| `src/lib/agents/navigatorAgent.ts` | Neighbor suggestion logic (Neo4j + optional model ranking) |
+| `src/lib/agents/storytellerAgent.ts` | What-if scenario generation workflow |
+| `src/lib/agents/catalog.ts` | Server-side catalog with Neo4j dynamic loading + 5-min cache |
+| `src/lib/agents/catalogSeed.ts` | Client-safe static seed data (8 stories) |
+| `src/lib/agents/catalogGenerator.ts` | AI story generation via Ollama |
+
+### API Routes
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/catalog` | GET | Returns full dynamic catalog (seed + generated) |
+| `/api/catalog/generate` | POST | Triggers AI story generation via Ollama |
+
+---
+
+## Dynamic Catalog
+
+The story catalog starts with 8 seed stories and expands dynamically through AI generation.
+
+### How It Works
+
+1. **Seed catalog** (`catalogSeed.ts`): 8 hand-curated stories across Movie/History/Novel
+2. **Dynamic expansion**: AI generates new stories via Ollama, persisted in Neo4j
+3. **Full catalog** (`catalog.ts`): Combines seed + Neo4j-generated stories with 5-minute cache
+4. **Client loading**: Universe page fetches the full catalog via server action on mount
+
+### Generate New Stories
+
+```bash
+# Generate 12 stories (4 per domain)
+curl -X POST http://localhost:16100/api/catalog/generate
+
+# Custom count per domain
+curl -X POST http://localhost:16100/api/catalog/generate \
+  -H "Content-Type: application/json" \
+  -d '{"countPerDomain": 6}'
+
+# Schedule weekly via cron (every Monday 3 AM)
+# 0 3 * * 1 curl -X POST http://localhost:16100/api/catalog/generate
+```
+
+---
 
 ## Environment Variables
 
-- `OPENAI_API_KEY` (optional, enables model-enhanced generation)
-- `NEO4J_URI`
-- `NEO4J_USERNAME`
-- `NEO4J_PASSWORD`
-- `QUERY_PREFERRED_MEDIA` (optional, comma list: `Movie,History,Novel`)
-- `QUERY_AMBIGUITY_MARGIN` (optional, integer `1..40`)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEO4J_URI` | Yes | Neo4j connection URI |
+| `NEO4J_USERNAME` | Yes | Neo4j username |
+| `NEO4J_PASSWORD` | Yes | Neo4j password |
+| `OPENAI_API_KEY` | Optional | Enables model-enhanced bridge generation |
+| `OLLAMA_BASE_URL` | Optional | Ollama server URL (default: `http://192.168.1.96:11434/v1`) |
+| `OLLAMA_MODEL` | Optional | Ollama model name (default: `llama3`) |
+| `CATALOG_GENERATE_SECRET` | Optional | Bearer token for catalog generation API |
+| `QUERY_PREFERRED_MEDIA` | Optional | Comma list: `Movie,History,Novel` |
+| `QUERY_AMBIGUITY_MARGIN` | Optional | Integer `1..40` |
+
+---
+
+## Design System
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| Background | `cosmos-950` (#020617) | Page and card backgrounds |
+| Foreground | `cosmos-100` (#dbeafe) | Primary text |
+| Accent Cyan | `neon-cyan` (#22d3ee) | CTAs, source selection, links |
+| Accent Violet | `neon-violet` (#a855f7) | Target selection, decorative |
+| Accent Rose | `neon-rose` (#f472b6) | Risk badges, alerts |
+| Domain Movie | `#60a5fa` | Movie badges, borders, glows |
+| Domain History | `#34d399` | History badges, borders, glows |
+| Domain Novel | `#f472b6` | Novel badges, borders, glows |
+| Display Font | Orbitron | Headings, logos |
+| Body Font | Space Grotesk | Body text |
+
+---
 
 ## Notes
 
-- Query resolution returns strategy/confidence/candidates metadata used by `CommandDeck` for clarification prompts.
+- Query resolution returns strategy/confidence/candidates metadata used by `ClarificationPanel` for disambiguation.
 - Query parser supports options (`preferredMediumOrder`, `ambiguityMargin`) for controlled disambiguation.
-- Preferred medium order also affects fallback target selection when only one node (or none) is detected.
-- Preferred medium order now also drives fallback candidate chip ordering for consistent clarification UX.
+- Preferred medium order also affects fallback target selection and candidate chip ordering.
 - Query parser infers locale (`ko`/`en`) and localizes clarification prompts.
-- `CommandDeck` now supports in-place source/target correction from candidate chips.
-- Candidate correction executes by node ID to avoid reparsing ambiguity.
-- `CommandDeck` also provides direct manual source/target selection from the catalog and executes by node ID.
-- Clicking highlighted catalog anchor nodes in `UniverseCanvas` stages source/target in `CommandDeck`.
-- Manual selection includes a quick bridge mode that auto-runs after two canvas picks.
-- `CommandDeck` stores up to 5 recent queries in local storage for quick reruns.
+- `useUniverseState` hook manages all universe page state: selection, queries, results, and actions.
+- Story cards support sequential selection: first click → Source (cyan glow), second click → Target (violet glow).
+- Manual selection auto-runs bridge generation when both source and target are selected.
+- Recent queries stored in localStorage (up to 5) for quick reruns.
 - Server action failures return explicit codes: `EMPTY_QUERY`, `INVALID_SELECTION`, `TIMEOUT`, `EXECUTION_FAILED`.
