@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URLS_RAW="${OPERATIONS_BASE_URLS:-${OPERATIONS_BASE_URL:-https://sv.moss.land} http://localhost:6100}"
+BASE_URLS_RAW="${OPERATIONS_BASE_URLS:-${OPERATIONS_BASE_URL:-https://sv.moss.land} http://localhost:16100}"
 ENDPOINTS=("/" "/universe" "/api/health")
 RETRIES="${OPERATIONS_RETRIES:-2}"
 RETRY_DELAY_SECS="${OPERATIONS_RETRY_DELAY_SECS:-1}"

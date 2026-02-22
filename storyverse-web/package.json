@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack -p 6100",
+    "dev": "next dev --turbopack -p 16100",
     "build": "next build --turbopack",
-    "start": "next start -p 6100",
+    "start": "next start -p 16100",
     "check": "npm run lint && npm run test:parser && npm run build",
     "lint": "eslint",
     "test:parser": "npm run test:parser:build && npm run test:parser:run",
