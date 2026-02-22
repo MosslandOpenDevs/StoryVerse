@@ -124,8 +124,8 @@ curl -X POST http://localhost:16100/api/catalog/generate \
 | `NEO4J_USERNAME` | Yes | Neo4j username |
 | `NEO4J_PASSWORD` | Yes | Neo4j password |
 | `OPENAI_API_KEY` | Optional | Enables model-enhanced bridge generation |
-| `OLLAMA_BASE_URL` | Optional | Ollama server URL (default: `http://192.168.1.96:11434/v1`) |
-| `OLLAMA_MODEL` | Optional | Ollama model name (default: `llama3`) |
+| `OLLAMA_BASE_URL` | Optional | Ollama server URL (default: `http://100.126.186.77:11434/v1`) |
+| `OLLAMA_MODEL` | Optional | Ollama model name (default: `qwen3:32b`) |
 | `CATALOG_GENERATE_SECRET` | Optional | Bearer token for catalog generation API |
 | `QUERY_PREFERRED_MEDIA` | Optional | Comma list: `Movie,History,Novel` |
 | `QUERY_AMBIGUITY_MARGIN` | Optional | Integer `1..40` |

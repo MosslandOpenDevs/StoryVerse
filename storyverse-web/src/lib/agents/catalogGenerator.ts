@@ -1,12 +1,16 @@
 import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import neo4j from "neo4j-driver";
-import { SEED_CATALOG, invalidateCatalogCache } from "./catalog";
+import {
+  invalidateCatalogCache,
+  appendGeneratedFile,
+  getFullCatalog,
+} from "./catalog";
 import type { StoryMedium } from "./navigatorAgent";
 
 const OLLAMA_BASE_URL =
-  process.env["OLLAMA_BASE_URL"] || "http://192.168.1.96:11434/v1";
-const OLLAMA_MODEL = process.env["OLLAMA_MODEL"] || "llama3";
+  process.env["OLLAMA_BASE_URL"] || "http://100.126.186.77:11434/v1";
+const OLLAMA_MODEL = process.env["OLLAMA_MODEL"] || "qwen3:32b";
 
 const MEDIA: StoryMedium[] = ["Movie", "History", "Novel"];
 
@@ -40,7 +44,7 @@ function createDriver() {
 function createModel() {
   const ollama = createOpenAI({
     baseURL: OLLAMA_BASE_URL,
-    apiKey: "ollama", // Ollama doesn't require a real key
+    apiKey: "ollama",
   });
   return ollama(OLLAMA_MODEL);
 }
@@ -68,15 +72,24 @@ async function generateStoriesForDomain(
   const model = createModel();
   const existingList = [...existingTitles].join(", ");
 
-  const { text } = await generateText({
-    model,
-    system: GENERATION_SYSTEM_PROMPT,
-    prompt: `Generate ${count} ${domain} stories.
+  let text: string;
+  try {
+    const result = await generateText({
+      model,
+      system: GENERATION_SYSTEM_PROMPT,
+      prompt: `Generate ${count} ${domain} stories.
 
 Already in catalog (DO NOT duplicate): ${existingList}
 
 Return a JSON array of ${count} ${domain} story objects.`,
-  });
+    });
+    text = result.text;
+  } catch (err) {
+    return {
+      stories: [],
+      error: `AI generation failed for ${domain}: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
 
   try {
     const cleaned = text.replace(/```json\n?|```\n?/g, "").trim();
@@ -171,28 +184,12 @@ async function writeStoriesToNeo4j(stories: GeneratedStory[]): Promise<void> {
 export async function generateCatalogStories(
   countPerDomain = 4,
 ): Promise<GenerationResult> {
+  // Load all existing stories (seed + Neo4j + file) to avoid duplication
+  const fullCatalog = await getFullCatalog();
   const existingTitles = new Set(
-    SEED_CATALOG.map((item) => item.title.toLowerCase()),
+    fullCatalog.map((item) => item.title.toLowerCase()),
   );
-  const existingIds = new Set(SEED_CATALOG.map((item) => item.id));
-
-  // Also fetch existing generated stories from Neo4j to avoid duplication
-  const driver = createDriver();
-  if (driver) {
-    const session = driver.session({ defaultAccessMode: neo4j.session.READ });
-    try {
-      const result = await session.run(
-        `MATCH (s:Story {isCatalog: true}) RETURN s.id AS id, s.title AS title`,
-      );
-      for (const record of result.records) {
-        existingIds.add(String(record.get("id")));
-        existingTitles.add(String(record.get("title")).toLowerCase());
-      }
-    } finally {
-      await session.close();
-      await driver.close();
-    }
-  }
+  const existingIds = new Set(fullCatalog.map((item) => item.id));
 
   const allGenerated: GeneratedStory[] = [];
   const allSkipped: string[] = [];
@@ -214,14 +211,18 @@ export async function generateCatalogStories(
   }
 
   if (allGenerated.length > 0) {
+    // Try Neo4j first, fall back to file-based storage
     try {
       await writeStoriesToNeo4j(allGenerated);
-      invalidateCatalogCache();
     } catch (err) {
       allErrors.push(
-        `Neo4j write failed: ${err instanceof Error ? err.message : "unknown"}`,
+        `Neo4j write failed (using file fallback): ${err instanceof Error ? err.message : "unknown"}`,
       );
     }
+
+    // Always persist to file as backup / fallback
+    appendGeneratedFile(allGenerated);
+    invalidateCatalogCache();
   }
 
   return {
