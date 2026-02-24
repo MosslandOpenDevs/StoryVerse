@@ -6,12 +6,13 @@ ENDPOINTS=("/" "/universe" "/api/health")
 RETRIES="${OPERATIONS_RETRIES:-2}"
 RETRY_DELAY_SECS="${OPERATIONS_RETRY_DELAY_SECS:-1}"
 REQUIRE_PRIMARY="${OPERATIONS_REQUIRE_PRIMARY:-0}"
+POLICY_MODE="fallback_allowed"
 REPORT_FILE="${OPERATIONS_REPORT_FILE:-}"
 TUNNEL_PROCESS_NAME="${OPERATIONS_TUNNEL_PROCESS_NAME:-storyverse-tunnel}"
 TUNNEL_RESTART_WARN="${OPERATIONS_TUNNEL_RESTART_WARN:-100}"
 
 if [[ "$REQUIRE_PRIMARY" == "1" ]]; then
-  echo "[storyverse-web] policy notice: OPERATIONS_REQUIRE_PRIMARY=1 is ignored (Policy A: warn + fallback allowed)"
+  echo "[storyverse-web] policy notice: OPERATIONS_REQUIRE_PRIMARY=1 is ignored and strict failover mode is disabled (Policy A: warn + fallback allowed)"
 fi
 
 IFS=' ' read -r -a BASE_URLS <<< "$BASE_URLS_RAW"
@@ -72,8 +73,8 @@ write_report() {
     return 0
   fi
 
-  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","note":"%s","primary_api_latency_ms":%s,"selected_api_latency_ms":%s,"primary_home_code":"%s","primary_universe_code":"%s","primary_api_code":"%s","selected_home_code":"%s","selected_universe_code":"%s","selected_api_code":"%s","primary_fail_count":%s,"selected_fail_count":%s,"primary_fail_ratio":%s,"selected_fail_ratio":%s,"tunnel_risk":"%s","tunnel_restart_count":%s,"ts":"%s"}\n' \
-    "$status" "$primary_status" "$selected_base" "$note" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$primary_api_code" "$selected_home_code" "$selected_universe_code" "$selected_api_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$tunnel_risk" "$tunnel_restart_count" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
+  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","policy_mode":"%s","note":"%s","primary_api_latency_ms":%s,"selected_api_latency_ms":%s,"primary_home_code":"%s","primary_universe_code":"%s","primary_api_code":"%s","selected_home_code":"%s","selected_universe_code":"%s","selected_api_code":"%s","primary_fail_count":%s,"selected_fail_count":%s,"primary_fail_ratio":%s,"selected_fail_ratio":%s,"tunnel_risk":"%s","tunnel_restart_count":%s,"ts":"%s"}\n' \
+    "$status" "$primary_status" "$selected_base" "$POLICY_MODE" "$note" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$primary_api_code" "$selected_home_code" "$selected_universe_code" "$selected_api_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$tunnel_risk" "$tunnel_restart_count" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
   echo "[storyverse-web] wrote report: ${REPORT_FILE}"
 }
 
