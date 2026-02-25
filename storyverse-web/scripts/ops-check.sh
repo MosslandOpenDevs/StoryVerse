@@ -10,6 +10,7 @@ POLICY_MODE="fallback_allowed"
 REPORT_FILE="${OPERATIONS_REPORT_FILE:-}"
 TUNNEL_PROCESS_NAME="${OPERATIONS_TUNNEL_PROCESS_NAME:-storyverse-tunnel}"
 TUNNEL_RESTART_WARN="${OPERATIONS_TUNNEL_RESTART_WARN:-100}"
+RETRY_EVENTS_TOTAL=0
 
 if [[ "$REQUIRE_PRIMARY" == "1" ]]; then
   echo "[storyverse-web] policy notice: OPERATIONS_REQUIRE_PRIMARY=1 is ignored and strict failover mode is disabled (Policy A: warn + fallback allowed)"
@@ -68,13 +69,14 @@ write_report() {
   local selected_api_code="${16}"
   local tunnel_risk="${17}"
   local tunnel_restart_count="${18}"
+  local retry_events_total="${19}"
 
   if [[ -z "$REPORT_FILE" ]]; then
     return 0
   fi
 
-  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","policy_mode":"%s","note":"%s","primary_api_latency_ms":%s,"selected_api_latency_ms":%s,"primary_home_code":"%s","primary_universe_code":"%s","primary_api_code":"%s","selected_home_code":"%s","selected_universe_code":"%s","selected_api_code":"%s","primary_fail_count":%s,"selected_fail_count":%s,"primary_fail_ratio":%s,"selected_fail_ratio":%s,"tunnel_risk":"%s","tunnel_restart_count":%s,"ts":"%s"}\n' \
-    "$status" "$primary_status" "$selected_base" "$POLICY_MODE" "$note" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$primary_api_code" "$selected_home_code" "$selected_universe_code" "$selected_api_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$tunnel_risk" "$tunnel_restart_count" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
+  printf '{"service":"storyverse-web","status":"%s","primary":"%s","selected_base":"%s","policy_mode":"%s","note":"%s","primary_api_latency_ms":%s,"selected_api_latency_ms":%s,"primary_home_code":"%s","primary_universe_code":"%s","primary_api_code":"%s","selected_home_code":"%s","selected_universe_code":"%s","selected_api_code":"%s","primary_fail_count":%s,"selected_fail_count":%s,"primary_fail_ratio":%s,"selected_fail_ratio":%s,"tunnel_risk":"%s","tunnel_restart_count":%s,"retry_events_total":%s,"ts":"%s"}\n' \
+    "$status" "$primary_status" "$selected_base" "$POLICY_MODE" "$note" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$primary_api_code" "$selected_home_code" "$selected_universe_code" "$selected_api_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$tunnel_risk" "$tunnel_restart_count" "$retry_events_total" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$REPORT_FILE"
   echo "[storyverse-web] wrote report: ${REPORT_FILE}"
 }
 
@@ -115,6 +117,9 @@ run_check() {
 
       if [[ "$code" == 2* || "$code" == 3* ]]; then
         printf "  %s => %s (%s bytes) [attempt %d/%d]\n" "$path" "$code" "$len" "$attempts" "$((RETRIES + 1))"
+        if (( attempts > 1 )); then
+          RETRY_EVENTS_TOTAL=$((RETRY_EVENTS_TOTAL + attempts - 1))
+        fi
         rm -f "$tmp"
         success=1
         break
@@ -138,6 +143,9 @@ run_check() {
     done
 
     if (( success == 0 )); then
+      if (( attempts > 1 )); then
+        RETRY_EVENTS_TOTAL=$((RETRY_EVENTS_TOTAL + attempts - 1))
+      fi
       failures=$((failures + 1))
     fi
   }
@@ -170,6 +178,9 @@ for idx in "${!BASE_URLS[@]}"; do
   base_url="${BASE_URLS[$idx]}"
 
   if run_check "$base_url"; then
+    if (( RETRY_EVENTS_TOTAL > 0 )); then
+      echo "[storyverse-web] warning: transient errors recovered via retries (retry_events_total=${RETRY_EVENTS_TOTAL})"
+    fi
     primary_latency_ms="$(probe_latency_ms "$primary_url")"
     selected_latency_ms="$(probe_latency_ms "$base_url")"
     primary_home_code="$(probe_endpoint_code "$primary_url" "/")"
@@ -192,9 +203,9 @@ for idx in "${!BASE_URLS[@]}"; do
 
     if (( idx > 0 && primary_failed == 1 )); then
       echo "[storyverse-web] warning: primary endpoint degraded (${primary_url}), fallback healthy (${base_url})"
-      write_report "ok" "degraded" "$base_url" "fallback_healthy_policy_a" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$selected_home_code" "$selected_universe_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$primary_api_code" "$selected_api_code" "$tunnel_risk" "$tunnel_restart_count"
+      write_report "ok" "degraded" "$base_url" "fallback_healthy_policy_a" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$selected_home_code" "$selected_universe_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$primary_api_code" "$selected_api_code" "$tunnel_risk" "$tunnel_restart_count" "$RETRY_EVENTS_TOTAL"
     else
-      write_report "ok" "healthy" "$base_url" "primary_healthy" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$selected_home_code" "$selected_universe_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$primary_api_code" "$selected_api_code" "$tunnel_risk" "$tunnel_restart_count"
+      write_report "ok" "healthy" "$base_url" "primary_healthy" "$primary_latency_ms" "$selected_latency_ms" "$primary_home_code" "$primary_universe_code" "$selected_home_code" "$selected_universe_code" "$primary_fail_count" "$selected_fail_count" "$primary_fail_ratio" "$selected_fail_ratio" "$primary_api_code" "$selected_api_code" "$tunnel_risk" "$tunnel_restart_count" "$RETRY_EVENTS_TOTAL"
     fi
     exit 0
   fi
@@ -207,5 +218,5 @@ for idx in "${!BASE_URLS[@]}"; do
 done
 
 echo "[storyverse-web] all base URLs failed"
-write_report "fail" "down" "none" "all_bases_failed" "null" "null" "000" "000" "000" "000" "2" "2" "1.00" "1.00" "000" "000" "$tunnel_risk" "$tunnel_restart_count"
+write_report "fail" "down" "none" "all_bases_failed" "null" "null" "000" "000" "000" "000" "2" "2" "1.00" "1.00" "000" "000" "$tunnel_risk" "$tunnel_restart_count" "$RETRY_EVENTS_TOTAL"
 exit 1
