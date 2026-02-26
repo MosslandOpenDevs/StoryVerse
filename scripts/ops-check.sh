@@ -15,11 +15,13 @@ fi
 
 policy_required="${OPERATIONS_REQUIRE_PRIMARY:-0}"
 policy_mode="policy_a_fallback_allowed"
+policy_reason="primary_optional_fallback_allowed"
 if [[ "$policy_required" == "1" || "$policy_required" == "true" ]]; then
   policy_mode="strict_primary"
+  policy_reason="strict_primary_mode_detected"
 fi
 
-summary="{\"service\":\"StoryVerse\",\"status\":\"${status}\",\"policyMode\":\"${policy_mode}\",\"primaryRequired\":\"${policy_required}\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+summary="{\"service\":\"StoryVerse\",\"status\":\"${status}\",\"policyMode\":\"${policy_mode}\",\"policyReason\":\"${policy_reason}\",\"primaryRequired\":\"${policy_required}\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 echo "$summary"
 
 exit "$code"
