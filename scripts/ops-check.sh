@@ -16,12 +16,15 @@ fi
 policy_required="${OPERATIONS_REQUIRE_PRIMARY:-0}"
 policy_mode="policy_a_fallback_allowed"
 policy_reason="primary_optional_fallback_allowed"
+strict_override_detected="false"
+
 if [[ "$policy_required" == "1" || "$policy_required" == "true" ]]; then
-  policy_mode="strict_primary"
-  policy_reason="strict_primary_mode_detected"
+  strict_override_detected="true"
+  policy_reason="strict_override_ignored_policy_a"
+  echo "[StoryVerse] policy notice: OPERATIONS_REQUIRE_PRIMARY=${policy_required} ignored (Policy A fixed: warn + fallback allowed)"
 fi
 
-summary="{\"service\":\"StoryVerse\",\"status\":\"${status}\",\"policyMode\":\"${policy_mode}\",\"policyReason\":\"${policy_reason}\",\"primaryRequired\":\"${policy_required}\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+summary="{\"service\":\"StoryVerse\",\"status\":\"${status}\",\"policyMode\":\"${policy_mode}\",\"policyReason\":\"${policy_reason}\",\"primaryRequired\":\"${policy_required}\",\"strictOverrideDetected\":${strict_override_detected},\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 echo "$summary"
 
 exit "$code"
