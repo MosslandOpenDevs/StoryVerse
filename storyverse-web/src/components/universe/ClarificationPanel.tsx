@@ -1,11 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { RankedNodeCandidate } from "./useUniverseState";
+import type { ClarificationChoice, RankedNodeCandidate } from "./useUniverseState";
 import { cn } from "@/lib/utils";
 
 interface ClarificationPanelProps {
-  clarificationPrompts: string[];
+  clarificationChoices: ClarificationChoice[];
   sourceCandidates: RankedNodeCandidate[];
   targetCandidates: RankedNodeCandidate[];
   selectedSourceId: string;
@@ -13,7 +13,7 @@ interface ClarificationPanelProps {
   onSelectSource: (id: string) => void;
   onSelectTarget: (id: string) => void;
   onRunCorrected: () => void;
-  onRunQuery: (prompt: string) => void;
+  onRunChoice: (choice: ClarificationChoice) => void;
   isCorrectedRunReady: boolean;
   uiLocale: "en" | "ko";
   isPending: boolean;
@@ -26,7 +26,7 @@ function formatCandidateLabel(candidate: RankedNodeCandidate): string {
 }
 
 export function ClarificationPanel({
-  clarificationPrompts,
+  clarificationChoices,
   sourceCandidates,
   targetCandidates,
   selectedSourceId,
@@ -34,33 +34,33 @@ export function ClarificationPanel({
   onSelectSource,
   onSelectTarget,
   onRunCorrected,
-  onRunQuery,
+  onRunChoice,
   isCorrectedRunReady,
   uiLocale,
   isPending,
 }: ClarificationPanelProps) {
-  const hasClarificationPrompts = clarificationPrompts.length > 0;
+  const hasClarificationChoices = clarificationChoices.length > 0;
   const hasCandidates = sourceCandidates.length > 0 && targetCandidates.length > 0;
 
-  if (!hasClarificationPrompts && !hasCandidates) return null;
+  if (!hasClarificationChoices && !hasCandidates) return null;
 
   return (
     <div className="space-y-3 rounded-2xl border border-neon-cyan/20 bg-panel/60 p-4 backdrop-blur-xl">
-      {hasClarificationPrompts && (
+      {hasClarificationChoices && (
         <div className="space-y-2">
           <p className="text-xs text-cosmos-200/70">
             {uiLocale === "ko" ? "해석 교정 제안" : "Clarification suggestions"}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {clarificationPrompts.map((prompt) => (
+            {clarificationChoices.map((choice) => (
               <button
-                key={prompt}
+                key={`${choice.sourceId}:${choice.targetId}`}
                 type="button"
                 className="rounded-full border border-neon-cyan/30 px-2.5 py-1 text-[11px] text-cosmos-100 transition-colors hover:border-neon-cyan hover:bg-neon-cyan/10 disabled:opacity-50"
-                onClick={() => onRunQuery(prompt)}
+                onClick={() => onRunChoice(choice)}
                 disabled={isPending}
               >
-                {prompt}
+                {choice.prompt}
               </button>
             ))}
           </div>

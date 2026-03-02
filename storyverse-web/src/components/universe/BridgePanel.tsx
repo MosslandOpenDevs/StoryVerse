@@ -58,7 +58,7 @@ export function BridgePanel({ state }: BridgePanelProps) {
 
         {/* Clarification panel */}
         <ClarificationPanel
-          clarificationPrompts={state.clarificationPrompts}
+          clarificationChoices={state.clarificationChoices}
           sourceCandidates={state.sourceCandidates}
           targetCandidates={state.targetCandidates}
           selectedSourceId={state.selectedSourceId}
@@ -66,7 +66,7 @@ export function BridgePanel({ state }: BridgePanelProps) {
           onSelectSource={state.setSelectedSourceId}
           onSelectTarget={state.setSelectedTargetId}
           onRunCorrected={state.runCorrectedQuery}
-          onRunQuery={state.runQuery}
+          onRunChoice={state.runClarificationChoice}
           isCorrectedRunReady={state.isCorrectedRunReady}
           uiLocale={state.uiLocale}
           isPending={state.isPending}

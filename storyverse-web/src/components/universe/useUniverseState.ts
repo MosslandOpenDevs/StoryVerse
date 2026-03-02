@@ -5,6 +5,7 @@ import {
   runUniverseCommandAction,
   runUniverseCommandByNodeIdsAction,
 } from "@/app/(universe)/universe/actions";
+import { buildClarificationChoices } from "@/lib/agents/clarificationChoices";
 import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import type { QueryResolutionStrategy } from "@/lib/agents/queryParser";
 
@@ -21,6 +22,8 @@ type UniverseCommandActionFailure = Extract<
 >;
 type ResolutionMetadata = UniverseCommandActionSuccess["result"]["resolution"];
 export type RankedNodeCandidate = ResolutionMetadata["sourceCandidates"][number];
+export type ClarificationChoice =
+  ReturnType<typeof buildClarificationChoices>[number];
 
 export type MessageRole = "assistant" | "user";
 
@@ -75,33 +78,6 @@ function formatResolutionLabel(resolution: QueryResolutionStrategy): string {
   }
 }
 
-function buildClarificationPrompts(
-  resolution: ResolutionMetadata,
-  sourceTitle: string,
-  targetTitle: string,
-): string[] {
-  const locale = resolution.locale;
-  const sourceOptions = resolution.sourceCandidates.map((c) => c.title);
-  const targetOptions = resolution.targetCandidates.map((c) => c.title);
-  const prompts: string[] = [];
-  const seen = new Set<string>();
-
-  for (const sourceOption of sourceOptions) {
-    for (const targetOption of targetOptions) {
-      if (sourceOption === sourceTitle && targetOption === targetTitle) continue;
-      const prompt =
-        locale === "ko"
-          ? `${sourceOption}를 ${targetOption}와 연결해줘.`
-          : `Connect ${sourceOption} to ${targetOption}.`;
-      if (seen.has(prompt)) continue;
-      seen.add(prompt);
-      prompts.push(prompt);
-      if (prompts.length >= 3) return prompts;
-    }
-  }
-  return prompts;
-}
-
 function buildAssistantSummary(result: UniverseCommandActionResult): string {
   if (!result.ok) return buildErrorReply(result);
 
@@ -151,9 +127,9 @@ export function useUniverseState(
     ),
   ]);
   const [query, setQuery] = useState("");
-  const [clarificationPrompts, setClarificationPrompts] = useState<string[]>(
-    [],
-  );
+  const [clarificationChoices, setClarificationChoices] = useState<
+    ClarificationChoice[]
+  >([]);
   const [sourceCandidates, setSourceCandidates] = useState<
     RankedNodeCandidate[]
   >([]);
@@ -216,17 +192,19 @@ export function useUniverseState(
     if (result.ok && result.result.resolution.needsClarification) {
       setSourceCandidates(result.result.resolution.sourceCandidates);
       setTargetCandidates(result.result.resolution.targetCandidates);
-      setClarificationPrompts(
-        buildClarificationPrompts(
-          result.result.resolution,
-          result.result.source.title,
-          result.result.target.title,
-        ),
+      setClarificationChoices(
+        buildClarificationChoices({
+          locale: result.result.resolution.locale,
+          sourceCandidates: result.result.resolution.sourceCandidates,
+          targetCandidates: result.result.resolution.targetCandidates,
+          selectedSourceId: result.result.source.id,
+          selectedTargetId: result.result.target.id,
+        }),
       );
     } else {
       setSourceCandidates([]);
       setTargetCandidates([]);
-      setClarificationPrompts([]);
+      setClarificationChoices([]);
     }
 
     setMessages((prev) => [
@@ -243,7 +221,7 @@ export function useUniverseState(
     pushRecentQuery(normalized);
     setMessages((prev) => [...prev, createMessage("user", normalized)]);
     setQuery("");
-    setClarificationPrompts([]);
+    setClarificationChoices([]);
     setSourceCandidates([]);
     setTargetCandidates([]);
 
@@ -253,7 +231,7 @@ export function useUniverseState(
         .catch((error: unknown) => {
           setSourceCandidates([]);
           setTargetCandidates([]);
-          setClarificationPrompts([]);
+          setClarificationChoices([]);
           setMessages((prev) => [
             ...prev,
             createMessage(
@@ -277,7 +255,7 @@ export function useUniverseState(
     pushRecentQuery(prompt);
     setMessages((prev) => [...prev, createMessage("user", prompt)]);
     setQuery("");
-    setClarificationPrompts([]);
+    setClarificationChoices([]);
     setSourceCandidates([]);
     setTargetCandidates([]);
 
@@ -287,7 +265,7 @@ export function useUniverseState(
         .catch((error: unknown) => {
           setSourceCandidates([]);
           setTargetCandidates([]);
-          setClarificationPrompts([]);
+          setClarificationChoices([]);
           setMessages((prev) => [
             ...prev,
             createMessage(
@@ -316,6 +294,10 @@ export function useUniverseState(
         ? `${sourceTitle}를 ${targetTitle}와 연결해줘.`
         : `Connect ${sourceTitle} to ${targetTitle}.`;
     runNodeSelectionQuery(selectedSourceId, selectedTargetId, correctedPrompt);
+  };
+
+  const runClarificationChoice = (choice: ClarificationChoice) => {
+    runNodeSelectionQuery(choice.sourceId, choice.targetId, choice.prompt);
   };
 
   const handleStoryCardClick = (storyId: string) => {
@@ -373,7 +355,7 @@ export function useUniverseState(
     messages,
     query,
     setQuery,
-    clarificationPrompts,
+    clarificationChoices,
     sourceCandidates,
     targetCandidates,
     selectedSourceId,
@@ -390,6 +372,7 @@ export function useUniverseState(
     runQuery,
     runNodeSelectionQuery,
     runCorrectedQuery,
+    runClarificationChoice,
     handleStoryCardClick,
     swapSelection,
     clearSelection,
