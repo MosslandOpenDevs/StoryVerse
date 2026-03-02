@@ -63,6 +63,7 @@ export function extractPairFromQuery(query: string): [string, string] | null {
     /(?:connect|bridge|link)\s+(.+?)\s+(?:and|with)\s+(.+?)[.?!]*$/i,
     /(?:show|find)\s+(?:a\s+)?path\s+from\s+(.+?)\s+to\s+(.+?)[.?!]*$/i,
     /(?:show|find)\s+(?:a\s+)?path\s+between\s+(.+?)\s+and\s+(.+?)[.?!]*$/i,
+    /(?:what\s+if\s+)?(.+?)\s+(?:meets|versus|vs)\s+(.+?)[.?!]*$/i,
     /(.+?)\s*(?:를|을)\s+(.+?)\s*(?:와|과|랑|이랑)\s*(?:연결|브리지|링크|이어)(?:해\s*줘|해\s*주세요|줘|주세요)?[.?!]*$/u,
     /(.+?)\s*(?:와|과|랑|이랑)\s+(.+?)\s*(?:를|을)?\s*(?:연결|브리지|링크|이어)(?:해\s*줘|해\s*주세요|줘|주세요)?[.?!]*$/u,
     /(.+?)\s*(?:에서|부터)\s+(.+?)\s*(?:까지)\s*(?:경로|길)(?:를)?\s*(?:보여\s*줘|찾아\s*줘|보여\s*주세요|찾아\s*주세요)?[.?!]*$/u,
@@ -414,6 +415,22 @@ function buildResult(
   };
 }
 
+function joinCandidateTitles(
+  locale: QueryResolutionLocale,
+  candidates: RankedNodeCandidate[],
+  limit = 2,
+): string {
+  const titles = candidates
+    .slice(0, limit)
+    .map((candidate) => candidate.title)
+    .filter(Boolean);
+
+  if (titles.length === 0) {
+    return locale === "ko" ? "추천 노드 없음" : "no suggestions";
+  }
+  return titles.join(locale === "ko" ? " 또는 " : " or ");
+}
+
 export function resolveNodesFromQuery(
   query: string,
   catalog: readonly StoryCatalogItem[] = STORY_CATALOG,
@@ -507,6 +524,7 @@ export function resolveQueryNodes(
         title: item.title,
         score: Math.max(0, 70 - index * 10),
       }));
+    const suggestionHint = joinCandidateTitles(locale, targetCandidates);
 
     return buildResult(
       {
@@ -520,8 +538,8 @@ export function resolveQueryNodes(
         targetCandidates,
       },
       locale === "ko"
-        ? "노드를 하나만 찾았습니다. 더 정확한 연결을 위해 두 번째 노드를 지정해 주세요."
-        : "I detected only one node. Please specify a second node to improve the bridge.",
+        ? `노드를 하나만 찾았습니다. 두 번째 노드를 지정해 주세요 (예: ${suggestionHint}).`
+        : `I detected only one node. Please specify a second node (for example: ${suggestionHint}).`,
     );
   }
 
@@ -541,6 +559,8 @@ export function resolveQueryNodes(
       title: item.title,
       score: Math.max(0, 60 - index * 10),
     }));
+  const sourceHint = sourceCandidates[0]?.title;
+  const targetHint = targetCandidates[0]?.title;
 
   return buildResult(
     {
@@ -554,7 +574,11 @@ export function resolveQueryNodes(
       targetCandidates,
     },
     locale === "ko"
-      ? '질의를 명확히 해석하지 못했습니다. "A를 B와 연결해줘."처럼 직접 지정해 주세요.'
-      : 'I could not confidently map your query. Try a direct command like "Connect A to B."',
+      ? sourceHint && targetHint
+        ? `질의를 명확히 해석하지 못했습니다. 예: "${sourceHint}를 ${targetHint}와 연결해줘."`
+        : '질의를 명확히 해석하지 못했습니다. "A를 B와 연결해줘."처럼 직접 지정해 주세요.'
+      : sourceHint && targetHint
+        ? `I could not confidently map your query. Try: "Connect ${sourceHint} to ${targetHint}."`
+        : 'I could not confidently map your query. Try a direct command like "Connect A to B."',
   );
 }

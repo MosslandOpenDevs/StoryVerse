@@ -61,6 +61,13 @@ test("extracts korean path intent", () => {
   ]);
 });
 
+test("extracts versus style pair intent", () => {
+  const resolution = resolveQueryNodes("What if Dune meets Roman Empire?");
+  assert.deepEqual(pairIds("What if Dune meets Roman Empire?"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("resolves mention-based queries without explicit command verbs", () => {
   const resolution = resolveQueryNodes(
     "Could Dune collide with Imperial Rome under a single prophecy?",
@@ -92,6 +99,9 @@ test("falls back to default pair for unknown input", () => {
   assert.equal(resolution.confidence, "low");
   assert.equal(resolution.locale, "en");
   assert.ok(resolution.clarificationPrompt);
+  assert.ok(
+    resolution.clarificationPrompt?.includes('Connect Sherlock Holmes to Star Wars.'),
+  );
 });
 
 test("uses single mention fallback when only one node is detected", () => {
@@ -101,6 +111,8 @@ test("uses single mention fallback when only one node is detected", () => {
   assert.equal(resolution.confidence, "low");
   assert.equal(resolution.locale, "en");
   assert.ok(resolution.clarificationPrompt);
+  assert.ok(resolution.clarificationPrompt?.includes("for example:"));
+  assert.ok(resolution.clarificationPrompt?.includes("or"));
 });
 
 test("returns korean locale and korean clarification prompt", () => {
@@ -108,6 +120,7 @@ test("returns korean locale and korean clarification prompt", () => {
   assert.equal(resolution.locale, "ko");
   assert.equal(resolution.strategy, "single_mention_fallback");
   assert.ok(resolution.clarificationPrompt?.includes("두 번째 노드"));
+  assert.ok(resolution.clarificationPrompt?.includes("예:"));
 });
 
 test("flags ambiguous explicit terms and provides candidates", () => {
