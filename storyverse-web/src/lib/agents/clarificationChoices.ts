@@ -15,13 +15,30 @@ interface BuildClarificationChoicesInput {
   maxChoices?: number;
 }
 
+function hasBatchim(text: string): boolean {
+  const trimmed = text.trim();
+  const lastChar = trimmed.at(-1);
+  if (!lastChar) return false;
+  const code = lastChar.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return false;
+  return (code - 0xac00) % 28 !== 0;
+}
+
+function withObjectParticle(word: string): string {
+  return `${word}${hasBatchim(word) ? "을" : "를"}`;
+}
+
+function withAndParticle(word: string): string {
+  return `${word}${hasBatchim(word) ? "과" : "와"}`;
+}
+
 function toPrompt(
   locale: QueryResolutionLocale,
   sourceTitle: string,
   targetTitle: string,
 ): string {
   return locale === "ko"
-    ? `${sourceTitle}를 ${targetTitle}와 연결해줘.`
+    ? `${withObjectParticle(sourceTitle)} ${withAndParticle(targetTitle)} 연결해줘.`
     : `Connect ${sourceTitle} to ${targetTitle}.`;
 }
 

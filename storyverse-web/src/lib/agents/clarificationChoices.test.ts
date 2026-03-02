@@ -49,7 +49,7 @@ test("builds korean clarification prompts", () => {
     {
       sourceId: "dune",
       targetId: "roman-empire",
-      prompt: "듄를 로마 제국와 연결해줘.",
+      prompt: "듄을 로마 제국과 연결해줘.",
     },
   ]);
 });
