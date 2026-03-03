@@ -103,6 +103,13 @@ test("extracts pipe-style pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts multiplication-sign crossover pair intent", () => {
+  const resolution = resolveQueryNodes("Dune × Roman Empire");
+  assert.deepEqual(pairIds("Dune × Roman Empire"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("resolves mention-based queries without explicit command verbs", () => {
   const resolution = resolveQueryNodes(
     "Could Dune collide with Imperial Rome under a single prophecy?",
