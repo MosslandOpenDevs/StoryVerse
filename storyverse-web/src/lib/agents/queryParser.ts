@@ -78,7 +78,7 @@ export function extractPairFromQuery(query: string): [string, string] | null {
     }
   }
 
-  const splitPattern = /^(.+?)\s*(?:->|=>|vs\.?|\/|\+)\s*(.+?)[.?!]*$/i;
+  const splitPattern = /^(.+?)\s*(?:->|=>|vs\.?|\/|\+|\|)\s*(.+?)[.?!]*$/i;
   const splitMatch = raw.match(splitPattern);
   if (splitMatch?.[1] && splitMatch[2]) {
     return [splitMatch[1], splitMatch[2]];
