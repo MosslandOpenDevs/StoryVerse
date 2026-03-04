@@ -152,6 +152,27 @@ test("extracts smart-quoted split pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts single-quoted explicit pair intent", () => {
+  const resolution = resolveQueryNodes("Connect 'Dune' to 'Roman Empire'");
+  assert.deepEqual(pairIds("Connect 'Dune' to 'Roman Empire'"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
+test("extracts korean smart-quoted pair intent", () => {
+  const resolution = resolveQueryNodes("‘셜록 홈즈’를 ‘스타워즈’와 연결해줘");
+  assert.deepEqual(pairIds("‘셜록 홈즈’를 ‘스타워즈’와 연결해줘"), ["sherlock-holmes", "star-wars"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
+test("extracts bracket-wrapped pair intent", () => {
+  const resolution = resolveQueryNodes('Connect ("Dune") to ["Roman Empire"]');
+  assert.deepEqual(pairIds('Connect ("Dune") to ["Roman Empire"]'), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts emoji-style bidirectional arrow crossover pair intent", () => {
   const resolution = resolveQueryNodes("Dune ↔️ Roman Empire");
   assert.deepEqual(pairIds("Dune ↔️ Roman Empire"), ["dune", "roman-empire"]);
