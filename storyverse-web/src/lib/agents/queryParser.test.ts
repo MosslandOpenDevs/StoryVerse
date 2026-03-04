@@ -138,6 +138,20 @@ test("extracts ascii bidirectional arrow crossover pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts quoted explicit pair intent", () => {
+  const resolution = resolveQueryNodes('Connect "Dune" to "Roman Empire"');
+  assert.deepEqual(pairIds('Connect "Dune" to "Roman Empire"'), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
+test("extracts smart-quoted split pair intent", () => {
+  const resolution = resolveQueryNodes("“Dune” ↔️ “Roman Empire”");
+  assert.deepEqual(pairIds("“Dune” ↔️ “Roman Empire”"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts emoji-style bidirectional arrow crossover pair intent", () => {
   const resolution = resolveQueryNodes("Dune ↔️ Roman Empire");
   assert.deepEqual(pairIds("Dune ↔️ Roman Empire"), ["dune", "roman-empire"]);

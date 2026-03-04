@@ -56,6 +56,14 @@ function inferResolutionLocale(query: string): QueryResolutionLocale {
   return /[가-힣]/u.test(query) ? "ko" : "en";
 }
 
+function stripOuterQuotes(value: string): string {
+  return value
+    .trim()
+    .replace(/^["'“”‘’]+/u, "")
+    .replace(/["'“”‘’]+$/u, "")
+    .trim();
+}
+
 export function extractPairFromQuery(query: string): [string, string] | null {
   const raw = query.trim();
   const pairPatterns = [
@@ -74,14 +82,14 @@ export function extractPairFromQuery(query: string): [string, string] | null {
   for (const pattern of pairPatterns) {
     const match = raw.match(pattern);
     if (match?.[1] && match[2]) {
-      return [match[1], match[2]];
+      return [stripOuterQuotes(match[1]), stripOuterQuotes(match[2])];
     }
   }
 
   const splitPattern = /^(.+?)\s*(?:<->|↔️|↔|->|=>|vs\.?|\/|\+|\||×|✕|\*)\s*(.+?)[.?!]*$/i;
   const splitMatch = raw.match(splitPattern);
   if (splitMatch?.[1] && splitMatch[2]) {
-    return [splitMatch[1], splitMatch[2]];
+    return [stripOuterQuotes(splitMatch[1]), stripOuterQuotes(splitMatch[2])];
   }
 
   return null;
