@@ -64,15 +64,16 @@ function stripOuterQuotes(value: string): string {
     .trim();
 }
 
-function stripTrailingPunctuation(value: string): string {
+function stripEdgePunctuation(value: string): string {
   return value
     .trim()
+    .replace(/^[.?!,:;]+/u, "")
     .replace(/[.?!,:;]+$/u, "")
     .trim();
 }
 
 function normalizeExplicitToken(value: string): string {
-  return stripTrailingPunctuation(stripOuterQuotes(value));
+  return stripEdgePunctuation(stripOuterQuotes(value));
 }
 
 export function extractPairFromQuery(query: string): [string, string] | null {
