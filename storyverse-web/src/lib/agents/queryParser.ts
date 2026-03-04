@@ -64,6 +64,17 @@ function stripOuterQuotes(value: string): string {
     .trim();
 }
 
+function stripTrailingPunctuation(value: string): string {
+  return value
+    .trim()
+    .replace(/[.?!,:;]+$/u, "")
+    .trim();
+}
+
+function normalizeExplicitToken(value: string): string {
+  return stripTrailingPunctuation(stripOuterQuotes(value));
+}
+
 export function extractPairFromQuery(query: string): [string, string] | null {
   const raw = query.trim();
   const pairPatterns = [
@@ -82,14 +93,14 @@ export function extractPairFromQuery(query: string): [string, string] | null {
   for (const pattern of pairPatterns) {
     const match = raw.match(pattern);
     if (match?.[1] && match[2]) {
-      return [stripOuterQuotes(match[1]), stripOuterQuotes(match[2])];
+      return [normalizeExplicitToken(match[1]), normalizeExplicitToken(match[2])];
     }
   }
 
   const splitPattern = /^(.+?)\s*(?:<->|↔️|↔|->|=>|vs\.?|\/|\+|\||×|✕|\*)\s*(.+?)[.?!]*$/i;
   const splitMatch = raw.match(splitPattern);
   if (splitMatch?.[1] && splitMatch[2]) {
-    return [stripOuterQuotes(splitMatch[1]), stripOuterQuotes(splitMatch[2])];
+    return [normalizeExplicitToken(splitMatch[1]), normalizeExplicitToken(splitMatch[2])];
   }
 
   return null;
