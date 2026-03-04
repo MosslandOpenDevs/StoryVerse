@@ -67,8 +67,8 @@ function stripOuterQuotes(value: string): string {
 function stripEdgePunctuation(value: string): string {
   return value
     .trim()
-    .replace(/^[.?!,:;]+/u, "")
-    .replace(/[.?!,:;]+$/u, "")
+    .replace(/^[.?!,:;…·]+/u, "")
+    .replace(/[.?!,:;…·]+$/u, "")
     .trim();
 }
 
