@@ -201,6 +201,13 @@ test("extracts bidirectional arrow crossover pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts left-right arrow crossover pair intent", () => {
+  const resolution = resolveQueryNodes("Dune ⇄ Roman Empire");
+  assert.deepEqual(pairIds("Dune ⇄ Roman Empire"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts ascii bidirectional arrow crossover pair intent", () => {
   const resolution = resolveQueryNodes("Dune <-> Roman Empire");
   assert.deepEqual(pairIds("Dune <-> Roman Empire"), ["dune", "roman-empire"]);
