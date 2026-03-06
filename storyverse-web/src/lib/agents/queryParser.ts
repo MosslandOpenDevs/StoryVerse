@@ -84,6 +84,7 @@ export function extractPairFromQuery(query: string): [string, string] | null {
     /(?:show|find)\s+(?:a\s+)?path\s+from\s+(.+?)\s+to\s+(.+?)[.?!]*$/i,
     /(?:show|find)\s+(?:a\s+)?path\s+between\s+(.+?)\s+and\s+(.+?)[.?!]*$/i,
     /(?:what\s+if\s+)?(.+?)\s+(?:meets|versus|vs)\s+(.+?)[.?!]*$/i,
+    /(.+?)\s+대\s+(.+?)[.?!]*$/u,
     /(?:what\s+if\s+)?(.+?)\s+x\s+(.+?)[.?!]*$/i,
     /(?:what\s+if\s+)?(.+?)\s*&\s*(.+?)[.?!]*$/i,
     /(.+?)\s*(?:를|을)\s+(.+?)\s*(?:와|과|랑|이랑)\s*(?:연결|브리지|링크|이어)(?:해\s*줘|해\s*주세요|줘|주세요)?[.?!]*$/u,

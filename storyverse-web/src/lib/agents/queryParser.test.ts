@@ -82,6 +82,13 @@ test("extracts ampersand-style crossover pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts korean versus-style pair intent with 대", () => {
+  const resolution = resolveQueryNodes("듄 대 로마 제국");
+  assert.deepEqual(pairIds("듄 대 로마 제국"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts plus-style crossover pair intent", () => {
   const resolution = resolveQueryNodes("Dune + Roman Empire");
   assert.deepEqual(pairIds("Dune + Roman Empire"), ["dune", "roman-empire"]);
