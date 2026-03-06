@@ -243,6 +243,20 @@ test("extracts full-width semicolon crossover pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts equals-sign crossover pair intent", () => {
+  const resolution = resolveQueryNodes("Dune = Roman Empire");
+  assert.deepEqual(pairIds("Dune = Roman Empire"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
+test("extracts full-width equals-sign crossover pair intent", () => {
+  const resolution = resolveQueryNodes("듄 ＝ 로마 제국");
+  assert.deepEqual(pairIds("듄 ＝ 로마 제국"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("resolves mention-based queries without explicit command verbs", () => {
   const resolution = resolveQueryNodes(
     "Could Dune collide with Imperial Rome under a single prophecy?",
