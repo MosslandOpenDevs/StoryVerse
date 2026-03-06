@@ -25,17 +25,23 @@ export function QueryInput({
   uiLocale,
   isPending,
 }: QueryInputProps) {
+  const placeholder =
+    uiLocale === "ko"
+      ? '예시: "셜록 홈즈를 스타워즈와 연결해줘."'
+      : 'Try: "Connect Sherlock Holmes to Star Wars."';
+  const isSubmitDisabled = isPending || query.trim().length === 0;
+
   return (
     <div className="space-y-3">
       <form className="flex gap-2" onSubmit={onSubmit}>
         <Input
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder='Try: "Connect Sherlock Holmes to Star Wars."'
+          placeholder={placeholder}
           aria-label="Universe command query"
           className="flex-1"
         />
-        <Button type="submit" size="icon" disabled={isPending}>
+        <Button type="submit" size="icon" disabled={isSubmitDisabled}>
           {isPending ? (
             <span
               className="inline-block h-4 w-4 rounded-full border-2 border-cosmos-100/40 border-t-cosmos-100/90 animate-spin"
