@@ -96,6 +96,20 @@ test("extracts fat-arrow style pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts unicode right-arrow style pair intent", () => {
+  const resolution = resolveQueryNodes("Cleopatra → Blade Runner");
+  assert.deepEqual(pairIds("Cleopatra → Blade Runner"), ["cleopatra", "blade-runner"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
+test("extracts unicode heavy-arrow style pair intent", () => {
+  const resolution = resolveQueryNodes("Cleopatra ➜ Blade Runner");
+  assert.deepEqual(pairIds("Cleopatra ➜ Blade Runner"), ["cleopatra", "blade-runner"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts pipe-style pair intent", () => {
   const resolution = resolveQueryNodes("Dune | Roman Empire");
   assert.deepEqual(pairIds("Dune | Roman Empire"), ["dune", "roman-empire"]);
