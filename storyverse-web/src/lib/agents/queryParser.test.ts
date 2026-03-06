@@ -327,6 +327,13 @@ test("extracts equals-sign crossover pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts crossed-swords emoji crossover pair intent", () => {
+  const resolution = resolveQueryNodes("Dune ⚔️ Roman Empire");
+  assert.deepEqual(pairIds("Dune ⚔️ Roman Empire"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts full-width equals-sign crossover pair intent", () => {
   const resolution = resolveQueryNodes("듄 ＝ 로마 제국");
   assert.deepEqual(pairIds("듄 ＝ 로마 제국"), ["dune", "roman-empire"]);
