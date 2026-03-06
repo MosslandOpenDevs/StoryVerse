@@ -89,6 +89,20 @@ test("extracts plus-style crossover pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts slash-style crossover pair intent", () => {
+  const resolution = resolveQueryNodes("Dune / Roman Empire");
+  assert.deepEqual(pairIds("Dune / Roman Empire"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
+test("extracts full-width slash-style crossover pair intent", () => {
+  const resolution = resolveQueryNodes("듄 ／ 로마 제국");
+  assert.deepEqual(pairIds("듄 ／ 로마 제국"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts fat-arrow style pair intent", () => {
   const resolution = resolveQueryNodes("Cleopatra => Blade Runner");
   assert.deepEqual(pairIds("Cleopatra => Blade Runner"), ["cleopatra", "blade-runner"]);
