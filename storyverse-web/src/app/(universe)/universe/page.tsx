@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
@@ -13,11 +13,26 @@ function UniverseContent() {
   const searchParams = useSearchParams();
   const initialStoryId = searchParams.get("story") ?? undefined;
   const [catalog, setCatalog] = useState<StoryCatalogItem[]>(SEED_CATALOG);
+  const [isCatalogLoading, setIsCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  const loadCatalog = useCallback(async () => {
+    setIsCatalogLoading(true);
+    try {
+      const fullCatalog = await fetchCatalogAction();
+      setCatalog(fullCatalog);
+      setCatalogError(null);
+    } catch {
+      setCatalogError("Unable to refresh the full catalog.");
+    } finally {
+      setIsCatalogLoading(false);
+    }
+  }, []);
 
   // Fetch full dynamic catalog on mount
   useEffect(() => {
-    void fetchCatalogAction().then(setCatalog);
-  }, []);
+    void loadCatalog();
+  }, [loadCatalog]);
 
   const state = useUniverseState(catalog, initialStoryId);
 
@@ -35,10 +50,32 @@ function UniverseContent() {
             <h2 className="font-display text-lg tracking-wide text-cosmos-100">
               Story Universe
             </h2>
-            <span className="text-xs text-cosmos-200/40">
-              {catalog.length} stories
-            </span>
+            <div className="flex items-center gap-3">
+              {isCatalogLoading ? (
+                <span className="text-xs text-cosmos-300/70">
+                  Updating catalog...
+                </span>
+              ) : null}
+              <span className="text-xs text-cosmos-200/40">
+                {catalog.length} stories
+              </span>
+            </div>
           </div>
+          {catalogError ? (
+            <div className="mb-4 flex items-center gap-3 rounded-md border border-red-300/20 bg-red-400/10 px-3 py-2 text-xs text-red-100/90">
+              <span>{catalogError}</span>
+              <button
+                type="button"
+                className="rounded border border-red-200/30 px-2 py-1 text-[11px] font-medium text-red-100 transition hover:bg-red-200/10 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => {
+                  void loadCatalog();
+                }}
+                disabled={isCatalogLoading}
+              >
+                Retry
+              </button>
+            </div>
+          ) : null}
           <StoryGrid
             catalog={catalog}
             selectedSourceId={state.selectedSourceId}
