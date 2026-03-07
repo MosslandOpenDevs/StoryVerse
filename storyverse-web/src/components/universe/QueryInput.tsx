@@ -1,6 +1,12 @@
 "use client";
 
-import { type FormEvent, type KeyboardEvent, useState } from "react";
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +41,30 @@ export function QueryInput({
   const starterPrompts = STARTER_PROMPTS[uiLocale] ?? STARTER_PROMPTS.en;
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyDraft, setHistoryDraft] = useState<string>("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
+      const isFocusShortcut =
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "k" &&
+        !event.shiftKey &&
+        !event.altKey;
+
+      if (!isFocusShortcut) {
+        return;
+      }
+
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+    };
+  }, []);
 
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (isPending) return;
@@ -81,6 +111,7 @@ export function QueryInput({
     <div className="space-y-3">
       <form className="flex gap-2" onSubmit={onSubmit}>
         <Input
+          ref={inputRef}
           value={query}
           onChange={(e) => {
             setHistoryIndex(null);
@@ -106,8 +137,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기"
-          : "Tip: ↑/↓ browses recent queries · Esc clears input"}
+          ? "팁: ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기 · ⌘/Ctrl+K 로 포커스"
+          : "Tip: ↑/↓ browses recent queries · Esc clears input · ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
