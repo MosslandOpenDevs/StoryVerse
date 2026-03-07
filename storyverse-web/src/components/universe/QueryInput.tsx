@@ -108,6 +108,17 @@ export function QueryInput({
     const cursorStart = target.selectionStart ?? query.length;
     const cursorEnd = target.selectionEnd ?? query.length;
     const isCaretCollapsed = cursorStart === cursorEnd;
+    const normalizedKey = event.key.toLowerCase();
+    const usePrevHistoryShortcut =
+      (event.ctrlKey || event.metaKey) &&
+      normalizedKey === "p" &&
+      !event.shiftKey &&
+      !event.altKey;
+    const useNextHistoryShortcut =
+      (event.ctrlKey || event.metaKey) &&
+      normalizedKey === "n" &&
+      !event.shiftKey &&
+      !event.altKey;
 
     if (event.key === "Escape") {
       if (historyIndex !== null) {
@@ -126,9 +137,13 @@ export function QueryInput({
       }
     }
 
-    if (event.key === "ArrowUp" && recentQueries.length > 0) {
+    if ((event.key === "ArrowUp" || usePrevHistoryShortcut) && recentQueries.length > 0) {
       // Keep native caret movement unless cursor is at the start (or history mode is active).
-      if (historyIndex === null && (!isCaretCollapsed || cursorStart > 0)) {
+      if (
+        !usePrevHistoryShortcut &&
+        historyIndex === null &&
+        (!isCaretCollapsed || cursorStart > 0)
+      ) {
         return;
       }
 
@@ -145,9 +160,13 @@ export function QueryInput({
       return;
     }
 
-    if (event.key === "ArrowDown" && recentQueries.length > 0) {
+    if ((event.key === "ArrowDown" || useNextHistoryShortcut) && recentQueries.length > 0) {
       // Keep native caret movement unless cursor is at the end (or history mode is active).
-      if (historyIndex === null && (!isCaretCollapsed || cursorEnd < query.length)) {
+      if (
+        !useNextHistoryShortcut &&
+        historyIndex === null &&
+        (!isCaretCollapsed || cursorEnd < query.length)
+      ) {
         return;
       }
 
@@ -212,8 +231,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓로 최근 실행 탐색 · Esc 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
-          : "Tip: At input edges, ↑/↓ browses recent queries · Esc exits history or clears input · use × on a recent chip to remove it · / or ⌘/Ctrl+K focuses input"}
+          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓ 또는 Ctrl/⌘+P,N으로 최근 실행 탐색 · Esc 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
+          : "Tip: At input edges, ↑/↓ or Ctrl/⌘+P,N browses recent queries · Esc exits history or clears input · use × on a recent chip to remove it · / or ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
