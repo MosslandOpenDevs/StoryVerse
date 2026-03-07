@@ -88,6 +88,24 @@ export function QueryInput({
     };
   }, []);
 
+  useEffect(() => {
+    if (historyIndex === null) {
+      return;
+    }
+
+    if (recentQueries.length === 0) {
+      setHistoryIndex(null);
+      onQueryChange(historyDraft);
+      return;
+    }
+
+    if (historyIndex >= recentQueries.length) {
+      const nextIndex = recentQueries.length - 1;
+      setHistoryIndex(nextIndex);
+      onQueryChange(recentQueries[nextIndex] ?? "");
+    }
+  }, [historyDraft, historyIndex, onQueryChange, recentQueries]);
+
   const handleRemoveRecentQuery = (index: number) => {
     if (historyIndex !== null) {
       if (index === historyIndex) {
