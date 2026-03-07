@@ -119,6 +119,25 @@ export function QueryInput({
     onRemoveRecentQuery(index);
   };
 
+  const handleClearRecentQueries = () => {
+    if (recentQueries.length <= 1) {
+      onClearRecentQueries();
+      return;
+    }
+
+    const shouldClear = window.confirm(
+      uiLocale === "ko"
+        ? `최근 실행 ${recentQueries.length}개를 모두 지울까요?`
+        : `Clear all ${recentQueries.length} recent queries?`,
+    );
+
+    if (!shouldClear) {
+      return;
+    }
+
+    onClearRecentQueries();
+  };
+
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (isPending) return;
 
@@ -304,7 +323,7 @@ export function QueryInput({
             <button
               type="button"
               className="text-[10px] uppercase tracking-wide text-cosmos-300/70 transition-colors hover:text-cosmos-100 disabled:opacity-50"
-              onClick={onClearRecentQueries}
+              onClick={handleClearRecentQueries}
               disabled={isPending}
               aria-label={uiLocale === "ko" ? "최근 실행 전체 지우기" : "Clear all recent queries"}
               title={uiLocale === "ko" ? "최근 실행 전체 지우기" : "Clear all recent queries"}
