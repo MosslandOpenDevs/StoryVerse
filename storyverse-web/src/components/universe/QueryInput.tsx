@@ -34,6 +34,7 @@ export function QueryInput({
   const isSubmitDisabled = isPending || query.trim().length === 0;
   const starterPrompts = STARTER_PROMPTS[uiLocale] ?? STARTER_PROMPTS.en;
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
+  const [historyDraft, setHistoryDraft] = useState<string>("");
 
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (isPending) return;
@@ -42,11 +43,15 @@ export function QueryInput({
       event.preventDefault();
       onQueryChange("");
       setHistoryIndex(null);
+      setHistoryDraft("");
       return;
     }
 
     if (event.key === "ArrowUp" && recentQueries.length > 0) {
       event.preventDefault();
+      if (historyIndex === null) {
+        setHistoryDraft(query);
+      }
       const nextIndex =
         historyIndex === null
           ? 0
@@ -64,7 +69,7 @@ export function QueryInput({
       const nextIndex = historyIndex - 1;
       if (nextIndex < 0) {
         setHistoryIndex(null);
-        onQueryChange("");
+        onQueryChange(historyDraft);
         return;
       }
       setHistoryIndex(nextIndex);
@@ -79,6 +84,7 @@ export function QueryInput({
           value={query}
           onChange={(e) => {
             setHistoryIndex(null);
+            setHistoryDraft("");
             onQueryChange(e.target.value);
           }}
           onKeyDown={handleInputKeyDown}
