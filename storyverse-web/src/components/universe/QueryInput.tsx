@@ -142,17 +142,25 @@ export function QueryInput({
             </button>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {recentQueries.map((prompt) => (
-              <button
-                key={`recent-${prompt}`}
-                type="button"
-                className="rounded-full border border-cosmos-700/50 bg-cosmos-900/40 px-2.5 py-1 text-[11px] text-cosmos-200/80 transition-colors hover:border-cosmos-500 hover:text-cosmos-100 disabled:opacity-50"
-                onClick={() => onRunQuery(prompt)}
-                disabled={isPending}
-              >
-                {prompt}
-              </button>
-            ))}
+            {recentQueries.map((prompt, index) => {
+              const isHistoryActive = historyIndex === index;
+              return (
+                <button
+                  key={`recent-${index}-${prompt}`}
+                  type="button"
+                  className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50 ${
+                    isHistoryActive
+                      ? "border-cosmos-400 bg-cosmos-800/70 text-cosmos-100"
+                      : "border-cosmos-700/50 bg-cosmos-900/40 text-cosmos-200/80 hover:border-cosmos-500 hover:text-cosmos-100"
+                  }`}
+                  onClick={() => onRunQuery(prompt)}
+                  disabled={isPending}
+                  aria-current={isHistoryActive ? "true" : undefined}
+                >
+                  {prompt}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
