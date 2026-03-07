@@ -237,15 +237,19 @@ export function QueryInput({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[11px] text-cosmos-200/60">
-              {uiLocale === "ko" ? "최근 실행" : "Recent queries"}
+              {uiLocale === "ko"
+                ? `최근 실행 (${recentQueries.length})`
+                : `Recent queries (${recentQueries.length})`}
             </p>
             <button
               type="button"
               className="text-[10px] uppercase tracking-wide text-cosmos-300/70 transition-colors hover:text-cosmos-100 disabled:opacity-50"
               onClick={onClearRecentQueries}
               disabled={isPending}
+              aria-label={uiLocale === "ko" ? "최근 실행 전체 지우기" : "Clear all recent queries"}
+              title={uiLocale === "ko" ? "최근 실행 전체 지우기" : "Clear all recent queries"}
             >
-              {uiLocale === "ko" ? "지우기" : "Clear"}
+              {uiLocale === "ko" ? "전체 지우기" : "Clear all"}
             </button>
           </div>
           <div className="flex flex-wrap gap-1.5">
