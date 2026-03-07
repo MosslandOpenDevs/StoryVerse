@@ -161,6 +161,11 @@ export function QueryInput({
       (event.key === "Backspace" || event.key === "Delete") &&
       !event.shiftKey &&
       !event.altKey;
+    const useClearInputShortcut =
+      (event.ctrlKey || event.metaKey) &&
+      normalizedKey === "l" &&
+      !event.shiftKey &&
+      !event.altKey;
 
     if (event.key === "Escape") {
       if (historyIndex !== null) {
@@ -177,6 +182,16 @@ export function QueryInput({
         setHistoryDraft("");
         return;
       }
+    }
+
+    if (useClearInputShortcut) {
+      if (historyIndex !== null || query.length > 0) {
+        event.preventDefault();
+        onQueryChange("");
+        setHistoryIndex(null);
+        setHistoryDraft("");
+      }
+      return;
     }
 
     if (useRemoveHistoryShortcut && historyIndex !== null) {
@@ -291,8 +306,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓ 또는 Ctrl/⌘+P,N으로 최근 실행 탐색 · 히스토리 탐색 중 Ctrl/⌘+Backspace/Delete로 현재 항목 삭제 · Esc 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
-          : "Tip: At input edges, ↑/↓ or Ctrl/⌘+P,N browses recent queries · while browsing history, Ctrl/⌘+Backspace/Delete removes the active item · Esc exits history or clears input · use × on a recent chip to remove it · / or ⌘/Ctrl+K focuses input"}
+          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓ 또는 Ctrl/⌘+P,N으로 최근 실행 탐색 · 히스토리 탐색 중 Ctrl/⌘+Backspace/Delete로 현재 항목 삭제 · Esc 또는 Ctrl/⌘+L 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
+          : "Tip: At input edges, ↑/↓ or Ctrl/⌘+P,N browses recent queries · while browsing history, Ctrl/⌘+Backspace/Delete removes the active item · Esc or Ctrl/⌘+L exits history or clears input · use × on a recent chip to remove it · / or ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
