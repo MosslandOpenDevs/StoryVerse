@@ -183,11 +183,12 @@ export function QueryInput({
           <button
             key={prompt}
             type="button"
-            className="rounded-full border border-cosmos-700/50 bg-cosmos-900/40 px-2.5 py-1 text-[11px] text-cosmos-200/80 transition-colors hover:border-cosmos-500 hover:text-cosmos-100 disabled:opacity-50"
+            className="max-w-full rounded-full border border-cosmos-700/50 bg-cosmos-900/40 px-2.5 py-1 text-[11px] text-cosmos-200/80 transition-colors hover:border-cosmos-500 hover:text-cosmos-100 disabled:opacity-50"
             onClick={() => onRunQuery(prompt)}
             disabled={isPending}
+            title={prompt}
           >
-            {prompt}
+            <span className="block max-w-[min(70vw,28rem)] truncate">{prompt}</span>
           </button>
         ))}
       </div>
@@ -215,7 +216,7 @@ export function QueryInput({
                 <button
                   key={`recent-${index}-${prompt}`}
                   type="button"
-                  className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50 ${
+                  className={`max-w-full rounded-full border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50 ${
                     isHistoryActive
                       ? "border-cosmos-400 bg-cosmos-800/70 text-cosmos-100"
                       : "border-cosmos-700/50 bg-cosmos-900/40 text-cosmos-200/80 hover:border-cosmos-500 hover:text-cosmos-100"
@@ -223,8 +224,9 @@ export function QueryInput({
                   onClick={() => onRunQuery(prompt)}
                   disabled={isPending}
                   aria-current={isHistoryActive ? "true" : undefined}
+                  title={prompt}
                 >
-                  {prompt}
+                  <span className="block max-w-[min(70vw,28rem)] truncate">{prompt}</span>
                 </button>
               );
             })}
