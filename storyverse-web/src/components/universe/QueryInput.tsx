@@ -19,6 +19,7 @@ interface QueryInputProps {
   onRunQuery: (prompt: string) => void;
   recentQueries: string[];
   onClearRecentQueries: () => void;
+  onRemoveRecentQuery: (index: number) => void;
   uiLocale: "en" | "ko";
   isPending: boolean;
 }
@@ -30,6 +31,7 @@ export function QueryInput({
   onRunQuery,
   recentQueries,
   onClearRecentQueries,
+  onRemoveRecentQuery,
   uiLocale,
   isPending,
 }: QueryInputProps) {
@@ -197,8 +199,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓로 최근 실행 탐색 · Esc 로 히스토리 종료/입력 지우기 · / 또는 ⌘/Ctrl+K 로 포커스"
-          : "Tip: At input edges, ↑/↓ browses recent queries · Esc exits history or clears input · / or ⌘/Ctrl+K focuses input"}
+          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓로 최근 실행 탐색 · Esc 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
+          : "Tip: At input edges, ↑/↓ browses recent queries · Esc exits history or clears input · use × on a recent chip to remove it · / or ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
@@ -237,21 +239,35 @@ export function QueryInput({
             {recentQueries.map((prompt, index) => {
               const isHistoryActive = historyIndex === index;
               return (
-                <button
+                <div
                   key={`recent-${index}-${prompt}`}
-                  type="button"
-                  className={`max-w-full rounded-full border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50 ${
+                  className={`group flex max-w-full items-center overflow-hidden rounded-full border text-[11px] transition-colors ${
                     isHistoryActive
                       ? "border-cosmos-400 bg-cosmos-800/70 text-cosmos-100"
                       : "border-cosmos-700/50 bg-cosmos-900/40 text-cosmos-200/80 hover:border-cosmos-500 hover:text-cosmos-100"
                   }`}
-                  onClick={() => onRunQuery(prompt)}
-                  disabled={isPending}
                   aria-current={isHistoryActive ? "true" : undefined}
-                  title={prompt}
                 >
-                  <span className="block max-w-[min(70vw,28rem)] truncate">{prompt}</span>
-                </button>
+                  <button
+                    type="button"
+                    className="max-w-[min(70vw,26rem)] truncate px-2.5 py-1 text-left"
+                    onClick={() => onRunQuery(prompt)}
+                    disabled={isPending}
+                    title={prompt}
+                  >
+                    <span className="block max-w-[min(70vw,24rem)] truncate">{prompt}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="border-l border-cosmos-700/50 px-1.5 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100 disabled:opacity-50"
+                    onClick={() => onRemoveRecentQuery(index)}
+                    disabled={isPending}
+                    aria-label={uiLocale === "ko" ? "해당 최근 항목 삭제" : "Remove recent query"}
+                    title={uiLocale === "ko" ? "해당 최근 항목 삭제" : "Remove recent query"}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
               );
             })}
           </div>

@@ -200,6 +200,24 @@ export function useUniverseState(
     }
   };
 
+  const removeRecentQueryAt = (index: number) => {
+    if (!Number.isInteger(index) || index < 0) return;
+    setRecentQueries((prev) => {
+      if (index >= prev.length) return prev;
+      const next = prev.filter((_, itemIndex) => itemIndex !== index);
+      try {
+        if (next.length === 0) {
+          window.localStorage.removeItem(RECENT_QUERIES_KEY);
+        } else {
+          window.localStorage.setItem(RECENT_QUERIES_KEY, JSON.stringify(next));
+        }
+      } catch {
+        // Ignore write failures.
+      }
+      return next;
+    });
+  };
+
   const applyActionResult = (result: UniverseCommandActionResult) => {
     if (result.ok) {
       setUiLocale(result.result.resolution.locale);
@@ -396,6 +414,7 @@ export function useUniverseState(
     swapSelection,
     clearSelection,
     clearRecentQueries,
+    removeRecentQueryAt,
     generateBridge,
     submitQuery,
   };
