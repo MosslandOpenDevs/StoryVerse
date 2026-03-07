@@ -35,13 +35,18 @@ export type ChatMessage = {
 
 export type LatestResult = UniverseCommandActionSuccess["result"] | null;
 
-export const STARTER_PROMPTS = [
-  "Connect Sherlock Holmes to Star Wars.",
-  "Bridge Cleopatra to Blade Runner.",
-  "Show a path from Dune to the Roman Empire.",
-  "셜록 홈즈를 스타워즈와 연결해줘.",
-  "클레오파트라와 블레이드 러너 연결해줘.",
-];
+export const STARTER_PROMPTS: Record<"en" | "ko", string[]> = {
+  en: [
+    "Connect Sherlock Holmes to Star Wars.",
+    "Bridge Cleopatra to Blade Runner.",
+    "Show a path from Dune to the Roman Empire.",
+  ],
+  ko: [
+    "셜록 홈즈를 스타워즈와 연결해줘.",
+    "클레오파트라와 블레이드 러너 연결해줘.",
+    "듄에서 로마 제국까지 이어줘.",
+  ],
+};
 
 const RECENT_QUERIES_KEY = "storyverse:recent-queries";
 const RECENT_QUERIES_LIMIT = 5;

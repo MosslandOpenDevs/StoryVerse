@@ -32,6 +32,7 @@ export function QueryInput({
       ? '예시: "셜록 홈즈를 스타워즈와 연결해줘."'
       : 'Try: "Connect Sherlock Holmes to Star Wars."';
   const isSubmitDisabled = isPending || query.trim().length === 0;
+  const starterPrompts = STARTER_PROMPTS[uiLocale] ?? STARTER_PROMPTS.en;
 
   return (
     <div className="space-y-3">
@@ -57,7 +58,7 @@ export function QueryInput({
 
       {/* Starter prompts */}
       <div className="flex flex-wrap gap-1.5">
-        {STARTER_PROMPTS.map((prompt) => (
+        {starterPrompts.map((prompt) => (
           <button
             key={prompt}
             type="button"
