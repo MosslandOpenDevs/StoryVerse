@@ -172,10 +172,15 @@ export function useUniverseState(
   const pushRecentQuery = (rawQuery: string) => {
     const normalized = rawQuery.trim();
     if (!normalized) return;
+
+    const normalizedKey = normalized.toLocaleLowerCase();
+
     setRecentQueries((prev) => {
       const next = [
         normalized,
-        ...prev.filter((item) => item !== normalized),
+        ...prev.filter(
+          (item) => item.trim().toLocaleLowerCase() !== normalizedKey,
+        ),
       ].slice(0, RECENT_QUERIES_LIMIT);
       try {
         window.localStorage.setItem(RECENT_QUERIES_KEY, JSON.stringify(next));
