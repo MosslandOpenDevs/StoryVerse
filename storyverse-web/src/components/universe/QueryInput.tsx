@@ -94,12 +94,21 @@ export function QueryInput({
     const cursorEnd = target.selectionEnd ?? query.length;
     const isCaretCollapsed = cursorStart === cursorEnd;
 
-    if (event.key === "Escape" && query.length > 0) {
-      event.preventDefault();
-      onQueryChange("");
-      setHistoryIndex(null);
-      setHistoryDraft("");
-      return;
+    if (event.key === "Escape") {
+      if (historyIndex !== null) {
+        event.preventDefault();
+        setHistoryIndex(null);
+        onQueryChange(historyDraft);
+        return;
+      }
+
+      if (query.length > 0) {
+        event.preventDefault();
+        onQueryChange("");
+        setHistoryIndex(null);
+        setHistoryDraft("");
+        return;
+      }
     }
 
     if (event.key === "ArrowUp" && recentQueries.length > 0) {
@@ -188,8 +197,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기 · / 또는 ⌘/Ctrl+K 로 포커스"
-          : "Tip: At input edges, ↑/↓ browses recent queries · Esc clears input · / or ⌘/Ctrl+K focuses input"}
+          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓로 최근 실행 탐색 · Esc 로 히스토리 종료/입력 지우기 · / 또는 ⌘/Ctrl+K 로 포커스"
+          : "Tip: At input edges, ↑/↓ browses recent queries · Esc exits history or clears input · / or ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
