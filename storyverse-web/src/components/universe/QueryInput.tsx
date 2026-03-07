@@ -45,21 +45,26 @@ export function QueryInput({
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
-      const isFocusShortcut =
-        (event.metaKey || event.ctrlKey) &&
-        event.key.toLowerCase() === "k" &&
-        !event.shiftKey &&
-        !event.altKey;
-
-      if (!isFocusShortcut) {
-        return;
-      }
-
       const target = event.target as HTMLElement | null;
       const isEditableTarget =
         target?.tagName === "INPUT" ||
         target?.tagName === "TEXTAREA" ||
         target?.isContentEditable;
+      const isFocusShortcut =
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "k" &&
+        !event.shiftKey &&
+        !event.altKey;
+      const isSlashFocusShortcut =
+        event.key === "/" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey;
+
+      if (!isFocusShortcut && !isSlashFocusShortcut) {
+        return;
+      }
 
       if (isEditableTarget && target !== inputRef.current) {
         return;
@@ -147,8 +152,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기 · ⌘/Ctrl+K 로 포커스"
-          : "Tip: ↑/↓ browses recent queries · Esc clears input · ⌘/Ctrl+K focuses input"}
+          ? "팁: ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기 · / 또는 ⌘/Ctrl+K 로 포커스"
+          : "Tip: ↑/↓ browses recent queries · Esc clears input · / or ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
