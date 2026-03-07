@@ -141,6 +141,11 @@ export function QueryInput({
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (isPending) return;
 
+    if (event.key === "Enter" && event.nativeEvent.isComposing) {
+      event.preventDefault();
+      return;
+    }
+
     const target = event.currentTarget;
     const cursorStart = target.selectionStart ?? query.length;
     const cursorEnd = target.selectionEnd ?? query.length;
