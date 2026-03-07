@@ -88,6 +88,19 @@ export function QueryInput({
     };
   }, []);
 
+  const handleRemoveRecentQuery = (index: number) => {
+    if (historyIndex !== null) {
+      if (index === historyIndex) {
+        setHistoryIndex(null);
+        onQueryChange(historyDraft);
+      } else if (index < historyIndex) {
+        setHistoryIndex(historyIndex - 1);
+      }
+    }
+
+    onRemoveRecentQuery(index);
+  };
+
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (isPending) return;
 
@@ -260,7 +273,7 @@ export function QueryInput({
                   <button
                     type="button"
                     className="border-l border-cosmos-700/50 px-1.5 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100 disabled:opacity-50"
-                    onClick={() => onRemoveRecentQuery(index)}
+                    onClick={() => handleRemoveRecentQuery(index)}
                     disabled={isPending}
                     aria-label={uiLocale === "ko" ? "해당 최근 항목 삭제" : "Remove recent query"}
                     title={uiLocale === "ko" ? "해당 최근 항목 삭제" : "Remove recent query"}
