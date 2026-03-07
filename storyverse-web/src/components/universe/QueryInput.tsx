@@ -66,6 +66,11 @@ export function QueryInput({
         return;
       }
 
+      // Never hijack a literal slash while user is actively typing in an editable field.
+      if (isSlashFocusShortcut && isEditableTarget) {
+        return;
+      }
+
       if (isEditableTarget && target !== inputRef.current) {
         return;
       }
