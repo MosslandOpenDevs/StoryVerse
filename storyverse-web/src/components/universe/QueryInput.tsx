@@ -55,6 +55,16 @@ export function QueryInput({
         return;
       }
 
+      const target = event.target as HTMLElement | null;
+      const isEditableTarget =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+
+      if (isEditableTarget && target !== inputRef.current) {
+        return;
+      }
+
       event.preventDefault();
       inputRef.current?.focus();
       inputRef.current?.select();
