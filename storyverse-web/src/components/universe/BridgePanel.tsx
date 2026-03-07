@@ -52,6 +52,7 @@ export function BridgePanel({ state }: BridgePanelProps) {
           onSubmit={state.submitQuery}
           onRunQuery={state.runQuery}
           recentQueries={state.recentQueries}
+          onClearRecentQueries={state.clearRecentQueries}
           uiLocale={state.uiLocale}
           isPending={state.isPending}
         />

@@ -12,6 +12,7 @@ interface QueryInputProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onRunQuery: (prompt: string) => void;
   recentQueries: string[];
+  onClearRecentQueries: () => void;
   uiLocale: "en" | "ko";
   isPending: boolean;
 }
@@ -22,6 +23,7 @@ export function QueryInput({
   onSubmit,
   onRunQuery,
   recentQueries,
+  onClearRecentQueries,
   uiLocale,
   isPending,
 }: QueryInputProps) {
@@ -71,9 +73,19 @@ export function QueryInput({
       {/* Recent queries */}
       {recentQueries.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[11px] text-cosmos-200/60">
-            {uiLocale === "ko" ? "최근 실행" : "Recent queries"}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] text-cosmos-200/60">
+              {uiLocale === "ko" ? "최근 실행" : "Recent queries"}
+            </p>
+            <button
+              type="button"
+              className="text-[10px] uppercase tracking-wide text-cosmos-300/70 transition-colors hover:text-cosmos-100 disabled:opacity-50"
+              onClick={onClearRecentQueries}
+              disabled={isPending}
+            >
+              {uiLocale === "ko" ? "지우기" : "Clear"}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {recentQueries.map((prompt) => (
               <button

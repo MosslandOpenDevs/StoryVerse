@@ -181,6 +181,15 @@ export function useUniverseState(
     });
   };
 
+  const clearRecentQueries = () => {
+    setRecentQueries([]);
+    try {
+      window.localStorage.removeItem(RECENT_QUERIES_KEY);
+    } catch {
+      // Ignore write failures.
+    }
+  };
+
   const applyActionResult = (result: UniverseCommandActionResult) => {
     if (result.ok) {
       setUiLocale(result.result.resolution.locale);
@@ -376,6 +385,7 @@ export function useUniverseState(
     handleStoryCardClick,
     swapSelection,
     clearSelection,
+    clearRecentQueries,
     generateBridge,
     submitQuery,
   };
