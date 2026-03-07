@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, type KeyboardEvent } from "react";
+import { type FormEvent, type KeyboardEvent, useState } from "react";
 import { SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ export function QueryInput({
       : 'Try: "Connect Sherlock Holmes to Star Wars."';
   const isSubmitDisabled = isPending || query.trim().length === 0;
   const starterPrompts = STARTER_PROMPTS[uiLocale] ?? STARTER_PROMPTS.en;
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
 
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (isPending) return;
@@ -40,12 +41,34 @@ export function QueryInput({
     if (event.key === "Escape" && query.length > 0) {
       event.preventDefault();
       onQueryChange("");
+      setHistoryIndex(null);
       return;
     }
 
-    if (event.key === "ArrowUp" && query.trim().length === 0 && recentQueries.length > 0) {
+    if (event.key === "ArrowUp" && recentQueries.length > 0) {
       event.preventDefault();
-      onQueryChange(recentQueries[0]);
+      const nextIndex =
+        historyIndex === null
+          ? 0
+          : Math.min(historyIndex + 1, recentQueries.length - 1);
+      setHistoryIndex(nextIndex);
+      onQueryChange(recentQueries[nextIndex] ?? "");
+      return;
+    }
+
+    if (event.key === "ArrowDown" && recentQueries.length > 0) {
+      event.preventDefault();
+      if (historyIndex === null) {
+        return;
+      }
+      const nextIndex = historyIndex - 1;
+      if (nextIndex < 0) {
+        setHistoryIndex(null);
+        onQueryChange("");
+        return;
+      }
+      setHistoryIndex(nextIndex);
+      onQueryChange(recentQueries[nextIndex] ?? "");
     }
   };
 
@@ -54,7 +77,10 @@ export function QueryInput({
       <form className="flex gap-2" onSubmit={onSubmit}>
         <Input
           value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
+          onChange={(e) => {
+            setHistoryIndex(null);
+            onQueryChange(e.target.value);
+          }}
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
           aria-label="Universe command query"
@@ -74,8 +100,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: 빈 입력창에서 ↑ 로 최근 실행 복원 · Esc 로 입력 지우기"
-          : "Tip: ↑ restores the latest query when empty · Esc clears input"}
+          ? "팁: ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기"
+          : "Tip: ↑/↓ browses recent queries · Esc clears input"}
       </p>
 
       {/* Starter prompts */}
