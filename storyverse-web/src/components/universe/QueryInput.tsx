@@ -89,6 +89,11 @@ export function QueryInput({
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (isPending) return;
 
+    const target = event.currentTarget;
+    const cursorStart = target.selectionStart ?? query.length;
+    const cursorEnd = target.selectionEnd ?? query.length;
+    const isCaretCollapsed = cursorStart === cursorEnd;
+
     if (event.key === "Escape" && query.length > 0) {
       event.preventDefault();
       onQueryChange("");
@@ -98,6 +103,11 @@ export function QueryInput({
     }
 
     if (event.key === "ArrowUp" && recentQueries.length > 0) {
+      // Keep native caret movement unless cursor is at the start (or history mode is active).
+      if (historyIndex === null && (!isCaretCollapsed || cursorStart > 0)) {
+        return;
+      }
+
       event.preventDefault();
       if (historyIndex === null) {
         setHistoryDraft(query);
@@ -112,6 +122,11 @@ export function QueryInput({
     }
 
     if (event.key === "ArrowDown" && recentQueries.length > 0) {
+      // Keep native caret movement unless cursor is at the end (or history mode is active).
+      if (historyIndex === null && (!isCaretCollapsed || cursorEnd < query.length)) {
+        return;
+      }
+
       event.preventDefault();
       if (historyIndex === null) {
         return;
@@ -173,8 +188,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기 · / 또는 ⌘/Ctrl+K 로 포커스"
-          : "Tip: ↑/↓ browses recent queries · Esc clears input · / or ⌘/Ctrl+K focuses input"}
+          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓로 최근 실행 탐색 · Esc 로 입력 지우기 · / 또는 ⌘/Ctrl+K 로 포커스"
+          : "Tip: At input edges, ↑/↓ browses recent queries · Esc clears input · / or ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
