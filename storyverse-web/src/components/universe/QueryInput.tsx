@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { STARTER_PROMPTS } from "./useUniverseState";
@@ -138,6 +138,22 @@ export function QueryInput({
           aria-label="Universe command query"
           className="flex-1"
         />
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          disabled={isPending || query.length === 0}
+          onClick={() => {
+            onQueryChange("");
+            setHistoryIndex(null);
+            setHistoryDraft("");
+            inputRef.current?.focus();
+          }}
+          aria-label={uiLocale === "ko" ? "입력 지우기" : "Clear query"}
+          title={uiLocale === "ko" ? "입력 지우기" : "Clear query"}
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <Button type="submit" size="icon" disabled={isSubmitDisabled}>
           {isPending ? (
             <span
