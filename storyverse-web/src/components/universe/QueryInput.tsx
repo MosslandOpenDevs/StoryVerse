@@ -10,7 +10,7 @@ import {
 import { SendHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { STARTER_PROMPTS } from "./useUniverseState";
+import { MAX_QUERY_LENGTH, STARTER_PROMPTS } from "./useUniverseState";
 
 interface QueryInputProps {
   query: string;
@@ -39,7 +39,6 @@ export function QueryInput({
     uiLocale === "ko"
       ? '예시: "셜록 홈즈를 스타워즈와 연결해줘."'
       : 'Try: "Connect Sherlock Holmes to Star Wars."';
-  const MAX_QUERY_LENGTH = 240;
   const isSubmitDisabled = isPending || query.trim().length === 0;
   const starterPrompts = STARTER_PROMPTS[uiLocale] ?? STARTER_PROMPTS.en;
   const remainingChars = Math.max(0, MAX_QUERY_LENGTH - query.length);

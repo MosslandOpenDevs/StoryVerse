@@ -50,6 +50,11 @@ export const STARTER_PROMPTS: Record<"en" | "ko", string[]> = {
 
 const RECENT_QUERIES_KEY = "storyverse:recent-queries";
 const RECENT_QUERIES_LIMIT = 5;
+export const MAX_QUERY_LENGTH = 240;
+
+function normalizeQuery(rawQuery: string): string {
+  return rawQuery.trim().slice(0, MAX_QUERY_LENGTH);
+}
 
 function buildErrorReply(failure: UniverseCommandActionFailure): string {
   return `Command failed [${failure.code}]: ${failure.error}`;
@@ -161,6 +166,8 @@ export function useUniverseState(
         setRecentQueries(
           parsed
             .filter((item): item is string => typeof item === "string")
+            .map((item) => normalizeQuery(item))
+            .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index)
             .slice(0, RECENT_QUERIES_LIMIT),
         );
       }
@@ -170,7 +177,7 @@ export function useUniverseState(
   }, []);
 
   const pushRecentQuery = (rawQuery: string) => {
-    const normalized = rawQuery.trim();
+    const normalized = normalizeQuery(rawQuery);
     if (!normalized) return;
 
     const normalizedKey = normalized.toLocaleLowerCase();
@@ -252,7 +259,7 @@ export function useUniverseState(
 
   const runQuery = (rawQuery: string) => {
     if (isPending) return;
-    const normalized = rawQuery.trim();
+    const normalized = normalizeQuery(rawQuery);
     if (!normalized) return;
 
     pushRecentQuery(normalized);
@@ -289,15 +296,18 @@ export function useUniverseState(
   ) => {
     if (isPending) return;
 
-    pushRecentQuery(prompt);
-    setMessages((prev) => [...prev, createMessage("user", prompt)]);
+    const normalizedPrompt = normalizeQuery(prompt);
+    if (!normalizedPrompt) return;
+
+    pushRecentQuery(normalizedPrompt);
+    setMessages((prev) => [...prev, createMessage("user", normalizedPrompt)]);
     setQuery("");
     setClarificationChoices([]);
     setSourceCandidates([]);
     setTargetCandidates([]);
 
     startTransition(() => {
-      void runUniverseCommandByNodeIdsAction(sourceId, targetId, prompt)
+      void runUniverseCommandByNodeIdsAction(sourceId, targetId, normalizedPrompt)
         .then(applyActionResult)
         .catch((error: unknown) => {
           setSourceCandidates([]);
