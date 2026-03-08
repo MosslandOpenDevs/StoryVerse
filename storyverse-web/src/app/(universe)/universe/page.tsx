@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
@@ -28,6 +28,7 @@ const COPY = {
     searchLabel: "Search stories",
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
+    searchShortcutHelp: "Press / to focus search and Esc to clear filters.",
     clearFilters: "Clear filters",
     activeFilters: "Active filters",
     removeSearchFilter: "Remove search filter",
@@ -61,6 +62,7 @@ const COPY = {
     searchLabel: "스토리 검색",
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
+    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 Esc로 필터를 지울 수 있어요.",
     clearFilters: "필터 지우기",
     activeFilters: "활성 필터",
     removeSearchFilter: "검색 필터 제거",
@@ -99,6 +101,7 @@ function UniverseContent() {
   const initialStoryId = searchParams.get("story") ?? undefined;
   const [catalog, setCatalog] = useState<StoryCatalogItem[]>(SEED_CATALOG);
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [lastCatalogRefreshAt, setLastCatalogRefreshAt] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get(SEARCH_QUERY_PARAM) ?? "");
@@ -167,6 +170,48 @@ function UniverseContent() {
 
   const trimmedSearchQuery = searchQuery.trim();
   const hasActiveFilters = trimmedSearchQuery.length > 0 || mediumFilter !== "All";
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      const activeTagName =
+        target instanceof HTMLElement ? target.tagName.toLowerCase() : "";
+      const isEditable =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          activeTagName === "input" ||
+          activeTagName === "textarea" ||
+          activeTagName === "select");
+
+      if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        if (isEditable) {
+          return;
+        }
+
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (event.key === "Escape") {
+        const isSearchFocused = document.activeElement === searchInputRef.current;
+        if (!isSearchFocused && !hasActiveFilters) {
+          return;
+        }
+
+        event.preventDefault();
+        setSearchQuery("");
+        setMediumFilter("All");
+        searchInputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [hasActiveFilters]);
 
   const matchesSearch = useCallback((story: StoryCatalogItem, normalizedQuery: string) => {
     if (normalizedQuery.length === 0) {
@@ -292,6 +337,7 @@ function UniverseContent() {
               <label className="text-xs text-cosmos-200/80">
                 <span className="mb-1 block text-cosmos-100/85">{copy.searchLabel}</span>
                 <input
+                  ref={searchInputRef}
                   type="search"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
@@ -301,6 +347,9 @@ function UniverseContent() {
               </label>
               <p className="text-[11px] text-cosmos-300/70">
                 {copy.searchHelp}
+              </p>
+              <p className="text-[11px] text-cosmos-400/70">
+                {copy.searchShortcutHelp}
               </p>
             </div>
 
