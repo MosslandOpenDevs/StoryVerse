@@ -39,8 +39,10 @@ export function QueryInput({
     uiLocale === "ko"
       ? '예시: "셜록 홈즈를 스타워즈와 연결해줘."'
       : 'Try: "Connect Sherlock Holmes to Star Wars."';
+  const MAX_QUERY_LENGTH = 240;
   const isSubmitDisabled = isPending || query.trim().length === 0;
   const starterPrompts = STARTER_PROMPTS[uiLocale] ?? STARTER_PROMPTS.en;
+  const remainingChars = Math.max(0, MAX_QUERY_LENGTH - query.length);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyDraft, setHistoryDraft] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -291,7 +293,7 @@ export function QueryInput({
           onChange={(e) => {
             setHistoryIndex(null);
             setHistoryDraft("");
-            onQueryChange(e.target.value);
+            onQueryChange(e.target.value.slice(0, MAX_QUERY_LENGTH));
           }}
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
@@ -325,6 +327,12 @@ export function QueryInput({
           )}
         </Button>
       </form>
+
+      <p
+        className={`text-[10px] ${remainingChars < 20 ? "text-amber-300/80" : "text-cosmos-200/50"}`}
+      >
+        {uiLocale === "ko" ? `입력 가능 남은 글자: ${remainingChars}` : `Remaining characters: ${remainingChars}`}
+      </p>
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
