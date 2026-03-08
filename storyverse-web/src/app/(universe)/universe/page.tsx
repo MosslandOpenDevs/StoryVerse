@@ -14,6 +14,7 @@ const MEDIUM_FILTERS: Array<StoryMedium | "All"> = ["All", "Movie", "History", "
 const STORY_MEDIA: StoryMedium[] = ["Movie", "History", "Novel"];
 const SEARCH_QUERY_PARAM = "q";
 const MEDIUM_FILTER_PARAM = "medium";
+const QUICK_FILTERS = ["Sherlock", "galaxy", "dynasty", "rebellion"] as const;
 
 const COPY = {
   en: {
@@ -29,6 +30,7 @@ const COPY = {
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
     searchShortcutHelp: "Press / to focus search and Esc to clear filters.",
+    quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
     activeFilters: "Active filters",
     removeSearchFilter: "Remove search filter",
@@ -63,6 +65,7 @@ const COPY = {
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
     searchShortcutHelp: "/ 키로 검색에 바로 이동하고 Esc로 필터를 지울 수 있어요.",
+    quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
     activeFilters: "활성 필터",
     removeSearchFilter: "검색 필터 제거",
@@ -348,6 +351,23 @@ function UniverseContent() {
               <p className="text-[11px] text-cosmos-300/70">
                 {copy.searchHelp}
               </p>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-cosmos-300/80">
+                <span className="text-cosmos-400/80">{copy.quickFiltersLabel}</span>
+                {QUICK_FILTERS.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    className="rounded-full border border-cosmos-300/20 bg-cosmos-950/50 px-2.5 py-1 text-cosmos-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
+                    onClick={() => {
+                      setSearchQuery(term);
+                      searchInputRef.current?.focus();
+                      searchInputRef.current?.select();
+                    }}
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
               <p className="text-[11px] text-cosmos-400/70">
                 {copy.searchShortcutHelp}
               </p>
