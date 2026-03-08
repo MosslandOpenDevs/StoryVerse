@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
@@ -11,16 +11,30 @@ import type { StoryMedium } from "@/lib/agents/navigatorAgent";
 import { fetchCatalogAction } from "./actions";
 
 const MEDIUM_FILTERS: Array<StoryMedium | "All"> = ["All", "Movie", "History", "Novel"];
+const SEARCH_QUERY_PARAM = "q";
+const MEDIUM_FILTER_PARAM = "medium";
+
+function parseMediumFilter(value: string | null): StoryMedium | "All" {
+  if (value === "Movie" || value === "History" || value === "Novel") {
+    return value;
+  }
+
+  return "All";
+}
 
 function UniverseContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialStoryId = searchParams.get("story") ?? undefined;
   const [catalog, setCatalog] = useState<StoryCatalogItem[]>(SEED_CATALOG);
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [lastCatalogRefreshAt, setLastCatalogRefreshAt] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [mediumFilter, setMediumFilter] = useState<StoryMedium | "All">("All");
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get(SEARCH_QUERY_PARAM) ?? "");
+  const [mediumFilter, setMediumFilter] = useState<StoryMedium | "All">(() =>
+    parseMediumFilter(searchParams.get(MEDIUM_FILTER_PARAM)),
+  );
 
   const loadCatalog = useCallback(async () => {
     setIsCatalogLoading(true);
@@ -40,6 +54,46 @@ function UniverseContent() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
+
+  useEffect(() => {
+    const nextSearchQuery = searchParams.get(SEARCH_QUERY_PARAM) ?? "";
+    const nextMediumFilter = parseMediumFilter(searchParams.get(MEDIUM_FILTER_PARAM));
+
+    if (nextSearchQuery !== searchQuery) {
+      setSearchQuery(nextSearchQuery);
+    }
+
+    if (nextMediumFilter !== mediumFilter) {
+      setMediumFilter(nextMediumFilter);
+    }
+  }, [mediumFilter, searchParams, searchQuery]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    const trimmedQuery = searchQuery.trim();
+
+    if (trimmedQuery.length > 0) {
+      params.set(SEARCH_QUERY_PARAM, searchQuery);
+    } else {
+      params.delete(SEARCH_QUERY_PARAM);
+    }
+
+    if (mediumFilter !== "All") {
+      params.set(MEDIUM_FILTER_PARAM, mediumFilter);
+    } else {
+      params.delete(MEDIUM_FILTER_PARAM);
+    }
+
+    const currentParams = searchParams.toString();
+    const nextParams = params.toString();
+
+    if (currentParams === nextParams) {
+      return;
+    }
+
+    const nextUrl = nextParams.length > 0 ? `${pathname}?${nextParams}` : pathname;
+    router.replace(nextUrl, { scroll: false });
+  }, [mediumFilter, pathname, router, searchParams, searchQuery]);
 
   const hasActiveFilters = searchQuery.trim().length > 0 || mediumFilter !== "All";
 
