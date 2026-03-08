@@ -9,6 +9,11 @@ interface StoryGridProps {
   selectedTargetId: string;
   onStoryClick: (storyId: string) => void;
   uiLocale: "en" | "ko";
+  hasActiveSearch: boolean;
+  hasActiveMediumFilter: boolean;
+  onClearSearch: () => void;
+  onClearMediumFilter: () => void;
+  onClearAllFilters: () => void;
 }
 
 const COPY = {
@@ -17,12 +22,18 @@ const COPY = {
     selectTarget: "Now click a story to select as Target",
     pairReady: "Pair selected — generate a bridge or pick new stories",
     empty: "No stories match your search or filters. Try clearing filters or changing the search term.",
+    clearSearch: "Clear search",
+    clearMedium: "Show all mediums",
+    clearAll: "Reset all filters",
   },
   ko: {
     selectSource: "스토리를 눌러 출발 노드로 선택하세요",
     selectTarget: "이제 다른 스토리를 눌러 도착 노드로 선택하세요",
     pairReady: "페어 선택 완료 — 브리지를 생성하거나 새 스토리를 고르세요",
     empty: "검색어나 필터와 일치하는 스토리가 없어요. 필터를 지우거나 검색어를 바꿔보세요.",
+    clearSearch: "검색 지우기",
+    clearMedium: "매체 전체 보기",
+    clearAll: "필터 모두 초기화",
   },
 } as const;
 
@@ -32,6 +43,11 @@ export function StoryGrid({
   selectedTargetId,
   onStoryClick,
   uiLocale,
+  hasActiveSearch,
+  hasActiveMediumFilter,
+  onClearSearch,
+  onClearMediumFilter,
+  onClearAllFilters,
 }: StoryGridProps) {
   const copy = COPY[uiLocale] ?? COPY.en;
   const guideText =
@@ -43,8 +59,37 @@ export function StoryGrid({
 
   if (catalog.length === 0) {
     return (
-      <div className="rounded-md border border-cosmos-300/15 p-4 text-xs text-cosmos-200/65">
-        {copy.empty}
+      <div className="rounded-md border border-cosmos-300/15 bg-cosmos-900/20 p-4 text-xs text-cosmos-200/65">
+        <p>{copy.empty}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {hasActiveSearch ? (
+            <button
+              type="button"
+              onClick={onClearSearch}
+              className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-[11px] font-medium text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
+            >
+              {copy.clearSearch}
+            </button>
+          ) : null}
+          {hasActiveMediumFilter ? (
+            <button
+              type="button"
+              onClick={onClearMediumFilter}
+              className="rounded-full border border-violet-300/30 bg-violet-300/10 px-3 py-1 text-[11px] font-medium text-violet-100 transition hover:border-violet-200/50 hover:bg-violet-300/15"
+            >
+              {copy.clearMedium}
+            </button>
+          ) : null}
+          {(hasActiveSearch || hasActiveMediumFilter) ? (
+            <button
+              type="button"
+              onClick={onClearAllFilters}
+              className="rounded-full border border-cosmos-500 px-3 py-1 text-[11px] font-medium text-cosmos-100 transition hover:border-cosmos-300 hover:bg-cosmos-800/50"
+            >
+              {copy.clearAll}
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }

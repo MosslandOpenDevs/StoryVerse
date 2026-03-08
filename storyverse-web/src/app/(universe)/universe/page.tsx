@@ -352,6 +352,14 @@ function UniverseContent() {
             selectedTargetId={state.selectedTargetId}
             onStoryClick={state.handleStoryCardClick}
             uiLocale={state.uiLocale}
+            hasActiveSearch={trimmedSearchQuery.length > 0}
+            hasActiveMediumFilter={mediumFilter !== "All"}
+            onClearSearch={() => setSearchQuery("")}
+            onClearMediumFilter={() => setMediumFilter("All")}
+            onClearAllFilters={() => {
+              setSearchQuery("");
+              setMediumFilter("All");
+            }}
           />
           <p className="mt-2 text-[10px] text-cosmos-300/70">
             {copy.showingPrefix} {filteredCatalog.length} / {catalog.length} {copy.storiesCountSuffix}
