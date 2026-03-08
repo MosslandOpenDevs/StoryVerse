@@ -1,13 +1,16 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
 import { useUniverseState } from "@/components/universe/useUniverseState";
 import { SEED_CATALOG, type StoryCatalogItem } from "@/lib/agents/catalogSeed";
+import type { StoryMedium } from "@/lib/agents/navigatorAgent";
 import { fetchCatalogAction } from "./actions";
+
+const MEDIUM_FILTERS: Array<StoryMedium | "All"> = ["All", "Movie", "History", "Novel"];
 
 function UniverseContent() {
   const searchParams = useSearchParams();
@@ -16,6 +19,8 @@ function UniverseContent() {
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [lastCatalogRefreshAt, setLastCatalogRefreshAt] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mediumFilter, setMediumFilter] = useState<StoryMedium | "All">("All");
 
   const loadCatalog = useCallback(async () => {
     setIsCatalogLoading(true);
@@ -35,6 +40,26 @@ function UniverseContent() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
+
+  const filteredCatalog = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return catalog.filter((story) => {
+      const matchesMedium = mediumFilter === "All" || story.medium === mediumFilter;
+      if (!matchesMedium) {
+        return false;
+      }
+
+      if (normalizedQuery.length === 0) {
+        return true;
+      }
+
+      const haystack = [story.title, story.summary, story.medium]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [catalog, mediumFilter, searchQuery]);
 
   const state = useUniverseState(catalog, initialStoryId);
 
@@ -93,12 +118,40 @@ function UniverseContent() {
               </button>
             </div>
           ) : null}
+          <div className="mb-3 flex flex-col gap-2 rounded-lg border border-cosmos-300/15 bg-cosmos-900/20 p-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="text-xs text-cosmos-200/80">
+              <span className="mb-1 block text-cosmos-100/85">Search stories</span>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Try: Sherlock, galaxy, or novel"
+                className="w-full rounded-md border border-cosmos-300/20 bg-cosmos-950/60 px-2.5 py-1.5 text-sm text-cosmos-100 placeholder:text-cosmos-400/50 focus:border-cyan-300/50 focus:outline-none"
+              />
+            </label>
+
+            <div className="flex flex-wrap gap-2 pt-1 sm:pt-0">
+              {MEDIUM_FILTERS.map((medium) => (
+                <button
+                  key={medium}
+                  type="button"
+                  onClick={() => setMediumFilter(medium)}
+                  className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${mediumFilter === medium ? "border-cyan-300 bg-cyan-300/15 text-cyan-100" : "border-cosmos-700 text-cosmos-200/80 hover:border-cosmos-400 hover:text-cosmos-100"}`}
+                >
+                  {medium}
+                </button>
+              ))}
+            </div>
+          </div>
           <StoryGrid
-            catalog={catalog}
+            catalog={filteredCatalog}
             selectedSourceId={state.selectedSourceId}
             selectedTargetId={state.selectedTargetId}
             onStoryClick={state.handleStoryCardClick}
           />
+          <p className="mt-2 text-[10px] text-cosmos-300/70">
+            Showing {filteredCatalog.length} / {catalog.length} stories
+          </p>
         </section>
 
         {/* Bridge Panel — right side */}

@@ -23,6 +23,14 @@ export function StoryGrid({
         ? "Now click a story to select as Target"
         : "Pair selected — generate a bridge or pick new stories";
 
+  if (catalog.length === 0) {
+    return (
+      <div className="rounded-md border border-cosmos-300/15 p-4 text-xs text-cosmos-200/65">
+        No stories match your search/filter. Try clearing filters or search terms.
+      </div>
+    );
+  }
+
   return (
     <div>
       <p className="mb-4 text-xs text-cosmos-200/60">{guideText}</p>
