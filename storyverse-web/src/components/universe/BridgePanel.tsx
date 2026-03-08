@@ -42,6 +42,7 @@ export function BridgePanel({ state }: BridgePanelProps) {
           onSwap={state.swapSelection}
           onClear={state.clearSelection}
           onGenerate={state.generateBridge}
+          uiLocale={state.uiLocale}
           isPending={state.isPending}
         />
 

@@ -19,8 +19,40 @@ interface SelectedPairBarProps {
   onSwap: () => void;
   onClear: () => void;
   onGenerate: () => void;
+  uiLocale: "en" | "ko";
   isPending: boolean;
 }
+
+const LABELS = {
+  en: {
+    selectionTitle: "Selected pair",
+    selectionHelp: "Pick any two nodes to generate a bridge.",
+    sourceEmpty: "Select source…",
+    targetEmpty: "Select target…",
+    sourceLabel: "Source",
+    targetLabel: "Target",
+    swap: "Swap",
+    clear: "Clear",
+    generate: "Generate Bridge",
+    generating: "Generating Bridge…",
+    ready: "Ready",
+    incomplete: "Select one more node",
+  },
+  ko: {
+    selectionTitle: "선택된 페어",
+    selectionHelp: "노드 두 개를 고르면 브리지를 생성할 수 있어요.",
+    sourceEmpty: "출발 노드를 고르세요…",
+    targetEmpty: "도착 노드를 고르세요…",
+    sourceLabel: "출발",
+    targetLabel: "도착",
+    swap: "서로 바꾸기",
+    clear: "초기화",
+    generate: "브리지 생성",
+    generating: "브리지 생성 중…",
+    ready: "생성 준비 완료",
+    incomplete: "노드를 하나 더 선택하세요",
+  },
+} as const;
 
 export function SelectedPairBar({
   catalog,
@@ -29,15 +61,31 @@ export function SelectedPairBar({
   onSwap,
   onClear,
   onGenerate,
+  uiLocale,
   isPending,
 }: SelectedPairBarProps) {
   const source = findCatalogNodeIn(catalog, selectedSourceId);
   const target = findCatalogNodeIn(catalog, selectedTargetId);
+  const labels = LABELS[uiLocale] ?? LABELS.en;
 
   if (!source && !target) return null;
 
   return (
     <div className="rounded-xl border border-cosmos-200/15 bg-panel/60 p-3 backdrop-blur-xl">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cosmos-200/65">
+            {labels.selectionTitle}
+          </p>
+          <p className="mt-1 text-[11px] text-cosmos-200/50">
+            {labels.selectionHelp}
+          </p>
+        </div>
+        <span className="rounded-full border border-cosmos-200/15 bg-cosmos-900/50 px-2 py-1 text-[10px] text-cosmos-200/70">
+          {source && target && source.id !== target.id ? labels.ready : labels.incomplete}
+        </span>
+      </div>
+
       <div className="flex items-center gap-3">
         {/* Source */}
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -46,12 +94,15 @@ export function SelectedPairBar({
               <span
                 className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOMAIN_DOT_COLORS[source.medium]}`}
               />
-              <span className="truncate text-sm text-cosmos-100">
-                {source.title}
-              </span>
+              <div className="min-w-0">
+                <div className="truncate text-sm text-cosmos-100">{source.title}</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-cosmos-200/45">
+                  {labels.sourceLabel} · {source.medium}
+                </div>
+              </div>
             </>
           ) : (
-            <span className="text-sm text-cosmos-200/40">Select source...</span>
+            <span className="text-sm text-cosmos-200/40">{labels.sourceEmpty}</span>
           )}
         </div>
 
@@ -65,12 +116,15 @@ export function SelectedPairBar({
               <span
                 className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOMAIN_DOT_COLORS[target.medium]}`}
               />
-              <span className="truncate text-sm text-cosmos-100">
-                {target.title}
-              </span>
+              <div className="min-w-0">
+                <div className="truncate text-sm text-cosmos-100">{target.title}</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-cosmos-200/45">
+                  {labels.targetLabel} · {target.medium}
+                </div>
+              </div>
             </>
           ) : (
-            <span className="text-sm text-cosmos-200/40">Select target...</span>
+            <span className="text-sm text-cosmos-200/40">{labels.targetEmpty}</span>
           )}
         </div>
 
@@ -83,7 +137,8 @@ export function SelectedPairBar({
               className="h-7 w-7"
               onClick={onSwap}
               disabled={isPending}
-              title="Swap"
+              title={labels.swap}
+              aria-label={labels.swap}
             >
               <ArrowLeftRight className="h-3.5 w-3.5" />
             </Button>
@@ -94,7 +149,8 @@ export function SelectedPairBar({
             className="h-7 w-7"
             onClick={onClear}
             disabled={isPending}
-            title="Clear"
+            title={labels.clear}
+            aria-label={labels.clear}
           >
             <X className="h-3.5 w-3.5" />
           </Button>
@@ -110,7 +166,7 @@ export function SelectedPairBar({
         >
           {isPending ? (
             <>
-              Generating Bridge...
+              {labels.generating}
               <span
                 className="inline-block h-3.5 w-3.5 rounded-full border-2 border-cosmos-100/40 border-t-cosmos-100/90 animate-spin"
                 aria-hidden
@@ -118,7 +174,7 @@ export function SelectedPairBar({
             </>
           ) : (
             <>
-              Generate Bridge
+              {labels.generate}
               <Zap className="h-4 w-4" />
             </>
           )}
