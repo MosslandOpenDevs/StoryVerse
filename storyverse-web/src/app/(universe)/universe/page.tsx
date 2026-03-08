@@ -15,6 +15,7 @@ function UniverseContent() {
   const [catalog, setCatalog] = useState<StoryCatalogItem[]>(SEED_CATALOG);
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [lastCatalogRefreshAt, setLastCatalogRefreshAt] = useState<string | null>(null);
 
   const loadCatalog = useCallback(async () => {
     setIsCatalogLoading(true);
@@ -22,6 +23,7 @@ function UniverseContent() {
       const fullCatalog = await fetchCatalogAction();
       setCatalog(fullCatalog);
       setCatalogError(null);
+      setLastCatalogRefreshAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     } catch {
       setCatalogError("Unable to refresh the full catalog.");
     } finally {
@@ -46,7 +48,7 @@ function UniverseContent() {
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:flex-row">
         {/* Story Grid — left side */}
         <section className="w-full lg:w-[55%]">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="font-display text-lg tracking-wide text-cosmos-100">
               Story Universe
             </h2>
@@ -55,10 +57,25 @@ function UniverseContent() {
                 <span className="text-xs text-cosmos-300/70">
                   Updating catalog...
                 </span>
+              ) : lastCatalogRefreshAt ? (
+                <span className="text-xs text-cosmos-300/60">
+                  Updated {lastCatalogRefreshAt}
+                </span>
               ) : null}
               <span className="text-xs text-cosmos-200/40">
                 {catalog.length} stories
               </span>
+              <button
+                type="button"
+                className="rounded-md border border-cosmos-300/20 px-3 py-1.5 text-xs font-medium text-cosmos-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => {
+                  void loadCatalog();
+                }}
+                disabled={isCatalogLoading}
+                aria-label="Refresh story catalog"
+              >
+                Refresh catalog
+              </button>
             </div>
           </div>
           {catalogError ? (
