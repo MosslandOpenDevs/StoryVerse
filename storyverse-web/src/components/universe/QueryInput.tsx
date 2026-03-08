@@ -47,6 +47,15 @@ export function QueryInput({
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyDraft, setHistoryDraft] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const canClearQuery = historyIndex !== null || query.length > 0;
+  const clearQueryLabel =
+    historyIndex !== null
+      ? uiLocale === "ko"
+        ? "히스토리 종료하고 원래 입력 복원"
+        : "Exit history and restore draft"
+      : uiLocale === "ko"
+        ? "입력 지우기"
+        : "Clear query";
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -334,15 +343,19 @@ export function QueryInput({
           type="button"
           size="icon"
           variant="ghost"
-          disabled={isPending || query.length === 0}
+          disabled={isPending || !canClearQuery}
           onClick={() => {
-            onQueryChange("");
-            setHistoryIndex(null);
+            if (historyIndex !== null) {
+              onQueryChange(historyDraft);
+              setHistoryIndex(null);
+            } else {
+              onQueryChange("");
+            }
             setHistoryDraft("");
             inputRef.current?.focus();
           }}
-          aria-label={uiLocale === "ko" ? "입력 지우기" : "Clear query"}
-          title={uiLocale === "ko" ? "입력 지우기" : "Clear query"}
+          aria-label={clearQueryLabel}
+          title={clearQueryLabel}
         >
           <X className="h-4 w-4" />
         </Button>
