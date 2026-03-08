@@ -166,6 +166,7 @@ function UniverseContent() {
             selectedSourceId={state.selectedSourceId}
             selectedTargetId={state.selectedTargetId}
             onStoryClick={state.handleStoryCardClick}
+            uiLocale={state.uiLocale}
           />
           <p className="mt-2 text-[10px] text-cosmos-300/70">
             Showing {filteredCatalog.length} / {catalog.length} stories
