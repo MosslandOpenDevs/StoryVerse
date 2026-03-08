@@ -28,6 +28,9 @@ const COPY = {
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
     clearFilters: "Clear filters",
+    activeFilters: "Active filters",
+    removeSearchFilter: "Remove search filter",
+    removeMediumFilter: "Remove medium filter",
     revealSelectedStories: "Reveal selected stories",
     hiddenSelectionPrefix: "Active selection is hidden by the current filters:",
     hiddenSource: "Source",
@@ -56,6 +59,9 @@ const COPY = {
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
     clearFilters: "필터 지우기",
+    activeFilters: "활성 필터",
+    removeSearchFilter: "검색 필터 제거",
+    removeMediumFilter: "매체 필터 제거",
     revealSelectedStories: "선택한 스토리 다시 표시",
     hiddenSelectionPrefix: "현재 선택이 필터에 가려져 있어요:",
     hiddenSource: "출발",
@@ -154,7 +160,8 @@ function UniverseContent() {
     router.replace(nextUrl, { scroll: false });
   }, [mediumFilter, pathname, router, searchParams, searchQuery]);
 
-  const hasActiveFilters = searchQuery.trim().length > 0 || mediumFilter !== "All";
+  const trimmedSearchQuery = searchQuery.trim();
+  const hasActiveFilters = trimmedSearchQuery.length > 0 || mediumFilter !== "All";
 
   const filteredCatalog = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -291,6 +298,31 @@ function UniverseContent() {
               </button>
             </div>
           </div>
+          {hasActiveFilters ? (
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-cosmos-300/15 bg-cosmos-900/20 px-3 py-2 text-xs text-cosmos-100/85">
+              <span className="text-cosmos-300/70">{copy.activeFilters}</span>
+              {trimmedSearchQuery.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  aria-label={copy.removeSearchFilter}
+                  className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-[11px] font-medium text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
+                >
+                  q: {trimmedSearchQuery} ×
+                </button>
+              ) : null}
+              {mediumFilter !== "All" ? (
+                <button
+                  type="button"
+                  onClick={() => setMediumFilter("All")}
+                  aria-label={copy.removeMediumFilter}
+                  className="rounded-full border border-violet-300/30 bg-violet-300/10 px-2.5 py-1 text-[11px] font-medium text-violet-100 transition hover:border-violet-200/50 hover:bg-violet-300/15"
+                >
+                  {copy.mediumLabels[mediumFilter]} ×
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {hasHiddenSelection ? (
             <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100/90">
               <span>
