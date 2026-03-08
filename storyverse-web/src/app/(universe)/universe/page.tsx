@@ -11,6 +11,7 @@ import type { StoryMedium } from "@/lib/agents/navigatorAgent";
 import { fetchCatalogAction } from "./actions";
 
 const MEDIUM_FILTERS: Array<StoryMedium | "All"> = ["All", "Movie", "History", "Novel"];
+const STORY_MEDIA: StoryMedium[] = ["Movie", "History", "Novel"];
 const SEARCH_QUERY_PARAM = "q";
 const MEDIUM_FILTER_PARAM = "medium";
 
@@ -45,6 +46,8 @@ const COPY = {
       History: "History",
       Novel: "Novel",
     },
+    mediumCountSuffix: "stories",
+    mediumCountLabel: "matching stories",
   },
   ko: {
     title: "스토리 유니버스",
@@ -76,6 +79,8 @@ const COPY = {
       History: "역사",
       Novel: "소설",
     },
+    mediumCountSuffix: "개",
+    mediumCountLabel: "일치 스토리",
   },
 } as const;
 
@@ -163,6 +168,17 @@ function UniverseContent() {
   const trimmedSearchQuery = searchQuery.trim();
   const hasActiveFilters = trimmedSearchQuery.length > 0 || mediumFilter !== "All";
 
+  const matchesSearch = useCallback((story: StoryCatalogItem, normalizedQuery: string) => {
+    if (normalizedQuery.length === 0) {
+      return true;
+    }
+
+    const haystack = [story.title, story.summary, story.medium, ...story.aliases]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(normalizedQuery);
+  }, []);
+
   const filteredCatalog = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -172,16 +188,30 @@ function UniverseContent() {
         return false;
       }
 
-      if (normalizedQuery.length === 0) {
-        return true;
+      return matchesSearch(story, normalizedQuery);
+    });
+  }, [catalog, matchesSearch, mediumFilter, searchQuery]);
+
+  const mediumAvailability = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const counts = STORY_MEDIA.reduce(
+      (acc, medium) => ({ ...acc, [medium]: 0 }),
+      {} as Record<StoryMedium, number>,
+    );
+
+    for (const story of catalog) {
+      if (!matchesSearch(story, normalizedQuery)) {
+        continue;
       }
 
-      const haystack = [story.title, story.summary, story.medium, ...story.aliases]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(normalizedQuery);
-    });
-  }, [catalog, mediumFilter, searchQuery]);
+      counts[story.medium] += 1;
+    }
+
+    return {
+      All: catalog.filter((story) => matchesSearch(story, normalizedQuery)).length,
+      ...counts,
+    } satisfies Record<StoryMedium | "All", number>;
+  }, [catalog, matchesSearch, searchQuery]);
 
   const state = useUniverseState(catalog, initialStoryId);
   const copy = COPY[state.uiLocale] ?? COPY.en;
@@ -275,16 +305,23 @@ function UniverseContent() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0 sm:justify-end">
-              {MEDIUM_FILTERS.map((medium) => (
-                <button
-                  key={medium}
-                  type="button"
-                  onClick={() => setMediumFilter(medium)}
-                  className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${mediumFilter === medium ? "border-cyan-300 bg-cyan-300/15 text-cyan-100" : "border-cosmos-700 text-cosmos-200/80 hover:border-cosmos-400 hover:text-cosmos-100"}`}
-                >
-                  {copy.mediumLabels[medium]}
-                </button>
-              ))}
+              {MEDIUM_FILTERS.map((medium) => {
+                const availableCount = mediumAvailability[medium];
+                const isDisabled = availableCount === 0 && medium !== "All";
+
+                return (
+                  <button
+                    key={medium}
+                    type="button"
+                    onClick={() => setMediumFilter(medium)}
+                    disabled={isDisabled}
+                    aria-label={`${copy.mediumLabels[medium]} · ${availableCount} ${copy.mediumCountLabel}`}
+                    className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${mediumFilter === medium ? "border-cyan-300 bg-cyan-300/15 text-cyan-100" : "border-cosmos-700 text-cosmos-200/80 hover:border-cosmos-400 hover:text-cosmos-100"} ${isDisabled ? "cursor-not-allowed opacity-40 hover:border-cosmos-700 hover:text-cosmos-200/80" : ""}`}
+                  >
+                    {copy.mediumLabels[medium]} <span className="opacity-70">({availableCount})</span>
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 onClick={() => {
