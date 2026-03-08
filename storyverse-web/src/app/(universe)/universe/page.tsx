@@ -118,6 +118,22 @@ function UniverseContent() {
   }, [catalog, mediumFilter, searchQuery]);
 
   const state = useUniverseState(catalog, initialStoryId);
+  const visibleStoryIds = useMemo(() => new Set(filteredCatalog.map((story) => story.id)), [filteredCatalog]);
+  const hiddenSourceStory = useMemo(
+    () =>
+      state.selectedSourceId && !visibleStoryIds.has(state.selectedSourceId)
+        ? catalog.find((story) => story.id === state.selectedSourceId) ?? null
+        : null,
+    [catalog, state.selectedSourceId, visibleStoryIds],
+  );
+  const hiddenTargetStory = useMemo(
+    () =>
+      state.selectedTargetId && !visibleStoryIds.has(state.selectedTargetId)
+        ? catalog.find((story) => story.id === state.selectedTargetId) ?? null
+        : null,
+    [catalog, state.selectedTargetId, visibleStoryIds],
+  );
+  const hasHiddenSelection = hiddenSourceStory !== null || hiddenTargetStory !== null;
 
   return (
     <main className="min-h-dvh bg-cosmos-950 pt-14 text-cosmos-100">
@@ -215,6 +231,25 @@ function UniverseContent() {
               </button>
             </div>
           </div>
+          {hasHiddenSelection ? (
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100/90">
+              <span>
+                Active selection is hidden by the current filters:
+                {hiddenSourceStory ? ` Source: ${hiddenSourceStory.title}.` : ""}
+                {hiddenTargetStory ? ` Target: ${hiddenTargetStory.title}.` : ""}
+              </span>
+              <button
+                type="button"
+                className="rounded border border-amber-200/30 px-2 py-1 text-[11px] font-medium text-amber-50 transition hover:bg-amber-200/10"
+                onClick={() => {
+                  setSearchQuery("");
+                  setMediumFilter("All");
+                }}
+              >
+                Reveal selected stories
+              </button>
+            </div>
+          ) : null}
           <StoryGrid
             catalog={filteredCatalog}
             selectedSourceId={state.selectedSourceId}
@@ -224,6 +259,8 @@ function UniverseContent() {
           />
           <p className="mt-2 text-[10px] text-cosmos-300/70">
             Showing {filteredCatalog.length} / {catalog.length} stories
+            {hasActiveFilters ? " · Filters active" : ""}
+            {hasHiddenSelection ? " · Selected stories preserved" : ""}
           </p>
         </section>
 
