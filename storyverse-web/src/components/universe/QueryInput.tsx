@@ -180,6 +180,20 @@ export function QueryInput({
       normalizedKey === "l" &&
       !event.shiftKey &&
       !event.altKey;
+    const useOldestHistoryShortcut =
+      historyIndex !== null &&
+      event.key === "Home" &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey;
+    const useNewestHistoryShortcut =
+      historyIndex !== null &&
+      event.key === "End" &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey;
 
     if (event.key === "Escape") {
       if (historyIndex !== null) {
@@ -216,6 +230,21 @@ export function QueryInput({
         setHistoryDraft("");
         onQueryChange("");
       }
+      return;
+    }
+
+    if (useOldestHistoryShortcut && recentQueries.length > 0) {
+      event.preventDefault();
+      const oldestIndex = recentQueries.length - 1;
+      setHistoryIndex(oldestIndex);
+      onQueryChange(recentQueries[oldestIndex] ?? "");
+      return;
+    }
+
+    if (useNewestHistoryShortcut && recentQueries.length > 0) {
+      event.preventDefault();
+      setHistoryIndex(0);
+      onQueryChange(recentQueries[0] ?? "");
       return;
     }
 
@@ -352,8 +381,8 @@ export function QueryInput({
 
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
-          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓ 또는 Ctrl/⌘+P,N으로 최근 실행 탐색 · 히스토리 탐색 중 Ctrl/⌘+Backspace/Delete로 현재 항목 삭제 · Ctrl/⌘+Shift+Backspace/Delete로 전체 삭제 · Esc 또는 Ctrl/⌘+L 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
-          : "Tip: At input edges, ↑/↓ or Ctrl/⌘+P,N browses recent queries · while browsing history, Ctrl/⌘+Backspace/Delete removes the active item · Ctrl/⌘+Shift+Backspace/Delete clears all recent queries · Esc or Ctrl/⌘+L exits history or clears input · use × on a recent chip to remove it · / or ⌘/Ctrl+K focuses input"}
+          ? "팁: 입력 맨앞/맨뒤에서 ↑/↓ 또는 Ctrl/⌘+P,N으로 최근 실행 탐색 · 히스토리 탐색 중 Home/End로 가장 오래된/최신 항목으로 점프 · Ctrl/⌘+Backspace/Delete로 현재 항목 삭제 · Ctrl/⌘+Shift+Backspace/Delete로 전체 삭제 · Esc 또는 Ctrl/⌘+L 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
+          : "Tip: At input edges, ↑/↓ or Ctrl/⌘+P,N browses recent queries · while browsing history, Home/End jumps to oldest/newest · Ctrl/⌘+Backspace/Delete removes the active item · Ctrl/⌘+Shift+Backspace/Delete clears all recent queries · Esc or Ctrl/⌘+L exits history or clears input · use × on a recent chip to remove it · / or ⌘/Ctrl+K focuses input"}
       </p>
 
       {/* Starter prompts */}
