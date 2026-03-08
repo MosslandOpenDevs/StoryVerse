@@ -13,6 +13,7 @@
 # testing
 /coverage
 /.parser-tests
+/test-results
 
 # next.js
 /.next/

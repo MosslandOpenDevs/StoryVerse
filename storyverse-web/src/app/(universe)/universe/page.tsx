@@ -41,6 +41,8 @@ function UniverseContent() {
     void loadCatalog();
   }, [loadCatalog]);
 
+  const hasActiveFilters = searchQuery.trim().length > 0 || mediumFilter !== "All";
+
   const filteredCatalog = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -54,7 +56,7 @@ function UniverseContent() {
         return true;
       }
 
-      const haystack = [story.title, story.summary, story.medium]
+      const haystack = [story.title, story.summary, story.medium, ...story.aliases]
         .join(" ")
         .toLowerCase();
       return haystack.includes(normalizedQuery);
@@ -119,18 +121,23 @@ function UniverseContent() {
             </div>
           ) : null}
           <div className="mb-3 flex flex-col gap-2 rounded-lg border border-cosmos-300/15 bg-cosmos-900/20 p-3 sm:flex-row sm:items-end sm:justify-between">
-            <label className="text-xs text-cosmos-200/80">
-              <span className="mb-1 block text-cosmos-100/85">Search stories</span>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Try: Sherlock, galaxy, or novel"
-                className="w-full rounded-md border border-cosmos-300/20 bg-cosmos-950/60 px-2.5 py-1.5 text-sm text-cosmos-100 placeholder:text-cosmos-400/50 focus:border-cyan-300/50 focus:outline-none"
-              />
-            </label>
+            <div className="flex flex-1 flex-col gap-2">
+              <label className="text-xs text-cosmos-200/80">
+                <span className="mb-1 block text-cosmos-100/85">Search stories</span>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Try: Sherlock, galaxy, Jedi, or novel"
+                  className="w-full rounded-md border border-cosmos-300/20 bg-cosmos-950/60 px-2.5 py-1.5 text-sm text-cosmos-100 placeholder:text-cosmos-400/50 focus:border-cyan-300/50 focus:outline-none"
+                />
+              </label>
+              <p className="text-[11px] text-cosmos-300/70">
+                Search matches titles, summaries, mediums, and aliases.
+              </p>
+            </div>
 
-            <div className="flex flex-wrap gap-2 pt-1 sm:pt-0">
+            <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0 sm:justify-end">
               {MEDIUM_FILTERS.map((medium) => (
                 <button
                   key={medium}
@@ -141,6 +148,17 @@ function UniverseContent() {
                   {medium}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setMediumFilter("All");
+                }}
+                disabled={!hasActiveFilters}
+                className="rounded-full border border-cosmos-600 px-3 py-1.5 text-[11px] font-medium text-cosmos-200/80 transition-colors hover:border-cosmos-300 hover:text-cosmos-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Clear filters
+              </button>
             </div>
           </div>
           <StoryGrid
