@@ -5,6 +5,7 @@ import { StoryCard } from "./StoryCard";
 
 interface StoryGridProps {
   catalog: StoryCatalogItem[];
+  totalCount: number;
   selectedSourceId: string;
   selectedTargetId: string;
   onStoryClick: (storyId: string) => void;
@@ -22,6 +23,9 @@ const COPY = {
     selectTarget: "Now click a story to select as Target",
     pairReady: "Pair selected — generate a bridge or pick new stories",
     empty: "No stories match your search or filters. Try clearing filters or changing the search term.",
+    results: "results",
+    showingAll: "Showing full catalog",
+    filtersActive: "Filters active",
     clearSearch: "Clear search",
     clearMedium: "Show all mediums",
     clearAll: "Reset all filters",
@@ -31,6 +35,9 @@ const COPY = {
     selectTarget: "이제 다른 스토리를 눌러 도착 노드로 선택하세요",
     pairReady: "페어 선택 완료 — 브리지를 생성하거나 새 스토리를 고르세요",
     empty: "검색어나 필터와 일치하는 스토리가 없어요. 필터를 지우거나 검색어를 바꿔보세요.",
+    results: "개 결과",
+    showingAll: "전체 카탈로그 표시 중",
+    filtersActive: "필터 적용 중",
     clearSearch: "검색 지우기",
     clearMedium: "매체 전체 보기",
     clearAll: "필터 모두 초기화",
@@ -39,6 +46,7 @@ const COPY = {
 
 export function StoryGrid({
   catalog,
+  totalCount,
   selectedSourceId,
   selectedTargetId,
   onStoryClick,
@@ -56,6 +64,7 @@ export function StoryGrid({
       : selectedTargetId === ""
         ? copy.selectTarget
         : copy.pairReady;
+  const hasActiveFilters = hasActiveSearch || hasActiveMediumFilter;
 
   if (catalog.length === 0) {
     return (
@@ -96,9 +105,52 @@ export function StoryGrid({
 
   return (
     <div>
-      <p className="mb-4 text-xs text-cosmos-200/60" aria-live="polite">
-        {guideText}
-      </p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-cosmos-200/60" aria-live="polite">
+          {guideText}
+        </p>
+        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="rounded-full border border-cosmos-700/50 bg-cosmos-900/40 px-2.5 py-1 text-cosmos-100/85">
+            {catalog.length}/{totalCount} {copy.results}
+          </span>
+          {hasActiveFilters ? (
+            <>
+              <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-2.5 py-1 text-emerald-100/85">
+                {copy.filtersActive}
+              </span>
+              {hasActiveSearch ? (
+                <button
+                  type="button"
+                  onClick={onClearSearch}
+                  className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 font-medium text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
+                >
+                  {copy.clearSearch}
+                </button>
+              ) : null}
+              {hasActiveMediumFilter ? (
+                <button
+                  type="button"
+                  onClick={onClearMediumFilter}
+                  className="rounded-full border border-violet-300/30 bg-violet-300/10 px-3 py-1 font-medium text-violet-100 transition hover:border-violet-200/50 hover:bg-violet-300/15"
+                >
+                  {copy.clearMedium}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={onClearAllFilters}
+                className="rounded-full border border-cosmos-500 px-3 py-1 font-medium text-cosmos-100 transition hover:border-cosmos-300 hover:bg-cosmos-800/50"
+              >
+                {copy.clearAll}
+              </button>
+            </>
+          ) : (
+            <span className="rounded-full border border-cosmos-700/50 bg-cosmos-900/30 px-2.5 py-1 text-cosmos-200/65">
+              {copy.showingAll}
+            </span>
+          )}
+        </div>
+      </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {catalog.map((story) => {
           const selectionState =

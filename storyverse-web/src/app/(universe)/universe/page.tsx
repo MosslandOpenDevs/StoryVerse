@@ -348,6 +348,7 @@ function UniverseContent() {
           ) : null}
           <StoryGrid
             catalog={filteredCatalog}
+            totalCount={catalog.length}
             selectedSourceId={state.selectedSourceId}
             selectedTargetId={state.selectedTargetId}
             onStoryClick={state.handleStoryCardClick}
