@@ -342,6 +342,14 @@ export function QueryInput({
             : `Remaining characters: ${remainingChars}`}
       </p>
 
+      {historyIndex !== null && recentQueries.length > 0 && (
+        <p className="text-[10px] text-cosmos-200/70" aria-live="polite">
+          {uiLocale === "ko"
+            ? `히스토리 탐색 중 ${historyIndex + 1}/${recentQueries.length} · Esc로 원래 입력 복귀`
+            : `Browsing history ${historyIndex + 1}/${recentQueries.length} · press Esc to restore draft`}
+        </p>
+      )}
+
       <p className="text-[10px] text-cosmos-200/50">
         {uiLocale === "ko"
           ? "팁: 입력 맨앞/맨뒤에서 ↑/↓ 또는 Ctrl/⌘+P,N으로 최근 실행 탐색 · 히스토리 탐색 중 Ctrl/⌘+Backspace/Delete로 현재 항목 삭제 · Ctrl/⌘+Shift+Backspace/Delete로 전체 삭제 · Esc 또는 Ctrl/⌘+L 로 히스토리 종료/입력 지우기 · 최근 실행 칩의 ×로 개별 삭제 · / 또는 ⌘/Ctrl+K 로 포커스"
