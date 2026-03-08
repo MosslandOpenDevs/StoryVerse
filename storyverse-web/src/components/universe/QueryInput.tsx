@@ -42,6 +42,8 @@ export function QueryInput({
   const isSubmitDisabled = isPending || query.trim().length === 0;
   const starterPrompts = STARTER_PROMPTS[uiLocale] ?? STARTER_PROMPTS.en;
   const remainingChars = Math.max(0, MAX_QUERY_LENGTH - query.length);
+  const isLimitReached = remainingChars === 0;
+  const isNearLimit = remainingChars > 0 && remainingChars < 20;
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyDraft, setHistoryDraft] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -328,9 +330,16 @@ export function QueryInput({
       </form>
 
       <p
-        className={`text-[10px] ${remainingChars < 20 ? "text-amber-300/80" : "text-cosmos-200/50"}`}
+        className={`text-[10px] ${isLimitReached ? "text-rose-300/90" : isNearLimit ? "text-amber-300/80" : "text-cosmos-200/50"}`}
+        aria-live="polite"
       >
-        {uiLocale === "ko" ? `입력 가능 남은 글자: ${remainingChars}` : `Remaining characters: ${remainingChars}`}
+        {uiLocale === "ko"
+          ? isLimitReached
+            ? `입력 한도(${MAX_QUERY_LENGTH}자)에 도달했어요.`
+            : `입력 가능 남은 글자: ${remainingChars}`
+          : isLimitReached
+            ? `Character limit reached (${MAX_QUERY_LENGTH}).`
+            : `Remaining characters: ${remainingChars}`}
       </p>
 
       <p className="text-[10px] text-cosmos-200/50">
