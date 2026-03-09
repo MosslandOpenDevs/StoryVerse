@@ -43,7 +43,7 @@ const LABELS = {
     copyFailed: "Copy failed",
     ready: "Ready",
     incomplete: "Select one more node",
-    shortcuts: "Shortcuts: Enter generate · S swap · Backspace clear",
+    shortcuts: "Shortcuts: Enter generate · C copy link · S swap · Esc/Backspace clear",
   },
   ko: {
     selectionTitle: "선택된 페어",
@@ -61,7 +61,7 @@ const LABELS = {
     copyFailed: "복사 실패",
     ready: "생성 준비 완료",
     incomplete: "노드를 하나 더 선택하세요",
-    shortcuts: "단축키: Enter 생성 · S 교체 · Backspace 초기화",
+    shortcuts: "단축키: Enter 생성 · C 링크 복사 · S 교체 · Esc/Backspace 초기화",
   },
 } as const;
 
@@ -105,13 +105,19 @@ export function SelectedPairBar({
         return;
       }
 
+      if ((event.key === "c" || event.key === "C") && isPairReady) {
+        event.preventDefault();
+        onCopyLink();
+        return;
+      }
+
       if ((event.key === "s" || event.key === "S") && isPairReady) {
         event.preventDefault();
         onSwap();
         return;
       }
 
-      if (event.key === "Backspace" && (source || target)) {
+      if ((event.key === "Escape" || event.key === "Backspace") && (source || target)) {
         event.preventDefault();
         onClear();
       }
@@ -121,7 +127,7 @@ export function SelectedPairBar({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isPairReady, isPending, onClear, onGenerate, onSwap, source, target]);
+  }, [isPairReady, isPending, onClear, onCopyLink, onGenerate, onSwap, source, target]);
 
   if (!source && !target) return null;
 
