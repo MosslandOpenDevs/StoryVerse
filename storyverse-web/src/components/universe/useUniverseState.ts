@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useState, useTransition } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   runUniverseCommandAction,
   runUniverseCommandByNodeIdsAction,
@@ -158,6 +158,7 @@ export function useUniverseState(
   const [recentQueries, setRecentQueries] = useState<string[]>([]);
   const [latestResult, setLatestResult] = useState<LatestResult>(null);
   const [isPending, startTransition] = useTransition();
+  const initialPairAutoRunRef = useRef<string | null>(null);
 
   // Load recent queries from localStorage
   useEffect(() => {
@@ -179,7 +180,7 @@ export function useUniverseState(
     }
   }, []);
 
-  const pushRecentQuery = (rawQuery: string) => {
+  const pushRecentQuery = useCallback((rawQuery: string) => {
     const normalized = normalizeQuery(rawQuery);
     if (!normalized) return;
 
@@ -199,7 +200,7 @@ export function useUniverseState(
       }
       return next;
     });
-  };
+  }, []);
 
   const clearRecentQueries = () => {
     setRecentQueries([]);
@@ -228,7 +229,7 @@ export function useUniverseState(
     });
   };
 
-  const applyActionResult = (result: UniverseCommandActionResult) => {
+  const applyActionResult = useCallback((result: UniverseCommandActionResult) => {
     if (result.ok) {
       setUiLocale(result.result.resolution.locale);
       setLatestResult(result.result);
@@ -258,7 +259,7 @@ export function useUniverseState(
       ...prev,
       createMessage("assistant", buildAssistantSummary(result)),
     ]);
-  };
+  }, []);
 
   const runQuery = (rawQuery: string) => {
     if (isPending) return;
@@ -292,42 +293,45 @@ export function useUniverseState(
     });
   };
 
-  const runNodeSelectionQuery = (
-    sourceId: string,
-    targetId: string,
-    prompt: string,
-  ) => {
-    if (isPending) return;
+  const runNodeSelectionQuery = useCallback(
+    (sourceId: string, targetId: string, prompt: string) => {
+      if (isPending) return;
 
-    const normalizedPrompt = normalizeQuery(prompt);
-    if (!normalizedPrompt) return;
+      const normalizedPrompt = normalizeQuery(prompt);
+      if (!normalizedPrompt) return;
 
-    pushRecentQuery(normalizedPrompt);
-    setMessages((prev) => [...prev, createMessage("user", normalizedPrompt)]);
-    setQuery("");
-    setClarificationChoices([]);
-    setSourceCandidates([]);
-    setTargetCandidates([]);
+      pushRecentQuery(normalizedPrompt);
+      setMessages((prev) => [...prev, createMessage("user", normalizedPrompt)]);
+      setQuery("");
+      setClarificationChoices([]);
+      setSourceCandidates([]);
+      setTargetCandidates([]);
 
-    startTransition(() => {
-      void runUniverseCommandByNodeIdsAction(sourceId, targetId, normalizedPrompt)
-        .then(applyActionResult)
-        .catch((error: unknown) => {
-          setSourceCandidates([]);
-          setTargetCandidates([]);
-          setClarificationChoices([]);
-          setMessages((prev) => [
-            ...prev,
-            createMessage(
-              "assistant",
-              buildUnexpectedErrorReply(
-                `Unexpected client failure: ${getErrorMessage(error)}`,
+      startTransition(() => {
+        void runUniverseCommandByNodeIdsAction(sourceId, targetId, normalizedPrompt)
+          .then(applyActionResult)
+          .catch((error: unknown) => {
+            setSourceCandidates([]);
+            setTargetCandidates([]);
+            setClarificationChoices([]);
+            setMessages((prev) => [
+              ...prev,
+              createMessage(
+                "assistant",
+                buildUnexpectedErrorReply(
+                  `Unexpected client failure: ${getErrorMessage(error)}`,
+                ),
               ),
-            ),
-          ]);
-        });
-    });
-  };
+            ]);
+          });
+      });
+    },
+    [
+      applyActionResult,
+      isPending,
+      pushRecentQuery,
+    ],
+  );
 
   const runCorrectedQuery = () => {
     if (isPending) return;
@@ -388,6 +392,42 @@ export function useUniverseState(
         : `Connect ${source.title} to ${target.title}.`;
     runNodeSelectionQuery(source.id, target.id, prompt);
   };
+
+  useEffect(() => {
+    const hasInitialPair = Boolean(initialSourceId && initialTargetId);
+    if (!hasInitialPair || isPending || latestResult) {
+      return;
+    }
+
+    const source = findCatalogNodeIn(catalog, selectedSourceId);
+    const target = findCatalogNodeIn(catalog, selectedTargetId);
+    if (!source || !target || source.id === target.id) {
+      initialPairAutoRunRef.current = null;
+      return;
+    }
+
+    const autoRunKey = `${source.id}:${target.id}`;
+    if (initialPairAutoRunRef.current === autoRunKey) {
+      return;
+    }
+
+    initialPairAutoRunRef.current = autoRunKey;
+    const autoPrompt =
+      uiLocale === "ko"
+        ? `${source.title}를 ${target.title}와 연결해줘.`
+        : `Connect ${source.title} to ${target.title}.`;
+    runNodeSelectionQuery(source.id, target.id, autoPrompt);
+  }, [
+    catalog,
+    initialSourceId,
+    initialTargetId,
+    isPending,
+    latestResult,
+    runNodeSelectionQuery,
+    selectedSourceId,
+    selectedTargetId,
+    uiLocale,
+  ]);
 
   const submitQuery = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
