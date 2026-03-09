@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
@@ -35,6 +36,9 @@ const COPY = {
     searchShortcutHelp: "Press / to focus search and Esc to clear filters.",
     quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
+    copyFilteredView: "Copy filtered view",
+    copiedFilteredView: "View link copied",
+    copyFilteredViewFailed: "Copy failed",
     activeFilters: "Active filters",
     removeSearchFilter: "Remove search filter",
     removeMediumFilter: "Remove medium filter",
@@ -70,6 +74,9 @@ const COPY = {
     searchShortcutHelp: "/ 키로 검색에 바로 이동하고 Esc로 필터를 지울 수 있어요.",
     quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
+    copyFilteredView: "필터 화면 링크 복사",
+    copiedFilteredView: "화면 링크 복사됨",
+    copyFilteredViewFailed: "복사 실패",
     activeFilters: "활성 필터",
     removeSearchFilter: "검색 필터 제거",
     removeMediumFilter: "매체 필터 제거",
@@ -116,6 +123,7 @@ function UniverseContent() {
     parseMediumFilter(searchParams.get(MEDIUM_FILTER_PARAM)),
   );
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
+  const [filterLinkCopyFeedback, setFilterLinkCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const state = useUniverseState(catalog, initialSourceId, initialTargetId);
 
   const loadCatalog = useCallback(async () => {
@@ -328,6 +336,30 @@ function UniverseContent() {
     }
   }, [mediumFilter, pathname, searchQuery, state.selectedSourceId, state.selectedTargetId]);
 
+  const handleCopyFilteredView = useCallback(async () => {
+    const params = new URLSearchParams();
+    const trimmedQueryForLink = searchQuery.trim();
+
+    if (trimmedQueryForLink.length > 0) {
+      params.set(SEARCH_QUERY_PARAM, trimmedQueryForLink);
+    }
+
+    if (mediumFilter !== "All") {
+      params.set(MEDIUM_FILTER_PARAM, mediumFilter);
+    }
+
+    const nextUrl = params.toString().length > 0
+      ? `${window.location.origin}${pathname}?${params.toString()}`
+      : `${window.location.origin}${pathname}`;
+
+    try {
+      await navigator.clipboard.writeText(nextUrl);
+      setFilterLinkCopyFeedback("success");
+    } catch {
+      setFilterLinkCopyFeedback("error");
+    }
+  }, [mediumFilter, pathname, searchQuery]);
+
   useEffect(() => {
     if (copyFeedback === "idle") {
       return;
@@ -341,6 +373,20 @@ function UniverseContent() {
       window.clearTimeout(timeout);
     };
   }, [copyFeedback]);
+
+  useEffect(() => {
+    if (filterLinkCopyFeedback === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setFilterLinkCopyFeedback("idle");
+    }, 1800);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [filterLinkCopyFeedback]);
 
   return (
     <main className="min-h-dvh bg-cosmos-950 pt-14 text-cosmos-100">
@@ -454,6 +500,40 @@ function UniverseContent() {
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => {
+                  void handleCopyFilteredView();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-cosmos-600 px-3 py-1.5 text-[11px] font-medium text-cosmos-200/80 transition-colors hover:border-cosmos-300 hover:text-cosmos-100"
+                aria-label={
+                  filterLinkCopyFeedback === "success"
+                    ? copy.copiedFilteredView
+                    : filterLinkCopyFeedback === "error"
+                      ? copy.copyFilteredViewFailed
+                      : copy.copyFilteredView
+                }
+                title={
+                  filterLinkCopyFeedback === "success"
+                    ? copy.copiedFilteredView
+                    : filterLinkCopyFeedback === "error"
+                      ? copy.copyFilteredViewFailed
+                      : copy.copyFilteredView
+                }
+              >
+                {filterLinkCopyFeedback === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                <span>
+                  {filterLinkCopyFeedback === "success"
+                    ? copy.copiedFilteredView
+                    : filterLinkCopyFeedback === "error"
+                      ? copy.copyFilteredViewFailed
+                      : copy.copyFilteredView}
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={() => {
