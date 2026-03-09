@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { ArrowLeftRight, Check, Copy, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
@@ -42,6 +43,7 @@ const LABELS = {
     copyFailed: "Copy failed",
     ready: "Ready",
     incomplete: "Select one more node",
+    shortcuts: "Shortcuts: Enter generate · S swap · Backspace clear",
   },
   ko: {
     selectionTitle: "선택된 페어",
@@ -59,6 +61,7 @@ const LABELS = {
     copyFailed: "복사 실패",
     ready: "생성 준비 완료",
     incomplete: "노드를 하나 더 선택하세요",
+    shortcuts: "단축키: Enter 생성 · S 교체 · Backspace 초기화",
   },
 } as const;
 
@@ -77,6 +80,48 @@ export function SelectedPairBar({
   const source = findCatalogNodeIn(catalog, selectedSourceId);
   const target = findCatalogNodeIn(catalog, selectedTargetId);
   const labels = LABELS[uiLocale] ?? LABELS.en;
+  const isPairReady = Boolean(source && target && source.id !== target.id);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isPending) return;
+
+      const targetElement = event.target;
+      const tagName = targetElement instanceof HTMLElement ? targetElement.tagName.toLowerCase() : "";
+      const isEditable =
+        targetElement instanceof HTMLElement &&
+        (targetElement.isContentEditable ||
+          tagName === "input" ||
+          tagName === "textarea" ||
+          tagName === "select");
+
+      if (isEditable) {
+        return;
+      }
+
+      if (event.key === "Enter" && isPairReady) {
+        event.preventDefault();
+        onGenerate();
+        return;
+      }
+
+      if ((event.key === "s" || event.key === "S") && isPairReady) {
+        event.preventDefault();
+        onSwap();
+        return;
+      }
+
+      if (event.key === "Backspace" && (source || target)) {
+        event.preventDefault();
+        onClear();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPairReady, isPending, onClear, onGenerate, onSwap, source, target]);
 
   if (!source && !target) return null;
 
@@ -89,6 +134,9 @@ export function SelectedPairBar({
           </p>
           <p className="mt-1 text-[11px] text-cosmos-200/50">
             {labels.selectionHelp}
+          </p>
+          <p className="mt-1 text-[10px] text-cosmos-300/45">
+            {labels.shortcuts}
           </p>
         </div>
         <span className="rounded-full border border-cosmos-200/15 bg-cosmos-900/50 px-2 py-1 text-[10px] text-cosmos-200/70">
