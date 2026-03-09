@@ -149,7 +149,7 @@ function UniverseContent() {
     const trimmedQuery = searchQuery.trim();
 
     if (trimmedQuery.length > 0) {
-      params.set(SEARCH_QUERY_PARAM, searchQuery);
+      params.set(SEARCH_QUERY_PARAM, trimmedQuery);
     } else {
       params.delete(SEARCH_QUERY_PARAM);
     }
@@ -360,6 +360,7 @@ function UniverseContent() {
                     className="rounded-full border border-cosmos-300/20 bg-cosmos-950/50 px-2.5 py-1 text-cosmos-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
                     onClick={() => {
                       setSearchQuery(term);
+                      setMediumFilter("All");
                       searchInputRef.current?.focus();
                       searchInputRef.current?.select();
                     }}
