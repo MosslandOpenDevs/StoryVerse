@@ -19,6 +19,7 @@ const SOURCE_PARAM = "source";
 const TARGET_PARAM = "target";
 const LEGACY_STORY_PARAM = "story";
 const QUICK_FILTERS = ["Sherlock", "galaxy", "dynasty", "rebellion"] as const;
+const QUICK_FILTER_SHORTCUTS = ["1", "2", "3", "4"] as const;
 
 const COPY = {
   en: {
@@ -33,7 +34,7 @@ const COPY = {
     searchLabel: "Search stories",
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
-    searchShortcutHelp: "Press / to focus search and Esc to clear filters.",
+    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, and Esc to clear filters.",
     quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
     copyFilteredView: "Copy filtered view",
@@ -71,7 +72,7 @@ const COPY = {
     searchLabel: "스토리 검색",
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
-    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 Esc로 필터를 지울 수 있어요.",
+    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, Esc로 필터를 지울 수 있어요.",
     quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
     copyFilteredView: "필터 화면 링크 복사",
@@ -235,6 +236,17 @@ function UniverseContent() {
         setSearchQuery("");
         setMediumFilter("All");
         searchInputRef.current?.blur();
+        return;
+      }
+
+      const quickFilterIndex = Number.parseInt(event.key, 10) - 1;
+      const quickFilterTerm = QUICK_FILTERS[quickFilterIndex];
+      if (quickFilterTerm) {
+        event.preventDefault();
+        setSearchQuery(quickFilterTerm);
+        setMediumFilter("All");
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
       }
     };
 
@@ -461,7 +473,7 @@ function UniverseContent() {
               </p>
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-cosmos-300/80">
                 <span className="text-cosmos-400/80">{copy.quickFiltersLabel}</span>
-                {QUICK_FILTERS.map((term) => (
+                {QUICK_FILTERS.map((term, index) => (
                   <button
                     key={term}
                     type="button"
@@ -472,7 +484,10 @@ function UniverseContent() {
                       searchInputRef.current?.focus();
                       searchInputRef.current?.select();
                     }}
+                    title={`${QUICK_FILTER_SHORTCUTS[index]} · ${term}`}
+                    aria-label={`${QUICK_FILTER_SHORTCUTS[index]} · ${term}`}
                   >
+                    <span className="mr-1 text-cosmos-400/80">{QUICK_FILTER_SHORTCUTS[index]}</span>
                     {term}
                   </button>
                 ))}
