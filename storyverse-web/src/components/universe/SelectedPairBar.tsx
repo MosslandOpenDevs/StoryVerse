@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, X, Zap } from "lucide-react";
+import { ArrowLeftRight, Check, Copy, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import { findCatalogNodeIn } from "./useUniverseState";
@@ -19,6 +19,8 @@ interface SelectedPairBarProps {
   onSwap: () => void;
   onClear: () => void;
   onGenerate: () => void;
+  onCopyLink: () => void;
+  copyFeedback: "idle" | "success" | "error";
   uiLocale: "en" | "ko";
   isPending: boolean;
 }
@@ -35,6 +37,9 @@ const LABELS = {
     clear: "Clear",
     generate: "Generate Bridge",
     generating: "Generating Bridge…",
+    copyLink: "Copy selection link",
+    copied: "Link copied",
+    copyFailed: "Copy failed",
     ready: "Ready",
     incomplete: "Select one more node",
   },
@@ -49,6 +54,9 @@ const LABELS = {
     clear: "초기화",
     generate: "브리지 생성",
     generating: "브리지 생성 중…",
+    copyLink: "선택 링크 복사",
+    copied: "링크 복사됨",
+    copyFailed: "복사 실패",
     ready: "생성 준비 완료",
     incomplete: "노드를 하나 더 선택하세요",
   },
@@ -61,6 +69,8 @@ export function SelectedPairBar({
   onSwap,
   onClear,
   onGenerate,
+  onCopyLink,
+  copyFeedback,
   uiLocale,
   isPending,
 }: SelectedPairBarProps) {
@@ -131,17 +141,34 @@ export function SelectedPairBar({
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1.5">
           {source && target && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={onSwap}
-              disabled={isPending}
-              title={labels.swap}
-              aria-label={labels.swap}
-            >
-              <ArrowLeftRight className="h-3.5 w-3.5" />
-            </Button>
+            <>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={onCopyLink}
+                disabled={isPending}
+                title={copyFeedback === "success" ? labels.copied : copyFeedback === "error" ? labels.copyFailed : labels.copyLink}
+                aria-label={copyFeedback === "success" ? labels.copied : copyFeedback === "error" ? labels.copyFailed : labels.copyLink}
+              >
+                {copyFeedback === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={onSwap}
+                disabled={isPending}
+                title={labels.swap}
+                aria-label={labels.swap}
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5" />
+              </Button>
+            </>
           )}
           <Button
             size="icon"

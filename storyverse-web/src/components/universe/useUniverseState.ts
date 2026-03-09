@@ -128,7 +128,8 @@ export function findCatalogNodeIn(
 
 export function useUniverseState(
   catalog: StoryCatalogItem[],
-  initialStoryId?: string,
+  initialSourceId?: string,
+  initialTargetId?: string,
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     createMessage(
@@ -147,9 +148,11 @@ export function useUniverseState(
     RankedNodeCandidate[]
   >([]);
   const [selectedSourceId, setSelectedSourceId] = useState<string>(
-    initialStoryId ?? "",
+    initialSourceId ?? "",
   );
-  const [selectedTargetId, setSelectedTargetId] = useState<string>("");
+  const [selectedTargetId, setSelectedTargetId] = useState<string>(
+    initialTargetId ?? "",
+  );
   const [uiLocale, setUiLocale] =
     useState<ResolutionMetadata["locale"]>("en");
   const [recentQueries, setRecentQueries] = useState<string[]>([]);

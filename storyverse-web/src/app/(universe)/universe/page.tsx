@@ -14,6 +14,9 @@ const MEDIUM_FILTERS: Array<StoryMedium | "All"> = ["All", "Movie", "History", "
 const STORY_MEDIA: StoryMedium[] = ["Movie", "History", "Novel"];
 const SEARCH_QUERY_PARAM = "q";
 const MEDIUM_FILTER_PARAM = "medium";
+const SOURCE_PARAM = "source";
+const TARGET_PARAM = "target";
+const LEGACY_STORY_PARAM = "story";
 const QUICK_FILTERS = ["Sherlock", "galaxy", "dynasty", "rebellion"] as const;
 
 const COPY = {
@@ -101,7 +104,8 @@ function UniverseContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const initialStoryId = searchParams.get("story") ?? undefined;
+  const initialSourceId = searchParams.get(SOURCE_PARAM) ?? searchParams.get(LEGACY_STORY_PARAM) ?? undefined;
+  const initialTargetId = searchParams.get(TARGET_PARAM) ?? undefined;
   const [catalog, setCatalog] = useState<StoryCatalogItem[]>(SEED_CATALOG);
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -111,6 +115,8 @@ function UniverseContent() {
   const [mediumFilter, setMediumFilter] = useState<StoryMedium | "All">(() =>
     parseMediumFilter(searchParams.get(MEDIUM_FILTER_PARAM)),
   );
+  const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
+  const state = useUniverseState(catalog, initialSourceId, initialTargetId);
 
   const loadCatalog = useCallback(async () => {
     setIsCatalogLoading(true);
@@ -160,6 +166,20 @@ function UniverseContent() {
       params.delete(MEDIUM_FILTER_PARAM);
     }
 
+    if (state.selectedSourceId) {
+      params.set(SOURCE_PARAM, state.selectedSourceId);
+    } else {
+      params.delete(SOURCE_PARAM);
+    }
+
+    if (state.selectedTargetId) {
+      params.set(TARGET_PARAM, state.selectedTargetId);
+    } else {
+      params.delete(TARGET_PARAM);
+    }
+
+    params.delete(LEGACY_STORY_PARAM);
+
     const currentParams = searchParams.toString();
     const nextParams = params.toString();
 
@@ -169,7 +189,7 @@ function UniverseContent() {
 
     const nextUrl = nextParams.length > 0 ? `${pathname}?${nextParams}` : pathname;
     router.replace(nextUrl, { scroll: false });
-  }, [mediumFilter, pathname, router, searchParams, searchQuery]);
+  }, [mediumFilter, pathname, router, searchParams, searchQuery, state.selectedSourceId, state.selectedTargetId]);
 
   const trimmedSearchQuery = searchQuery.trim();
   const hasActiveFilters = trimmedSearchQuery.length > 0 || mediumFilter !== "All";
@@ -261,7 +281,6 @@ function UniverseContent() {
     } satisfies Record<StoryMedium | "All", number>;
   }, [catalog, matchesSearch, searchQuery]);
 
-  const state = useUniverseState(catalog, initialStoryId);
   const copy = COPY[state.uiLocale] ?? COPY.en;
   const visibleStoryIds = useMemo(() => new Set(filteredCatalog.map((story) => story.id)), [filteredCatalog]);
   const hiddenSourceStory = useMemo(
@@ -279,6 +298,49 @@ function UniverseContent() {
     [catalog, state.selectedTargetId, visibleStoryIds],
   );
   const hasHiddenSelection = hiddenSourceStory !== null || hiddenTargetStory !== null;
+
+  const handleCopySelectionLink = useCallback(async () => {
+    if (!state.selectedSourceId || !state.selectedTargetId) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+    const trimmedQueryForLink = searchQuery.trim();
+
+    if (trimmedQueryForLink.length > 0) {
+      params.set(SEARCH_QUERY_PARAM, trimmedQueryForLink);
+    }
+
+    if (mediumFilter !== "All") {
+      params.set(MEDIUM_FILTER_PARAM, mediumFilter);
+    }
+
+    params.set(SOURCE_PARAM, state.selectedSourceId);
+    params.set(TARGET_PARAM, state.selectedTargetId);
+
+    const nextUrl = `${window.location.origin}${pathname}?${params.toString()}`;
+
+    try {
+      await navigator.clipboard.writeText(nextUrl);
+      setCopyFeedback("success");
+    } catch {
+      setCopyFeedback("error");
+    }
+  }, [mediumFilter, pathname, searchQuery, state.selectedSourceId, state.selectedTargetId]);
+
+  useEffect(() => {
+    if (copyFeedback === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setCopyFeedback("idle");
+    }, 1800);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [copyFeedback]);
 
   return (
     <main className="min-h-dvh bg-cosmos-950 pt-14 text-cosmos-100">
@@ -478,7 +540,11 @@ function UniverseContent() {
 
         {/* Bridge Panel — right side */}
         <section className="w-full lg:w-[45%]">
-          <BridgePanel state={state} />
+          <BridgePanel
+            state={state}
+            onCopyLink={handleCopySelectionLink}
+            copyFeedback={copyFeedback}
+          />
         </section>
       </div>
     </main>
