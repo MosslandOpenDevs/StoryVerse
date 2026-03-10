@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+const SHORTCUT_GUIDE_STORAGE_KEY = "storyverse-universe-shortcut-guide-open";
 import { Compass, Keyboard } from "lucide-react";
 import { QueryInput } from "./QueryInput";
 import { SelectedPairBar } from "./SelectedPairBar";
@@ -74,6 +76,25 @@ const SHORTCUT_COPY = {
 export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, promptCopyFeedback }: BridgePanelProps) {
   const shortcutCopy = SHORTCUT_COPY[state.uiLocale] ?? SHORTCUT_COPY.en;
   const [isShortcutGuideOpen, setIsShortcutGuideOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storedValue = window.localStorage.getItem(SHORTCUT_GUIDE_STORAGE_KEY);
+    if (storedValue === "true") {
+      setIsShortcutGuideOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(SHORTCUT_GUIDE_STORAGE_KEY, String(isShortcutGuideOpen));
+  }, [isShortcutGuideOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
