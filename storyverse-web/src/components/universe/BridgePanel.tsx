@@ -16,10 +16,12 @@ type UniverseState = ReturnType<typeof useUniverseState>;
 interface BridgePanelProps {
   state: UniverseState;
   onCopyLink: () => void;
+  onCopyPrompt: () => void;
   copyFeedback: "idle" | "success" | "error";
+  promptCopyFeedback: "idle" | "success" | "error";
 }
 
-export function BridgePanel({ state, onCopyLink, copyFeedback }: BridgePanelProps) {
+export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, promptCopyFeedback }: BridgePanelProps) {
   return (
     <div className="flex h-full flex-col overflow-y-auto max-h-[calc(100dvh-5rem)]">
       {/* Header */}
@@ -45,7 +47,9 @@ export function BridgePanel({ state, onCopyLink, copyFeedback }: BridgePanelProp
           onClear={state.clearSelection}
           onGenerate={state.generateBridge}
           onCopyLink={onCopyLink}
+          onCopyPrompt={onCopyPrompt}
           copyFeedback={copyFeedback}
+          promptCopyFeedback={promptCopyFeedback}
           uiLocale={state.uiLocale}
           isPending={state.isPending}
         />

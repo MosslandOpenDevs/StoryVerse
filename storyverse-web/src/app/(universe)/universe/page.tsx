@@ -124,6 +124,7 @@ function UniverseContent() {
     parseMediumFilter(searchParams.get(MEDIUM_FILTER_PARAM)),
   );
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
+  const [promptCopyFeedback, setPromptCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const [filterLinkCopyFeedback, setFilterLinkCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const state = useUniverseState(catalog, initialSourceId, initialTargetId);
 
@@ -393,6 +394,27 @@ function UniverseContent() {
     }
   }, [mediumFilter, pathname, searchQuery]);
 
+  const handleCopyPrompt = useCallback(async () => {
+    if (!state.selectedSourceId || !state.selectedTargetId) {
+      return;
+    }
+
+    const source = state.catalog.find((story) => story.id === state.selectedSourceId);
+    const target = state.catalog.find((story) => story.id === state.selectedTargetId);
+    if (!source || !target) return;
+
+    const prompt = state.uiLocale === "ko"
+      ? `${source.title}를 ${target.title}와 연결해줘.`
+      : `Connect ${source.title} to ${target.title}.`;
+
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setPromptCopyFeedback("success");
+    } catch {
+      setPromptCopyFeedback("error");
+    }
+  }, [state.catalog, state.selectedSourceId, state.selectedTargetId, state.uiLocale]);
+
   useEffect(() => {
     if (copyFeedback === "idle") {
       return;
@@ -406,6 +428,20 @@ function UniverseContent() {
       window.clearTimeout(timeout);
     };
   }, [copyFeedback]);
+
+  useEffect(() => {
+    if (promptCopyFeedback === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setPromptCopyFeedback("idle");
+    }, 1800);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [promptCopyFeedback]);
 
   useEffect(() => {
     if (filterLinkCopyFeedback === "idle") {
@@ -664,7 +700,9 @@ function UniverseContent() {
           <BridgePanel
             state={state}
             onCopyLink={handleCopySelectionLink}
+            onCopyPrompt={handleCopyPrompt}
             copyFeedback={copyFeedback}
+            promptCopyFeedback={promptCopyFeedback}
           />
         </section>
       </div>

@@ -21,7 +21,9 @@ interface SelectedPairBarProps {
   onClear: () => void;
   onGenerate: () => void;
   onCopyLink: () => void;
+  onCopyPrompt: () => void;
   copyFeedback: "idle" | "success" | "error";
+  promptCopyFeedback: "idle" | "success" | "error";
   uiLocale: "en" | "ko";
   isPending: boolean;
 }
@@ -39,11 +41,13 @@ const LABELS = {
     generate: "Generate Bridge",
     generating: "Generating Bridge…",
     copyLink: "Copy selection link",
+    copyPrompt: "Copy bridge prompt",
     copied: "Link copied",
+    promptCopied: "Prompt copied",
     copyFailed: "Copy failed",
     ready: "Ready",
     incomplete: "Select one more node",
-    shortcuts: "Shortcuts: Enter generate · C copy link · S swap · Esc/Backspace clear",
+    shortcuts: "Shortcuts: Enter generate · C copy link · P copy prompt · S swap · Esc/Backspace clear",
   },
   ko: {
     selectionTitle: "선택된 페어",
@@ -57,11 +61,13 @@ const LABELS = {
     generate: "브리지 생성",
     generating: "브리지 생성 중…",
     copyLink: "선택 링크 복사",
+    copyPrompt: "브리지 프롬프트 복사",
     copied: "링크 복사됨",
+    promptCopied: "프롬프트 복사됨",
     copyFailed: "복사 실패",
     ready: "생성 준비 완료",
     incomplete: "노드를 하나 더 선택하세요",
-    shortcuts: "단축키: Enter 생성 · C 링크 복사 · S 교체 · Esc/Backspace 초기화",
+    shortcuts: "단축키: Enter 생성 · C 링크 복사 · P 프롬프트 복사 · S 교체 · Esc/Backspace 초기화",
   },
 } as const;
 
@@ -73,7 +79,9 @@ export function SelectedPairBar({
   onClear,
   onGenerate,
   onCopyLink,
+  onCopyPrompt,
   copyFeedback,
+  promptCopyFeedback,
   uiLocale,
   isPending,
 }: SelectedPairBarProps) {
@@ -111,6 +119,12 @@ export function SelectedPairBar({
         return;
       }
 
+      if ((event.key === "p" || event.key === "P") && isPairReady) {
+        event.preventDefault();
+        onCopyPrompt();
+        return;
+      }
+
       if ((event.key === "s" || event.key === "S") && isPairReady) {
         event.preventDefault();
         onSwap();
@@ -127,7 +141,7 @@ export function SelectedPairBar({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isPairReady, isPending, onClear, onCopyLink, onGenerate, onSwap, source, target]);
+  }, [isPairReady, isPending, onClear, onCopyLink, onCopyPrompt, onGenerate, onSwap, source, target]);
 
   if (!source && !target) return null;
 
@@ -206,6 +220,21 @@ export function SelectedPairBar({
                 aria-label={copyFeedback === "success" ? labels.copied : copyFeedback === "error" ? labels.copyFailed : labels.copyLink}
               >
                 {copyFeedback === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={onCopyPrompt}
+                disabled={isPending}
+                title={promptCopyFeedback === "success" ? labels.promptCopied : promptCopyFeedback === "error" ? labels.copyFailed : labels.copyPrompt}
+                aria-label={promptCopyFeedback === "success" ? labels.promptCopied : promptCopyFeedback === "error" ? labels.copyFailed : labels.copyPrompt}
+              >
+                {promptCopyFeedback === "success" ? (
                   <Check className="h-3.5 w-3.5" />
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
