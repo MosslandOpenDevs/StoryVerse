@@ -82,7 +82,7 @@ export function BridgePanel({ state, onCopyLink, copyFeedback }: BridgePanelProp
         {/* Bridge result */}
         {state.latestResult && (
           <>
-            <BridgeResultCard result={state.latestResult} />
+            <BridgeResultCard result={state.latestResult} uiLocale={state.uiLocale} />
             <TimelineBeats beats={state.latestResult.scenario.timelineBeats} />
             <RiskBadge risk={state.latestResult.scenario.risk} />
             <NeighborSuggestions
