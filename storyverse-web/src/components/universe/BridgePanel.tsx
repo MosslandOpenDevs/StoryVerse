@@ -38,6 +38,8 @@ const SHORTCUT_COPY = {
     generate: "Generate bridge for selected pair",
     copyLink: "Copy current selection link",
     copyPrompt: "Copy ready-to-run bridge prompt",
+    copyView: "Copy the current filtered universe view",
+    copyPair: "Copy the current selected pair link",
     swap: "Swap source and target",
     reset: "Clear selected pair",
   },
@@ -57,6 +59,8 @@ const SHORTCUT_COPY = {
     generate: "선택된 페어 브리지 생성",
     copyLink: "현재 선택 링크 복사",
     copyPrompt: "바로 실행 가능한 브리지 프롬프트 복사",
+    copyView: "현재 필터 화면 링크 복사",
+    copyPair: "현재 선택 페어 링크 복사",
     swap: "출발/도착 교체",
     reset: "선택 페어 초기화",
   },
@@ -87,7 +91,7 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
               <Keyboard className="h-4 w-4 text-neon-cyan" />
               {shortcutCopy.title}
             </span>
-            <span className="text-[11px] text-cosmos-300/60">/ · ⌘/Ctrl+K · ↑/↓ · Enter</span>
+            <span className="text-[11px] text-cosmos-300/60">/ · ⌘/Ctrl+K · ↑/↓ · L · Shift+L · Enter</span>
           </summary>
           <p className="mt-2 text-[11px] text-cosmos-200/55">{shortcutCopy.summary}</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -96,6 +100,8 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
               <ul className="space-y-1 text-[11px] leading-5 text-cosmos-200/75">
                 <li><span className="text-cosmos-100">/</span>, <span className="text-cosmos-100">⌘/Ctrl+K</span> — {shortcutCopy.focus}</li>
                 <li><span className="text-cosmos-100">Enter</span> — {shortcutCopy.submit}</li>
+                <li><span className="text-cosmos-100">L</span> — {shortcutCopy.copyView}</li>
+                <li><span className="text-cosmos-100">Shift+L</span> — {shortcutCopy.copyPair}</li>
                 <li><span className="text-cosmos-100">Esc</span>, <span className="text-cosmos-100">⌘/Ctrl+L</span> — {shortcutCopy.clearInput}</li>
               </ul>
             </div>

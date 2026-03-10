@@ -34,7 +34,7 @@ const COPY = {
     searchLabel: "Search stories",
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
-    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, and Esc to clear filters.",
+    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, L to copy the filtered view, Shift+L to copy the selected pair when ready, and Esc to clear filters.",
     quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
     copyFilteredView: "Copy filtered view",
@@ -72,7 +72,7 @@ const COPY = {
     searchLabel: "스토리 검색",
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
-    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, Esc로 필터를 지울 수 있어요.",
+    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, L로 필터 화면 링크를 복사하고, Shift+L로 준비된 선택 페어 링크를 복사하고, Esc로 필터를 지울 수 있어요.",
     quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
     copyFilteredView: "필터 화면 링크 복사",
@@ -255,6 +255,66 @@ function UniverseContent() {
         return;
       }
 
+      const copyFilteredViewShortcut =
+        event.key === "l" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey;
+      if (copyFilteredViewShortcut) {
+        event.preventDefault();
+
+        const params = new URLSearchParams();
+        const trimmedQueryForLink = searchQuery.trim();
+        if (trimmedQueryForLink.length > 0) {
+          params.set(SEARCH_QUERY_PARAM, trimmedQueryForLink);
+        }
+        if (mediumFilter !== "All") {
+          params.set(MEDIUM_FILTER_PARAM, mediumFilter);
+        }
+
+        const nextUrl = params.toString().length > 0
+          ? `${window.location.origin}${pathname}?${params.toString()}`
+          : `${window.location.origin}${pathname}`;
+
+        void navigator.clipboard.writeText(nextUrl)
+          .then(() => setFilterLinkCopyFeedback("success"))
+          .catch(() => setFilterLinkCopyFeedback("error"));
+        return;
+      }
+
+      const copySelectionLinkShortcut =
+        event.key === "L" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        event.shiftKey;
+      if (copySelectionLinkShortcut) {
+        if (!state.selectedSourceId || !state.selectedTargetId) {
+          return;
+        }
+
+        event.preventDefault();
+        const params = new URLSearchParams();
+        const trimmedQueryForLink = searchQuery.trim();
+
+        if (trimmedQueryForLink.length > 0) {
+          params.set(SEARCH_QUERY_PARAM, trimmedQueryForLink);
+        }
+        if (mediumFilter !== "All") {
+          params.set(MEDIUM_FILTER_PARAM, mediumFilter);
+        }
+        params.set(SOURCE_PARAM, state.selectedSourceId);
+        params.set(TARGET_PARAM, state.selectedTargetId);
+
+        const nextUrl = `${window.location.origin}${pathname}?${params.toString()}`;
+
+        void navigator.clipboard.writeText(nextUrl)
+          .then(() => setCopyFeedback("success"))
+          .catch(() => setCopyFeedback("error"));
+        return;
+      }
+
       const mediumShortcutMap: Partial<Record<string, StoryMedium | "All">> = {
         a: "All",
         A: "All",
@@ -276,7 +336,7 @@ function UniverseContent() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [hasActiveFilters]);
+  }, [hasActiveFilters, mediumFilter, pathname, searchQuery, state.selectedSourceId, state.selectedTargetId]);
 
   const matchesSearch = useCallback((story: StoryCatalogItem, normalizedQuery: string) => {
     if (normalizedQuery.length === 0) {
