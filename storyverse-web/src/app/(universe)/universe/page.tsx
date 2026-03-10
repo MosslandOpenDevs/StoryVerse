@@ -34,7 +34,7 @@ const COPY = {
     searchLabel: "Search stories",
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
-    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, and Esc to clear filters.",
+    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, and Esc to clear filters.",
     quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
     copyFilteredView: "Copy filtered view",
@@ -72,7 +72,7 @@ const COPY = {
     searchLabel: "스토리 검색",
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
-    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, Esc로 필터를 지울 수 있어요.",
+    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, Esc로 필터를 지울 수 있어요.",
     quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
     copyFilteredView: "필터 화면 링크 복사",
@@ -251,6 +251,23 @@ function UniverseContent() {
         setMediumFilter("All");
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
+        return;
+      }
+
+      const mediumShortcutMap: Partial<Record<string, StoryMedium | "All">> = {
+        a: "All",
+        A: "All",
+        m: "Movie",
+        M: "Movie",
+        h: "History",
+        H: "History",
+        n: "Novel",
+        N: "Novel",
+      };
+      const nextMediumFilter = mediumShortcutMap[event.key];
+      if (nextMediumFilter) {
+        event.preventDefault();
+        setMediumFilter(nextMediumFilter);
       }
     };
 
