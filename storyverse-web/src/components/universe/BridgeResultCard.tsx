@@ -13,20 +13,29 @@ interface BridgeResultCardProps {
 const LABELS = {
   en: {
     copy: "Copy bridge summary",
+    copyFull: "Copy full brief",
     copied: "Copied",
     copyFailed: "Copy failed",
     sourceTarget: "Source → Target",
+    timeline: "Timeline beats",
+    risk: "Risk",
+    neighbors: "Next story hops",
   },
   ko: {
     copy: "브리지 요약 복사",
+    copyFull: "전체 브리프 복사",
     copied: "복사됨",
     copyFailed: "복사 실패",
     sourceTarget: "출발 → 도착",
+    timeline: "타임라인 비트",
+    risk: "리스크",
+    neighbors: "다음 확장 후보",
   },
 } as const;
 
 export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
+  const [copyFullFeedback, setCopyFullFeedback] = useState<"idle" | "success" | "error">("idle");
 
   if (!result) return null;
 
@@ -37,6 +46,28 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
     "",
     result.scenario.bridge,
   ].join("\n");
+  const fullShareText = [
+    result.scenario.title,
+    `${labels.sourceTarget}: ${result.source.title} → ${result.target.title}`,
+    "",
+    result.scenario.bridge,
+    "",
+    `${labels.timeline}:`,
+    ...result.scenario.timelineBeats.map((beat, index) => `${index + 1}. ${beat}`),
+    "",
+    `${labels.risk}: ${result.scenario.risk}`,
+    result.suggestions.length > 0 ? "" : null,
+    result.suggestions.length > 0 ? `${labels.neighbors}:` : null,
+    ...result.suggestions.map((suggestion, index) => `${index + 1}. ${suggestion.title}`),
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
+
+  const resetFeedback = (setter: (value: "idle" | "success" | "error" | ((current: "idle" | "success" | "error") => "idle" | "success" | "error")) => void) => {
+    window.setTimeout(() => {
+      setter((current) => (current === "idle" ? current : "idle"));
+    }, 1500);
+  };
 
   const handleCopy = async () => {
     try {
@@ -46,9 +77,18 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
       setCopyFeedback("error");
     }
 
-    window.setTimeout(() => {
-      setCopyFeedback((current) => (current === "idle" ? current : "idle"));
-    }, 1500);
+    resetFeedback(setCopyFeedback);
+  };
+
+  const handleCopyFull = async () => {
+    try {
+      await navigator.clipboard.writeText(fullShareText);
+      setCopyFullFeedback("success");
+    } catch {
+      setCopyFullFeedback("error");
+    }
+
+    resetFeedback(setCopyFullFeedback);
   };
 
   const copyLabel =
@@ -57,6 +97,12 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
       : copyFeedback === "error"
         ? labels.copyFailed
         : labels.copy;
+  const copyFullLabel =
+    copyFullFeedback === "success"
+      ? labels.copied
+      : copyFullFeedback === "error"
+        ? labels.copyFailed
+        : labels.copyFull;
 
   return (
     <div className="animate-slide-up overflow-hidden rounded-2xl border border-cosmos-200/15 bg-panel/60 backdrop-blur-xl">
@@ -74,22 +120,40 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
                 <span>{result.target.title}</span>
               </div>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="gap-1.5"
-              onClick={handleCopy}
-              title={copyLabel}
-              aria-label={copyLabel}
-            >
-              {copyFeedback === "success" ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              {copyLabel}
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+                onClick={handleCopy}
+                title={copyLabel}
+                aria-label={copyLabel}
+              >
+                {copyFeedback === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copyLabel}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+                onClick={handleCopyFull}
+                title={copyFullLabel}
+                aria-label={copyFullLabel}
+              >
+                {copyFullFeedback === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copyFullLabel}
+              </Button>
+            </div>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-cosmos-200/90">
             {result.scenario.bridge}
