@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Compass, Keyboard } from "lucide-react";
 import { QueryInput } from "./QueryInput";
 import { SelectedPairBar } from "./SelectedPairBar";
@@ -68,6 +69,43 @@ const SHORTCUT_COPY = {
 
 export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, promptCopyFeedback }: BridgePanelProps) {
   const shortcutCopy = SHORTCUT_COPY[state.uiLocale] ?? SHORTCUT_COPY.en;
+  const [isShortcutGuideOpen, setIsShortcutGuideOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditableTarget =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable;
+
+      if (isEditableTarget) {
+        return;
+      }
+
+      const isQuestionMarkShortcut =
+        event.key === "?" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey;
+
+      if (isQuestionMarkShortcut) {
+        event.preventDefault();
+        setIsShortcutGuideOpen((current) => !current);
+        return;
+      }
+
+      if (event.key === "Escape") {
+        setIsShortcutGuideOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto max-h-[calc(100dvh-5rem)]">
@@ -85,13 +123,19 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
       </div>
 
       <div className="space-y-4">
-        <details className="rounded-xl border border-cosmos-200/15 bg-panel/40 p-3 text-xs text-cosmos-200/75 backdrop-blur-xl">
+        <details
+          open={isShortcutGuideOpen}
+          onToggle={(event) => {
+            setIsShortcutGuideOpen(event.currentTarget.open);
+          }}
+          className="rounded-xl border border-cosmos-200/15 bg-panel/40 p-3 text-xs text-cosmos-200/75 backdrop-blur-xl"
+        >
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-cosmos-100 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center gap-2">
               <Keyboard className="h-4 w-4 text-neon-cyan" />
               {shortcutCopy.title}
             </span>
-            <span className="text-[11px] text-cosmos-300/60">/ · ⌘/Ctrl+K · ↑/↓ · L · Shift+L · Enter</span>
+            <span className="text-[11px] text-cosmos-300/60">? · Esc · / · ⌘/Ctrl+K · ↑/↓ · L · Shift+L · Enter</span>
           </summary>
           <p className="mt-2 text-[11px] text-cosmos-200/55">{shortcutCopy.summary}</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
