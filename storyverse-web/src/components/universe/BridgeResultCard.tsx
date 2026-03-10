@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LatestResult } from "./useUniverseState";
@@ -20,6 +20,7 @@ const LABELS = {
     timeline: "Timeline beats",
     risk: "Risk",
     neighbors: "Next story hops",
+    shortcutHint: "Shortcut: press B to copy the full brief",
   },
   ko: {
     copy: "브리지 요약 복사",
@@ -30,38 +31,40 @@ const LABELS = {
     timeline: "타임라인 비트",
     risk: "리스크",
     neighbors: "다음 확장 후보",
+    shortcutHint: "단축키: B 키로 전체 브리프 복사",
   },
 } as const;
 
 export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const [copyFullFeedback, setCopyFullFeedback] = useState<"idle" | "success" | "error">("idle");
-
-  if (!result) return null;
-
   const labels = LABELS[uiLocale] ?? LABELS.en;
-  const shareText = [
-    result.scenario.title,
-    `${result.source.title} → ${result.target.title}`,
-    "",
-    result.scenario.bridge,
-  ].join("\n");
-  const fullShareText = [
-    result.scenario.title,
-    `${labels.sourceTarget}: ${result.source.title} → ${result.target.title}`,
-    "",
-    result.scenario.bridge,
-    "",
-    `${labels.timeline}:`,
-    ...result.scenario.timelineBeats.map((beat, index) => `${index + 1}. ${beat}`),
-    "",
-    `${labels.risk}: ${result.scenario.risk}`,
-    result.suggestions.length > 0 ? "" : null,
-    result.suggestions.length > 0 ? `${labels.neighbors}:` : null,
-    ...result.suggestions.map((suggestion, index) => `${index + 1}. ${suggestion.title}`),
-  ]
-    .filter((line): line is string => Boolean(line))
-    .join("\n");
+  const shareText = result
+    ? [
+        result.scenario.title,
+        `${result.source.title} → ${result.target.title}`,
+        "",
+        result.scenario.bridge,
+      ].join("\n")
+    : "";
+  const fullShareText = result
+    ? [
+        result.scenario.title,
+        `${labels.sourceTarget}: ${result.source.title} → ${result.target.title}`,
+        "",
+        result.scenario.bridge,
+        "",
+        `${labels.timeline}:`,
+        ...result.scenario.timelineBeats.map((beat, index) => `${index + 1}. ${beat}`),
+        "",
+        `${labels.risk}: ${result.scenario.risk}`,
+        result.suggestions.length > 0 ? "" : null,
+        result.suggestions.length > 0 ? `${labels.neighbors}:` : null,
+        ...result.suggestions.map((suggestion, index) => `${index + 1}. ${suggestion.title}`),
+      ]
+        .filter((line): line is string => Boolean(line))
+        .join("\n")
+    : "";
 
   const resetFeedback = (setter: (value: "idle" | "success" | "error" | ((current: "idle" | "success" | "error") => "idle" | "success" | "error")) => void) => {
     window.setTimeout(() => {
@@ -69,7 +72,9 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
     }, 1500);
   };
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
+    if (!shareText) return;
+
     try {
       await navigator.clipboard.writeText(shareText);
       setCopyFeedback("success");
@@ -78,9 +83,11 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
     }
 
     resetFeedback(setCopyFeedback);
-  };
+  }, [shareText]);
 
-  const handleCopyFull = async () => {
+  const handleCopyFull = useCallback(async () => {
+    if (!fullShareText) return;
+
     try {
       await navigator.clipboard.writeText(fullShareText);
       setCopyFullFeedback("success");
@@ -89,7 +96,32 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
     }
 
     resetFeedback(setCopyFullFeedback);
-  };
+  }, [fullShareText]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditable =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable;
+
+      if (isEditable || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      if (event.key === "b" || event.key === "B") {
+        event.preventDefault();
+        void handleCopyFull();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleCopyFull]);
+
+  if (!result) return null;
 
   const copyLabel =
     copyFeedback === "success"
@@ -161,6 +193,9 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
           <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-cosmos-200/40">
             {labels.sourceTarget}
           </div>
+          <p className="mt-2 text-[10px] text-cosmos-300/55">
+            {labels.shortcutHint}
+          </p>
         </div>
       </div>
     </div>
