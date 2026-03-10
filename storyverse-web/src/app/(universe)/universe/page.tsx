@@ -202,6 +202,10 @@ function UniverseContent() {
 
   const trimmedSearchQuery = searchQuery.trim();
   const hasActiveFilters = trimmedSearchQuery.length > 0 || mediumFilter !== "All";
+  const activeQuickFilterTerm =
+    mediumFilter === "All"
+      ? QUICK_FILTERS.find((term) => term.toLowerCase() === trimmedSearchQuery.toLowerCase()) ?? null
+      : null;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -473,24 +477,29 @@ function UniverseContent() {
               </p>
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-cosmos-300/80">
                 <span className="text-cosmos-400/80">{copy.quickFiltersLabel}</span>
-                {QUICK_FILTERS.map((term, index) => (
-                  <button
-                    key={term}
-                    type="button"
-                    className="rounded-full border border-cosmos-300/20 bg-cosmos-950/50 px-2.5 py-1 text-cosmos-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
-                    onClick={() => {
-                      setSearchQuery(term);
-                      setMediumFilter("All");
-                      searchInputRef.current?.focus();
-                      searchInputRef.current?.select();
-                    }}
-                    title={`${QUICK_FILTER_SHORTCUTS[index]} · ${term}`}
-                    aria-label={`${QUICK_FILTER_SHORTCUTS[index]} · ${term}`}
-                  >
-                    <span className="mr-1 text-cosmos-400/80">{QUICK_FILTER_SHORTCUTS[index]}</span>
-                    {term}
-                  </button>
-                ))}
+                {QUICK_FILTERS.map((term, index) => {
+                  const isActive = activeQuickFilterTerm === term;
+
+                  return (
+                    <button
+                      key={term}
+                      type="button"
+                      className={`rounded-full border px-2.5 py-1 text-cosmos-100 transition ${isActive ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-50 shadow-[0_0_0_1px_rgba(103,232,249,0.18)]" : "border-cosmos-300/20 bg-cosmos-950/50 hover:border-cyan-300/40 hover:bg-cyan-300/10"}`}
+                      onClick={() => {
+                        setSearchQuery(term);
+                        setMediumFilter("All");
+                        searchInputRef.current?.focus();
+                        searchInputRef.current?.select();
+                      }}
+                      title={`${QUICK_FILTER_SHORTCUTS[index]} · ${term}`}
+                      aria-label={`${QUICK_FILTER_SHORTCUTS[index]} · ${term}`}
+                      aria-pressed={isActive}
+                    >
+                      <span className={`mr-1 ${isActive ? "text-cyan-100/90" : "text-cosmos-400/80"}`}>{QUICK_FILTER_SHORTCUTS[index]}</span>
+                      {term}
+                    </button>
+                  );
+                })}
               </div>
               <p className="text-[11px] text-cosmos-400/70">
                 {copy.searchShortcutHelp}
