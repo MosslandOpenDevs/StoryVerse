@@ -231,6 +231,16 @@ function UniverseContent() {
         return;
       }
 
+      if (isEditable) {
+        if (event.key === "Escape") {
+          const input = searchInputRef.current;
+          if (document.activeElement === input && input && input.value.length === 0 && mediumFilter === "All") {
+            input.blur();
+          }
+        }
+        return;
+      }
+
       if (event.key === "Escape") {
         const isSearchFocused = document.activeElement === searchInputRef.current;
         if (!isSearchFocused && !hasActiveFilters) {
