@@ -41,6 +41,8 @@ const SHORTCUT_COPY = {
     copyPrompt: "Copy ready-to-run bridge prompt",
     copyView: "Copy the current filtered universe view",
     copyPair: "Copy the current selected pair link",
+    copyTimeline: "Copy timeline beats from the latest bridge",
+    copyNextHops: "Copy next story hops from the latest bridge",
     swap: "Swap source and target",
     reset: "Clear selected pair",
   },
@@ -62,6 +64,8 @@ const SHORTCUT_COPY = {
     copyPrompt: "바로 실행 가능한 브리지 프롬프트 복사",
     copyView: "현재 필터 화면 링크 복사",
     copyPair: "현재 선택 페어 링크 복사",
+    copyTimeline: "최근 브리지의 타임라인 비트 복사",
+    copyNextHops: "최근 브리지의 다음 확장 후보 복사",
     swap: "출발/도착 교체",
     reset: "선택 페어 초기화",
   },
@@ -164,6 +168,8 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
                 <li><span className="text-cosmos-100">Enter</span> — {shortcutCopy.generate}</li>
                 <li><span className="text-cosmos-100">C</span> — {shortcutCopy.copyLink}</li>
                 <li><span className="text-cosmos-100">P</span> — {shortcutCopy.copyPrompt}</li>
+                <li><span className="text-cosmos-100">T</span> — {shortcutCopy.copyTimeline}</li>
+                <li><span className="text-cosmos-100">N</span> — {shortcutCopy.copyNextHops}</li>
                 <li><span className="text-cosmos-100">S</span> — {shortcutCopy.swap}</li>
                 <li><span className="text-cosmos-100">Esc</span>, <span className="text-cosmos-100">⌫</span> — {shortcutCopy.reset}</li>
               </ul>

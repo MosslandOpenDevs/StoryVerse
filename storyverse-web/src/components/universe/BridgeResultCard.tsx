@@ -14,30 +14,38 @@ const LABELS = {
   en: {
     copy: "Copy bridge summary",
     copyFull: "Copy full brief",
+    copyTimeline: "Copy timeline beats",
+    copyNeighbors: "Copy next hops",
     copied: "Copied",
     copyFailed: "Copy failed",
     sourceTarget: "Source → Target",
     timeline: "Timeline beats",
     risk: "Risk",
     neighbors: "Next story hops",
-    shortcutHint: "Shortcut: press B to copy the full brief",
+    shortcutHint: "Shortcuts: B full brief · T timeline · N next hops",
+    noNeighbors: "No next hops yet",
   },
   ko: {
     copy: "브리지 요약 복사",
     copyFull: "전체 브리프 복사",
+    copyTimeline: "타임라인 비트 복사",
+    copyNeighbors: "다음 확장 후보 복사",
     copied: "복사됨",
     copyFailed: "복사 실패",
     sourceTarget: "출발 → 도착",
     timeline: "타임라인 비트",
     risk: "리스크",
     neighbors: "다음 확장 후보",
-    shortcutHint: "단축키: B 키로 전체 브리프 복사",
+    shortcutHint: "단축키: B 전체 브리프 · T 타임라인 · N 다음 후보",
+    noNeighbors: "아직 다음 후보가 없어요",
   },
 } as const;
 
 export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const [copyFullFeedback, setCopyFullFeedback] = useState<"idle" | "success" | "error">("idle");
+  const [copyTimelineFeedback, setCopyTimelineFeedback] = useState<"idle" | "success" | "error">("idle");
+  const [copyNeighborsFeedback, setCopyNeighborsFeedback] = useState<"idle" | "success" | "error">("idle");
   const labels = LABELS[uiLocale] ?? LABELS.en;
   const shareText = result
     ? [
@@ -45,6 +53,22 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
         `${result.source.title} → ${result.target.title}`,
         "",
         result.scenario.bridge,
+      ].join("\n")
+    : "";
+  const timelineShareText = result
+    ? [
+        result.scenario.title,
+        `${labels.timeline}:`,
+        ...result.scenario.timelineBeats.map((beat, index) => `${index + 1}. ${beat}`),
+      ].join("\n")
+    : "";
+  const neighborsShareText = result
+    ? [
+        result.scenario.title,
+        `${labels.neighbors}:`,
+        ...(result.suggestions.length > 0
+          ? result.suggestions.map((suggestion, index) => `${index + 1}. ${suggestion.title}`)
+          : [labels.noNeighbors]),
       ].join("\n")
     : "";
   const fullShareText = result
@@ -58,9 +82,8 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
         ...result.scenario.timelineBeats.map((beat, index) => `${index + 1}. ${beat}`),
         "",
         `${labels.risk}: ${result.scenario.risk}`,
-        result.suggestions.length > 0 ? "" : null,
-        result.suggestions.length > 0 ? `${labels.neighbors}:` : null,
-        ...result.suggestions.map((suggestion, index) => `${index + 1}. ${suggestion.title}`),
+        "",
+        neighborsShareText,
       ]
         .filter((line): line is string => Boolean(line))
         .join("\n")
@@ -98,6 +121,32 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
     resetFeedback(setCopyFullFeedback);
   }, [fullShareText]);
 
+  const handleCopyTimeline = useCallback(async () => {
+    if (!timelineShareText) return;
+
+    try {
+      await navigator.clipboard.writeText(timelineShareText);
+      setCopyTimelineFeedback("success");
+    } catch {
+      setCopyTimelineFeedback("error");
+    }
+
+    resetFeedback(setCopyTimelineFeedback);
+  }, [timelineShareText]);
+
+  const handleCopyNeighbors = useCallback(async () => {
+    if (!neighborsShareText) return;
+
+    try {
+      await navigator.clipboard.writeText(neighborsShareText);
+      setCopyNeighborsFeedback("success");
+    } catch {
+      setCopyNeighborsFeedback("error");
+    }
+
+    resetFeedback(setCopyNeighborsFeedback);
+  }, [neighborsShareText]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -114,12 +163,24 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
       if (event.key === "b" || event.key === "B") {
         event.preventDefault();
         void handleCopyFull();
+        return;
+      }
+
+      if (event.key === "t" || event.key === "T") {
+        event.preventDefault();
+        void handleCopyTimeline();
+        return;
+      }
+
+      if (event.key === "n" || event.key === "N") {
+        event.preventDefault();
+        void handleCopyNeighbors();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleCopyFull]);
+  }, [handleCopyFull, handleCopyNeighbors, handleCopyTimeline]);
 
   if (!result) return null;
 
@@ -135,6 +196,18 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
       : copyFullFeedback === "error"
         ? labels.copyFailed
         : labels.copyFull;
+  const copyTimelineLabel =
+    copyTimelineFeedback === "success"
+      ? labels.copied
+      : copyTimelineFeedback === "error"
+        ? labels.copyFailed
+        : labels.copyTimeline;
+  const copyNeighborsLabel =
+    copyNeighborsFeedback === "success"
+      ? labels.copied
+      : copyNeighborsFeedback === "error"
+        ? labels.copyFailed
+        : labels.copyNeighbors;
 
   return (
     <div className="animate-slide-up overflow-hidden rounded-2xl border border-cosmos-200/15 bg-panel/60 backdrop-blur-xl">
@@ -184,6 +257,38 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
                   <Copy className="h-3.5 w-3.5" />
                 )}
                 {copyFullLabel}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+                onClick={handleCopyTimeline}
+                title={copyTimelineLabel}
+                aria-label={copyTimelineLabel}
+              >
+                {copyTimelineFeedback === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copyTimelineLabel}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+                onClick={handleCopyNeighbors}
+                title={copyNeighborsLabel}
+                aria-label={copyNeighborsLabel}
+              >
+                {copyNeighborsFeedback === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copyNeighborsLabel}
               </Button>
             </div>
           </div>
