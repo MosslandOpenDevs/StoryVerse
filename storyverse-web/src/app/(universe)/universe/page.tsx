@@ -62,6 +62,10 @@ const COPY = {
     showingPrefix: "Showing",
     filtersActive: "Filters active",
     selectedStoriesPreserved: "Selected stories preserved",
+    recentPairsLabel: "Recent pairs",
+    recentPairsEmpty: "No recent pairs yet. Generate a bridge to pin one here.",
+    recentPairsResume: "Resume",
+    recentPairsClearAll: "Clear all",
     loadingUniverse: "Loading universe...",
     mediumLabels: {
       All: "All",
@@ -112,6 +116,10 @@ const COPY = {
     showingPrefix: "표시 중",
     filtersActive: "필터 적용 중",
     selectedStoriesPreserved: "선택 스토리 유지됨",
+    recentPairsLabel: "최근 페어",
+    recentPairsEmpty: "아직 최근 페어가 없어요. 브리지를 한 번 생성하면 여기에 고정돼요.",
+    recentPairsResume: "이어보기",
+    recentPairsClearAll: "전체 지우기",
     loadingUniverse: "유니버스 로딩 중...",
     mediumLabels: {
       All: "전체",
@@ -423,6 +431,15 @@ function UniverseContent() {
 
   const copy = COPY[state.uiLocale] ?? COPY.en;
   const visibleStoryIds = useMemo(() => new Set(filteredCatalog.map((story) => story.id)), [filteredCatalog]);
+  const validRecentPairs = useMemo(
+    () =>
+      state.recentPairs.filter((pair) => {
+        const source = catalog.find((story) => story.id === pair.sourceId);
+        const target = catalog.find((story) => story.id === pair.targetId);
+        return Boolean(source && target && source.id !== target.id);
+      }).slice(0, 3),
+    [catalog, state.recentPairs],
+  );
   const hiddenSourceStory = useMemo(
     () =>
       state.selectedSourceId && !visibleStoryIds.has(state.selectedSourceId)
@@ -783,70 +800,102 @@ function UniverseContent() {
               </button>
             </div>
           ) : null}
-          {(selectedSourceStory || selectedTargetStory) ? (
-            <div className="mb-3 flex flex-col gap-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-3 text-xs text-cyan-50/95 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-cyan-100/70">{copy.selectedPairLabel}</span>
-                <span className={`rounded-full border px-2.5 py-1 font-medium ${hasReadySelection ? "border-emerald-200/35 bg-emerald-300/15 text-emerald-50" : "border-amber-200/30 bg-amber-300/10 text-amber-50"}`}>
-                  {hasReadySelection ? copy.selectedPairReady : copy.selectedPairPending}
-                </span>
-                <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
-                  {selectedSourceStory?.title ?? copy.pickSource}
-                </span>
-                <span className="text-cyan-100/60">→</span>
-                <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
-                  {selectedTargetStory?.title ?? copy.pickTarget}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => state.generateBridge()}
-                  disabled={!hasReadySelection || state.isPending}
-                  className="rounded-full border border-cyan-200/40 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {copy.generateBridgeCta}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleCopySelectionLink();
-                  }}
-                  disabled={!hasReadySelection}
-                  className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {copyFeedback === "success" ? copy.pairLinkCopied : copyFeedback === "error" ? copy.copyFilteredViewFailed : copy.copyPairLink}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleCopyPrompt();
-                  }}
-                  disabled={!hasReadySelection}
-                  className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {promptCopyFeedback === "success"
-                    ? copy.bridgePromptCopied
-                    : promptCopyFeedback === "error"
-                      ? copy.copyFilteredViewFailed
-                      : copy.copyPrompt}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => state.swapSelection()}
-                  disabled={!hasReadySelection || state.isPending}
-                  className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {copy.swapPair}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => state.clearSelection()}
-                  disabled={!selectedSourceStory && !selectedTargetStory}
-                  className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {copy.clearSelection}
-                </button>
+          {(selectedSourceStory || selectedTargetStory || validRecentPairs.length > 0) ? (
+            <div className="mb-3 flex flex-col gap-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-3 text-xs text-cyan-50/95">
+              {(selectedSourceStory || selectedTargetStory) ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-cyan-100/70">{copy.selectedPairLabel}</span>
+                    <span className={`rounded-full border px-2.5 py-1 font-medium ${hasReadySelection ? "border-emerald-200/35 bg-emerald-300/15 text-emerald-50" : "border-amber-200/30 bg-amber-300/10 text-amber-50"}`}>
+                      {hasReadySelection ? copy.selectedPairReady : copy.selectedPairPending}
+                    </span>
+                    <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
+                      {selectedSourceStory?.title ?? copy.pickSource}
+                    </span>
+                    <span className="text-cyan-100/60">→</span>
+                    <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
+                      {selectedTargetStory?.title ?? copy.pickTarget}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => state.generateBridge()}
+                      disabled={!hasReadySelection || state.isPending}
+                      className="rounded-full border border-cyan-200/40 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {copy.generateBridgeCta}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleCopySelectionLink();
+                      }}
+                      disabled={!hasReadySelection}
+                      className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {copyFeedback === "success" ? copy.pairLinkCopied : copyFeedback === "error" ? copy.copyFilteredViewFailed : copy.copyPairLink}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleCopyPrompt();
+                      }}
+                      disabled={!hasReadySelection}
+                      className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {promptCopyFeedback === "success"
+                        ? copy.bridgePromptCopied
+                        : promptCopyFeedback === "error"
+                          ? copy.copyFilteredViewFailed
+                          : copy.copyPrompt}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => state.swapSelection()}
+                      disabled={!hasReadySelection || state.isPending}
+                      className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {copy.swapPair}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => state.clearSelection()}
+                      disabled={!selectedSourceStory && !selectedTargetStory}
+                      className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {copy.clearSelection}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-2 border-t border-cyan-200/10 pt-3">
+                <span className="text-cyan-100/70">{copy.recentPairsLabel}</span>
+                {validRecentPairs.length > 0 ? (
+                  validRecentPairs.map((pair, index) => (
+                    <button
+                      key={`${pair.sourceId}:${pair.targetId}:${pair.savedAt}`}
+                      type="button"
+                      onClick={() => state.resumeRecentPair(pair)}
+                      className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10"
+                      title={`${copy.recentPairsResume} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                    >
+                      <span className="mr-1 text-cyan-200/60">#{index + 1}</span>
+                      {pair.sourceTitle} → {pair.targetTitle}
+                    </button>
+                  ))
+                ) : (
+                  <span className="text-cyan-100/60">{copy.recentPairsEmpty}</span>
+                )}
+                {validRecentPairs.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => state.clearRecentPairs()}
+                    className="rounded-full border border-cyan-200/15 px-2.5 py-1 text-[11px] font-medium text-cyan-100/80 transition hover:bg-cyan-200/10"
+                  >
+                    {copy.recentPairsClearAll}
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}
