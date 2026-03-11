@@ -88,12 +88,15 @@ const RECENT_PAIR_COPY = {
   en: {
     title: "Recent bridge pairs",
     summary: "Resume a recent source → target pair without searching again.",
+    keyboardHint: "1-9 resume · Shift+1-9 remove · Alt+1-9 copy · Alt+Shift+1-9 open",
     clearAll: "Clear all",
+    clearAllConfirm: (count: number) => `Clear all ${count} recent bridge pairs?`,
     remove: "Remove recent pair",
     copyLink: "Copy pair link",
     copiedLink: "Pair link copied",
     copyFailed: "Copy failed",
     openLink: "Open pair in new tab",
+    shortcutLabel: "Shortcut",
     empty: "Recent bridge pairs will appear here after you generate one.",
     localeLabel: "Locale",
     mediumLabel: "Mediums",
@@ -102,12 +105,15 @@ const RECENT_PAIR_COPY = {
   ko: {
     title: "최근 브리지 페어",
     summary: "방금 쓴 source → target 페어를 다시 검색하지 않고 바로 복구해요.",
+    keyboardHint: "1-9 복구 · Shift+1-9 삭제 · Alt+1-9 복사 · Alt+Shift+1-9 새 탭 열기",
     clearAll: "전체 지우기",
+    clearAllConfirm: (count: number) => `최근 브리지 페어 ${count}개를 모두 지울까요?`,
     remove: "최근 페어 삭제",
     copyLink: "페어 링크 복사",
     copiedLink: "페어 링크 복사됨",
     copyFailed: "복사 실패",
     openLink: "새 탭에서 페어 열기",
+    shortcutLabel: "단축키",
     empty: "브리지를 한 번 생성하면 최근 페어가 여기에 쌓여요.",
     localeLabel: "로케일",
     mediumLabel: "매체",
@@ -389,14 +395,28 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
             <button
               type="button"
               className="text-[10px] uppercase tracking-wide text-cosmos-300/70 transition-colors hover:text-cosmos-100 disabled:opacity-40"
-              onClick={state.clearRecentPairs}
+              onClick={() => {
+                if (validRecentPairs.length <= 1) {
+                  state.clearRecentPairs();
+                  return;
+                }
+
+                const shouldClear = window.confirm(recentPairCopy.clearAllConfirm(validRecentPairs.length));
+                if (!shouldClear) {
+                  return;
+                }
+
+                state.clearRecentPairs();
+              }}
               disabled={validRecentPairs.length === 0}
             >
               {recentPairCopy.clearAll}
             </button>
           </div>
           {validRecentPairs.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <>
+              <p className="mt-3 text-[10px] text-cosmos-300/60">{recentPairCopy.keyboardHint}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
               {validRecentPairs.map((pair, index) => {
                 const source = catalogById.get(pair.sourceId);
                 const target = catalogById.get(pair.targetId);
@@ -425,6 +445,14 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
                       <div className="truncate">
                         <span className="mr-1 text-cosmos-400/80">#{index + 1}</span>
                         {pair.sourceTitle} → {pair.targetTitle}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-cosmos-300/70">
+                        <span className="rounded-full border border-neon-cyan/40 px-1.5 py-0.5 text-neon-cyan/90">
+                          {recentPairCopy.shortcutLabel} {index + 1}
+                        </span>
+                        <span>Shift+{index + 1}</span>
+                        <span>Alt+{index + 1}</span>
+                        <span>Alt+Shift+{index + 1}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-cosmos-300/60">
                         <span className="rounded-full border border-cosmos-700/60 px-1.5 py-0.5">{localeLabel}</span>
@@ -473,6 +501,7 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
                 );
               })}
             </div>
+            </>
           ) : (
             <p className="mt-3 text-[11px] text-cosmos-300/60">{recentPairCopy.empty}</p>
           )}
