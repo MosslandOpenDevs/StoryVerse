@@ -61,7 +61,12 @@ const RECENT_QUERIES_KEY = "storyverse:recent-queries";
 const RECENT_QUERIES_LIMIT = 5;
 const RECENT_PAIRS_KEY = "storyverse:recent-pairs";
 const RECENT_PAIRS_LIMIT = 5;
+const ACTIVE_SELECTION_KEY = "storyverse:active-selection";
 export const MAX_QUERY_LENGTH = 240;
+
+function isUiLocale(value: unknown): value is ResolutionMetadata["locale"] {
+  return value === "en" || value === "ko";
+}
 
 function normalizeQuery(rawQuery: string): string {
   return rawQuery.trim().slice(0, MAX_QUERY_LENGTH);
@@ -171,6 +176,63 @@ export function useUniverseState(
   const [latestResult, setLatestResult] = useState<LatestResult>(null);
   const [isPending, startTransition] = useTransition();
   const initialPairAutoRunRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (initialSourceId || initialTargetId) {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(ACTIVE_SELECTION_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        sourceId?: unknown;
+        targetId?: unknown;
+        locale?: unknown;
+      };
+      const nextSourceId = typeof parsed.sourceId === "string" ? parsed.sourceId : "";
+      const nextTargetId = typeof parsed.targetId === "string" ? parsed.targetId : "";
+      const nextLocale = isUiLocale(parsed.locale) ? parsed.locale : null;
+      const hasValidSource = nextSourceId ? Boolean(findCatalogNodeIn(catalog, nextSourceId)) : true;
+      const hasValidTarget = nextTargetId ? Boolean(findCatalogNodeIn(catalog, nextTargetId)) : true;
+
+      if (!hasValidSource || !hasValidTarget || (nextSourceId && nextSourceId === nextTargetId)) {
+        window.localStorage.removeItem(ACTIVE_SELECTION_KEY);
+        return;
+      }
+
+      setSelectedSourceId(nextSourceId);
+      setSelectedTargetId(nextTargetId);
+      if (nextLocale) {
+        setUiLocale(nextLocale);
+      }
+    } catch {
+      // Ignore malformed local storage.
+    }
+  }, [catalog, initialSourceId, initialTargetId]);
+
+  useEffect(() => {
+    try {
+      if (!selectedSourceId && !selectedTargetId) {
+        window.localStorage.removeItem(ACTIVE_SELECTION_KEY);
+        return;
+      }
+
+      window.localStorage.setItem(
+        ACTIVE_SELECTION_KEY,
+        JSON.stringify({
+          sourceId: selectedSourceId,
+          targetId: selectedTargetId,
+          locale: uiLocale,
+        }),
+      );
+    } catch {
+      // Ignore write failures.
+    }
+  }, [selectedSourceId, selectedTargetId, uiLocale]);
 
   // Load recent queries from localStorage
   useEffect(() => {
