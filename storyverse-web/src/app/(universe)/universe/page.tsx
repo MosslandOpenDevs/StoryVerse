@@ -66,6 +66,7 @@ const COPY = {
     recentPairsLabel: "Recent pairs",
     recentPairsEmpty: "No recent pairs yet. Generate a bridge to pin one here.",
     recentPairsResume: "Resume",
+    recentPairsActive: "Active",
     recentPairsRemove: "Remove pair",
     recentPairsClearAll: "Clear all",
     loadingUniverse: "Loading universe...",
@@ -122,6 +123,7 @@ const COPY = {
     recentPairsLabel: "최근 페어",
     recentPairsEmpty: "아직 최근 페어가 없어요. 브리지를 한 번 생성하면 여기에 고정돼요.",
     recentPairsResume: "이어보기",
+    recentPairsActive: "Active",
     recentPairsRemove: "페어 제거",
     recentPairsClearAll: "전체 지우기",
     loadingUniverse: "유니버스 로딩 중...",
@@ -909,7 +911,12 @@ function UniverseContent() {
               <div className="flex flex-wrap items-center gap-2 border-t border-cyan-200/10 pt-3">
                 <span className="text-cyan-100/70">{copy.recentPairsLabel}</span>
                 {validRecentPairs.length > 0 ? (
-                  validRecentPairs.map((pair, index) => (
+                  validRecentPairs.map((pair, index) => {
+                    const isActiveRecentPair =
+                      state.selectedSourceId === pair.sourceId &&
+                      state.selectedTargetId === pair.targetId;
+
+                    return (
                     <div
                       key={`${pair.sourceId}:${pair.targetId}:${pair.savedAt}`}
                       className="flex items-center overflow-hidden rounded-full border border-cyan-200/20 bg-cosmos-950/40 text-[11px] font-medium text-cyan-50"
@@ -917,11 +924,17 @@ function UniverseContent() {
                       <button
                         type="button"
                         onClick={() => state.resumeRecentPair(pair)}
-                        className="px-2.5 py-1 transition hover:bg-cyan-200/10"
-                        title={`${copy.recentPairsResume} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                        disabled={isActiveRecentPair}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 transition hover:bg-cyan-200/10 disabled:cursor-default disabled:bg-emerald-300/15 disabled:text-emerald-50"
+                        title={`${isActiveRecentPair ? copy.recentPairsActive : copy.recentPairsResume} ${pair.sourceTitle} → ${pair.targetTitle}`}
                       >
                         <span className="mr-1 text-cyan-200/60">#{index + 1}</span>
                         {pair.sourceTitle} → {pair.targetTitle}
+                        {isActiveRecentPair ? (
+                          <span className="rounded-full border border-emerald-200/35 bg-emerald-300/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-50">
+                            {copy.recentPairsActive}
+                          </span>
+                        ) : null}
                       </button>
                       <button
                         type="button"
@@ -939,8 +952,8 @@ function UniverseContent() {
                         target="_blank"
                         rel="noreferrer"
                         className="border-l border-cyan-200/10 px-2 py-1 text-cyan-100/75 transition hover:bg-cyan-200/10 hover:text-cyan-50"
-                        aria-label={`${copy.copyPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
-                        title={`${copy.recentPairsResume} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                        aria-label={`${copy.openPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                        title={`${copy.openPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
                       >
                         ↗
                       </a>
@@ -954,7 +967,8 @@ function UniverseContent() {
                         <X className="h-3 w-3" />
                       </button>
                     </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <span className="text-cyan-100/60">{copy.recentPairsEmpty}</span>
                 )}
