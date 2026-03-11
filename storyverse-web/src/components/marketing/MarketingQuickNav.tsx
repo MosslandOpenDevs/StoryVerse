@@ -21,6 +21,15 @@ const SECTIONS: MarketingSection[] = [
   { id: "launch-storyverse", label: "Launch", hint: "Jump into universe" },
 ];
 
+function getSectionByShortcutKey(shortcutKey: string) {
+  const shortcutIndex = Number.parseInt(shortcutKey, 10) - 1;
+  if (Number.isNaN(shortcutIndex) || shortcutIndex < 0 || shortcutIndex >= SECTIONS.length) {
+    return null;
+  }
+
+  return SECTIONS[shortcutIndex] ?? null;
+}
+
 function buildAnchorUrl(anchorId: string) {
   if (typeof window === "undefined") {
     return `#${anchorId}`;
@@ -225,7 +234,7 @@ export function MarketingQuickNav() {
         return;
       }
 
-      if (event.key === "[") {
+      if (event.key === "[" || event.key.toLowerCase() === "j") {
         event.preventDefault();
         const previousSection = SECTIONS[Math.max(0, activeIndex - 1)];
         if (!previousSection || !canJumpPrev || !jumpToSection(previousSection.id)) return;
@@ -233,11 +242,19 @@ export function MarketingQuickNav() {
         return;
       }
 
-      if (event.key === "]") {
+      if (event.key === "]" || event.key.toLowerCase() === "k") {
         event.preventDefault();
         const nextSection = SECTIONS[Math.min(SECTIONS.length - 1, activeIndex + 1)];
         if (!nextSection || !canJumpNext || !jumpToSection(nextSection.id)) return;
         setActiveId(nextSection.id);
+        return;
+      }
+
+      const shortcutSection = getSectionByShortcutKey(event.key);
+      if (shortcutSection) {
+        event.preventDefault();
+        if (!jumpToSection(shortcutSection.id)) return;
+        setActiveId(shortcutSection.id);
         return;
       }
 
@@ -355,9 +372,14 @@ export function MarketingQuickNav() {
                     : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
                 )}
                 aria-pressed={isActive}
-                title={`${section.label} · ${section.hint}`}
+                title={`${section.label} · ${section.hint} · press ${SECTIONS.findIndex((candidate) => candidate.id === section.id) + 1}`}
               >
-                <span>{section.label}</span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-current/20 px-1 text-[10px] font-semibold leading-none text-cosmos-200/55">
+                    {SECTIONS.findIndex((candidate) => candidate.id === section.id) + 1}
+                  </span>
+                  <span>{section.label}</span>
+                </span>
                 <span className="hidden text-[10px] text-cosmos-200/45 sm:inline">{section.hint}</span>
               </button>
             );
@@ -402,7 +424,7 @@ export function MarketingQuickNav() {
           </span>
 
           <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
-            [ ] / Home / End / C / O / R
+            1-4 / [ ] / J K / Home / End / C / O / R
           </span>
 
           <button
