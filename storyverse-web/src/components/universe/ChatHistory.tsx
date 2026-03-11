@@ -12,6 +12,8 @@ interface ChatHistoryProps {
 
 const QUERY_LOG_STORAGE_KEY = "storyverse-universe-query-log-open";
 
+type RoleFilter = "all" | "user" | "assistant";
+
 const LABELS = {
   en: {
     title: "Query Log",
@@ -21,6 +23,8 @@ const LABELS = {
     shortcutHint: "Tip: keep this open to review recent bridge runs.",
     assistant: "assistant",
     user: "user",
+    all: "all",
+    visible: "visible",
   },
   ko: {
     title: "질의 로그",
@@ -30,12 +34,15 @@ const LABELS = {
     shortcutHint: "팁: 최근 브리지 실행 흐름을 보려면 열어둔 채로 쓰세요.",
     assistant: "assistant",
     user: "user",
+    all: "전체",
+    visible: "표시 중",
   },
 } as const;
 
 export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const labels = LABELS[uiLocale] ?? LABELS.en;
 
   useEffect(() => {
@@ -69,13 +76,25 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
     return () => window.clearTimeout(timeout);
   }, [copyFeedback]);
 
+  const historyMessages = useMemo(() => messages.slice(1), [messages]);
+  const visibleMessages = useMemo(
+    () => historyMessages.filter((message) => roleFilter === "all" || message.role === roleFilter),
+    [historyMessages, roleFilter],
+  );
+  const userMessageCount = useMemo(
+    () => historyMessages.filter((message) => message.role === "user").length,
+    [historyMessages],
+  );
+  const assistantMessageCount = useMemo(
+    () => historyMessages.filter((message) => message.role === "assistant").length,
+    [historyMessages],
+  );
   const historyText = useMemo(
     () =>
-      messages
-        .slice(1)
+      visibleMessages
         .map((message, index) => `${index + 1}. [${message.role}] ${message.content}`)
         .join("\n\n"),
-    [messages],
+    [visibleMessages],
   );
 
   const copyLabel =
@@ -98,7 +117,7 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
         >
           <div>
             <span className="font-display text-xs tracking-wider text-cosmos-200/60 uppercase">
-              {labels.title} ({messages.length - 1})
+              {labels.title} ({historyMessages.length})
             </span>
             <p className="mt-1 text-[11px] text-cosmos-300/45">{labels.shortcutHint}</p>
           </div>
@@ -133,28 +152,68 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
       </div>
 
       {isOpen && (
-        <div className="max-h-64 space-y-2 overflow-y-auto border-t border-cosmos-200/10 p-4">
-          {messages.slice(1).map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "rounded-lg px-3 py-2 text-sm leading-relaxed",
-                message.role === "assistant"
-                  ? "bg-cosmos-800/50 text-cosmos-200/80"
-                  : "bg-neon-violet/10 text-cosmos-100",
-              )}
-            >
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] tracking-wider text-cosmos-200/40 uppercase">
-                {message.role === "assistant" ? (
-                  <Bot className="h-3 w-3 text-neon-cyan/60" />
-                ) : (
-                  <Sparkles className="h-3 w-3 text-neon-rose/60" />
-                )}
-                {message.role === "assistant" ? labels.assistant : labels.user}
+        <div className="border-t border-cosmos-200/10 p-4">
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-cosmos-200/65">
+            {(["all", "user", "assistant"] as const).map((filter) => {
+              const isActive = roleFilter === filter;
+              const count =
+                filter === "all"
+                  ? historyMessages.length
+                  : filter === "user"
+                    ? userMessageCount
+                    : assistantMessageCount;
+              const label = filter === "all" ? labels.all : labels[filter];
+
+              return (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setRoleFilter(filter)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 transition-colors",
+                    isActive
+                      ? "border-cosmos-200/40 bg-cosmos-200/10 text-cosmos-50"
+                      : "border-cosmos-200/10 text-cosmos-200/65 hover:border-cosmos-200/25 hover:text-cosmos-100",
+                  )}
+                  aria-pressed={isActive}
+                >
+                  {label} {count}
+                </button>
+              );
+            })}
+            <span className="rounded-full border border-cosmos-200/10 px-2.5 py-1 text-cosmos-300/55">
+              {labels.visible} {visibleMessages.length}
+            </span>
+          </div>
+          <div className="max-h-64 space-y-2 overflow-y-auto">
+            {visibleMessages.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-cosmos-200/10 px-3 py-4 text-xs text-cosmos-300/55">
+                {labels.visible} 0
               </div>
-              <p className="whitespace-pre-wrap text-xs">{message.content}</p>
-            </div>
-          ))}
+            ) : (
+              visibleMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm leading-relaxed",
+                    message.role === "assistant"
+                      ? "bg-cosmos-800/50 text-cosmos-200/80"
+                      : "bg-neon-violet/10 text-cosmos-100",
+                  )}
+                >
+                  <div className="mb-1 flex items-center gap-1.5 text-[10px] tracking-wider text-cosmos-200/40 uppercase">
+                    {message.role === "assistant" ? (
+                      <Bot className="h-3 w-3 text-neon-cyan/60" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 text-neon-rose/60" />
+                    )}
+                    {message.role === "assistant" ? labels.assistant : labels.user}
+                  </div>
+                  <p className="whitespace-pre-wrap text-xs">{message.content}</p>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
