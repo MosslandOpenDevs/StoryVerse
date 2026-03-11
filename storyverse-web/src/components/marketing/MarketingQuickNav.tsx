@@ -51,6 +51,10 @@ function openSectionLink(anchorId: string) {
   return true;
 }
 
+async function copySectionLink(anchorId: string) {
+  await navigator.clipboard.writeText(buildAnchorUrl(anchorId));
+}
+
 export function MarketingQuickNav() {
   const [activeId, setActiveId] = useState<string>(SECTIONS[0]?.id ?? "hero");
   const [resumeId, setResumeId] = useState<string | null>(null);
@@ -66,6 +70,7 @@ export function MarketingQuickNav() {
   const activePositionLabel = activeIndex >= 0 ? `${activeIndex + 1}/${SECTIONS.length}` : `1/${SECTIONS.length}`;
   const canJumpPrev = activeIndex > 0;
   const canJumpNext = activeIndex >= 0 && activeIndex < SECTIONS.length - 1;
+  const progressPercent = SECTIONS.length > 1 && activeIndex >= 0 ? Math.round((activeIndex / (SECTIONS.length - 1)) * 100) : 100;
   const resumeSection = useMemo(
     () => (resumeId ? SECTIONS.find((section) => section.id === resumeId) ?? null : null),
     [resumeId],
@@ -162,9 +167,74 @@ export function MarketingQuickNav() {
     };
   }, [copyState]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName;
+      const isTypingTarget =
+        target?.isContentEditable ||
+        tagName === "INPUT" ||
+        tagName === "TEXTAREA" ||
+        tagName === "SELECT";
+
+      if (isTypingTarget || event.metaKey || event.ctrlKey) {
+        return;
+      }
+
+      if (event.key === "[") {
+        event.preventDefault();
+        const previousSection = SECTIONS[Math.max(0, activeIndex - 1)];
+        if (!previousSection || !canJumpPrev || !jumpToSection(previousSection.id)) return;
+        setActiveId(previousSection.id);
+        return;
+      }
+
+      if (event.key === "]") {
+        event.preventDefault();
+        const nextSection = SECTIONS[Math.min(SECTIONS.length - 1, activeIndex + 1)];
+        if (!nextSection || !canJumpNext || !jumpToSection(nextSection.id)) return;
+        setActiveId(nextSection.id);
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        const firstSection = SECTIONS[0];
+        if (!firstSection || !jumpToSection(firstSection.id)) return;
+        setActiveId(firstSection.id);
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        const lastSection = SECTIONS[SECTIONS.length - 1];
+        if (!lastSection || !jumpToSection(lastSection.id)) return;
+        setActiveId(lastSection.id);
+        return;
+      }
+
+      if (event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        copySectionLink(activeSection.id)
+          .then(() => setCopyState("done"))
+          .catch(() => setCopyState("error"));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev]);
+
   return (
     <div className="sticky top-16 z-40 px-6 pb-2">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-cosmos-200/10 bg-cosmos-950/70 px-4 py-3 shadow-[0_0_30px_rgba(2,6,23,0.35)] backdrop-blur-xl">
+      <div className="mx-auto max-w-5xl rounded-2xl border border-cosmos-200/10 bg-cosmos-950/70 px-4 py-3 shadow-[0_0_30px_rgba(2,6,23,0.35)] backdrop-blur-xl">
+        <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-cosmos-900/80" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-neon-cyan transition-all duration-200"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-cosmos-200/65">
           <Sparkles className="h-4 w-4 text-neon-cyan" />
           Landing quick nav
@@ -263,7 +333,15 @@ export function MarketingQuickNav() {
           </span>
 
           <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
+            Progress {progressPercent}%
+          </span>
+
+          <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
             {activeHashLabel}
+          </span>
+
+          <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+            [ ] / Home / End / C
           </span>
 
           <button
@@ -281,8 +359,7 @@ export function MarketingQuickNav() {
           <button
             type="button"
             onClick={() => {
-              navigator.clipboard
-                .writeText(buildAnchorUrl(activeSection.id))
+              copySectionLink(activeSection.id)
                 .then(() => setCopyState("done"))
                 .catch(() => setCopyState("error"));
             }}
@@ -299,5 +376,6 @@ export function MarketingQuickNav() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
