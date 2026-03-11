@@ -11,6 +11,7 @@ interface ChatHistoryProps {
 }
 
 const QUERY_LOG_STORAGE_KEY = "storyverse-universe-query-log-open";
+const QUERY_LOG_ROLE_FILTER_STORAGE_KEY = "storyverse-universe-query-log-role-filter";
 
 type RoleFilter = "all" | "user" | "assistant";
 
@@ -21,6 +22,9 @@ const LABELS = {
     copied: "Query log copied",
     copyFailed: "Copy failed",
     shortcutHint: "Tip: keep this open to review recent bridge runs.",
+    searchPlaceholder: "Filter visible messages",
+    clearSearch: "Clear search",
+    noMatches: "No messages match that filter yet.",
     assistant: "assistant",
     user: "user",
     all: "all",
@@ -32,6 +36,9 @@ const LABELS = {
     copied: "질의 로그 복사됨",
     copyFailed: "복사 실패",
     shortcutHint: "팁: 최근 브리지 실행 흐름을 보려면 열어둔 채로 쓰세요.",
+    searchPlaceholder: "표시 중인 메시지 필터",
+    clearSearch: "검색 지우기",
+    noMatches: "해당 필터에 맞는 메시지가 아직 없습니다.",
     assistant: "assistant",
     user: "user",
     all: "전체",
@@ -43,6 +50,7 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const labels = LABELS[uiLocale] ?? LABELS.en;
 
   useEffect(() => {
@@ -50,6 +58,11 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
       const storedValue = window.localStorage.getItem(QUERY_LOG_STORAGE_KEY);
       if (storedValue === "true") {
         setIsOpen(true);
+      }
+
+      const storedRoleFilter = window.localStorage.getItem(QUERY_LOG_ROLE_FILTER_STORAGE_KEY);
+      if (storedRoleFilter === "all" || storedRoleFilter === "user" || storedRoleFilter === "assistant") {
+        setRoleFilter(storedRoleFilter);
       }
     } catch {
       // Ignore storage read failures and keep the log collapsed by default.
@@ -65,6 +78,14 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
   }, [isOpen]);
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem(QUERY_LOG_ROLE_FILTER_STORAGE_KEY, roleFilter);
+    } catch {
+      // Ignore storage write failures and keep the log interactive.
+    }
+  }, [roleFilter]);
+
+  useEffect(() => {
     if (copyFeedback === "idle") {
       return;
     }
@@ -77,9 +98,21 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
   }, [copyFeedback]);
 
   const historyMessages = useMemo(() => messages.slice(1), [messages]);
-  const visibleMessages = useMemo(
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const roleFilteredMessages = useMemo(
     () => historyMessages.filter((message) => roleFilter === "all" || message.role === roleFilter),
     [historyMessages, roleFilter],
+  );
+  const visibleMessages = useMemo(
+    () =>
+      roleFilteredMessages.filter((message) => {
+        if (!normalizedSearchQuery) {
+          return true;
+        }
+
+        return `${message.role} ${message.content}`.toLowerCase().includes(normalizedSearchQuery);
+      }),
+    [normalizedSearchQuery, roleFilteredMessages],
   );
   const userMessageCount = useMemo(
     () => historyMessages.filter((message) => message.role === "user").length,
@@ -181,14 +214,31 @@ export function ChatHistory({ messages, uiLocale }: ChatHistoryProps) {
                 </button>
               );
             })}
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={labels.searchPlaceholder}
+              aria-label={labels.searchPlaceholder}
+              className="min-w-[11rem] flex-1 rounded-full border border-cosmos-200/10 bg-cosmos-950/30 px-3 py-1 text-[11px] text-cosmos-100 outline-none transition-colors placeholder:text-cosmos-300/35 focus:border-cosmos-200/30"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="rounded-full border border-cosmos-200/10 px-2.5 py-1 text-cosmos-200/65 transition-colors hover:border-cosmos-200/25 hover:text-cosmos-100"
+              >
+                {labels.clearSearch}
+              </button>
+            ) : null}
             <span className="rounded-full border border-cosmos-200/10 px-2.5 py-1 text-cosmos-300/55">
-              {labels.visible} {visibleMessages.length}
+              {labels.visible} {visibleMessages.length}/{roleFilteredMessages.length}
             </span>
           </div>
           <div className="max-h-64 space-y-2 overflow-y-auto">
             {visibleMessages.length === 0 ? (
               <div className="rounded-lg border border-dashed border-cosmos-200/10 px-3 py-4 text-xs text-cosmos-300/55">
-                {labels.visible} 0
+                {normalizedSearchQuery ? labels.noMatches : `${labels.visible} 0`}
               </div>
             ) : (
               visibleMessages.map((message) => (
