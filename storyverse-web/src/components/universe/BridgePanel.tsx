@@ -86,6 +86,9 @@ const RECENT_PAIR_COPY = {
     clearAll: "Clear all",
     remove: "Remove recent pair",
     empty: "Recent bridge pairs will appear here after you generate one.",
+    localeLabel: "Locale",
+    mediumLabel: "Mediums",
+    unknownTime: "Saved just now",
   },
   ko: {
     title: "최근 브리지 페어",
@@ -93,8 +96,25 @@ const RECENT_PAIR_COPY = {
     clearAll: "전체 지우기",
     remove: "최근 페어 삭제",
     empty: "브리지를 한 번 생성하면 최근 페어가 여기에 쌓여요.",
+    localeLabel: "로케일",
+    mediumLabel: "매체",
+    unknownTime: "방금 저장됨",
   },
 } as const;
+
+function formatRecentPairSavedAt(savedAt: string, locale: "en" | "ko") {
+  const date = new Date(savedAt);
+  if (Number.isNaN(date.getTime())) {
+    return RECENT_PAIR_COPY[locale].unknownTime;
+  }
+
+  return new Intl.DateTimeFormat(locale === "ko" ? "ko-KR" : "en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
 
 export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, promptCopyFeedback }: BridgePanelProps) {
   const shortcutCopy = SHORTCUT_COPY[state.uiLocale] ?? SHORTCUT_COPY.en;
@@ -108,6 +128,10 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
         return sourceExists && targetExists;
       }),
     [state.catalog, state.recentPairs],
+  );
+  const catalogById = useMemo(
+    () => new Map(state.catalog.map((story) => [story.id, story] as const)),
+    [state.catalog],
   );
 
   useEffect(() => {
@@ -291,31 +315,46 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
           </div>
           {validRecentPairs.length > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
-              {validRecentPairs.map((pair, index) => (
-                <div
-                  key={`${pair.sourceId}:${pair.targetId}`}
-                  className="group flex max-w-full items-center overflow-hidden rounded-full border border-cosmos-700/50 bg-cosmos-900/40 text-[11px] text-cosmos-200/80 transition-colors hover:border-cosmos-500 hover:text-cosmos-100"
-                >
-                  <button
-                    type="button"
-                    className="max-w-[min(70vw,24rem)] truncate px-2.5 py-1 text-left"
-                    onClick={() => state.resumeRecentPair(pair)}
-                    title={`${pair.sourceTitle} → ${pair.targetTitle}`}
+              {validRecentPairs.map((pair, index) => {
+                const source = catalogById.get(pair.sourceId);
+                const target = catalogById.get(pair.targetId);
+                const mediumLabel = source && target ? `${source.medium} → ${target.medium}` : "—";
+                const savedAtLabel = formatRecentPairSavedAt(pair.savedAt, state.uiLocale);
+                const localeLabel = pair.locale.toUpperCase();
+
+                return (
+                  <div
+                    key={`${pair.sourceId}:${pair.targetId}`}
+                    className="group flex max-w-full items-center overflow-hidden rounded-2xl border border-cosmos-700/50 bg-cosmos-900/40 text-[11px] text-cosmos-200/80 transition-colors hover:border-cosmos-500 hover:text-cosmos-100"
                   >
-                    <span className="mr-1 text-cosmos-400/80">#{index + 1}</span>
-                    {pair.sourceTitle} → {pair.targetTitle}
-                  </button>
-                  <button
-                    type="button"
-                    className="border-l border-cosmos-700/50 px-1.5 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100"
-                    onClick={() => state.removeRecentPairAt(index)}
-                    aria-label={recentPairCopy.remove}
-                    title={recentPairCopy.remove}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    <button
+                      type="button"
+                      className="max-w-[min(78vw,28rem)] px-2.5 py-1.5 text-left"
+                      onClick={() => state.resumeRecentPair(pair)}
+                      title={`${pair.sourceTitle} → ${pair.targetTitle} · ${recentPairCopy.localeLabel} ${localeLabel} · ${recentPairCopy.mediumLabel} ${mediumLabel} · ${savedAtLabel}`}
+                    >
+                      <div className="truncate">
+                        <span className="mr-1 text-cosmos-400/80">#{index + 1}</span>
+                        {pair.sourceTitle} → {pair.targetTitle}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-cosmos-300/60">
+                        <span className="rounded-full border border-cosmos-700/60 px-1.5 py-0.5">{localeLabel}</span>
+                        <span className="rounded-full border border-cosmos-700/60 px-1.5 py-0.5">{mediumLabel}</span>
+                        <span>{savedAtLabel}</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="self-stretch border-l border-cosmos-700/50 px-2 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100"
+                      onClick={() => state.removeRecentPairAt(index)}
+                      aria-label={recentPairCopy.remove}
+                      title={recentPairCopy.remove}
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="mt-3 text-[11px] text-cosmos-300/60">{recentPairCopy.empty}</p>
