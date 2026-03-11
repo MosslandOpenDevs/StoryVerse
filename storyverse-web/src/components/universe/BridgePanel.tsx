@@ -120,11 +120,23 @@ function buildRecentPairUrl(sourceId: string, targetId: string) {
     return `/universe?source=${encodeURIComponent(sourceId)}&target=${encodeURIComponent(targetId)}`;
   }
 
+  const currentUrl = new URL(window.location.href);
   const url = new URL(window.location.href);
   url.pathname = "/universe";
+  url.hash = "";
+
+  const preservedQuery = currentUrl.searchParams.get("q");
+  const preservedMedium = currentUrl.searchParams.get("medium");
+
+  url.search = "";
+  if (preservedQuery) {
+    url.searchParams.set("q", preservedQuery);
+  }
+  if (preservedMedium) {
+    url.searchParams.set("medium", preservedMedium);
+  }
   url.searchParams.set("source", sourceId);
   url.searchParams.set("target", targetId);
-  url.hash = "";
   return url.toString();
 }
 
