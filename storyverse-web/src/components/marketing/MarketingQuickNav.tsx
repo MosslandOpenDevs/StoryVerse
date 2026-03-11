@@ -63,6 +63,7 @@ export function MarketingQuickNav() {
     [activeId],
   );
   const activeHashLabel = `#${activeSection.id}`;
+  const activePositionLabel = activeIndex >= 0 ? `${activeIndex + 1}/${SECTIONS.length}` : `1/${SECTIONS.length}`;
   const canJumpPrev = activeIndex > 0;
   const canJumpNext = activeIndex >= 0 && activeIndex < SECTIONS.length - 1;
   const resumeSection = useMemo(
@@ -114,6 +115,24 @@ export function MarketingQuickNav() {
     }
 
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      const hashId = window.location.hash.replace(/^#/, "");
+      if (!hashId || !SECTIONS.some((section) => section.id === hashId)) return;
+      setActiveId(hashId);
+      setResumeId(hashId);
+    };
+
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    window.addEventListener("popstate", syncFromHash);
+
+    return () => {
+      window.removeEventListener("hashchange", syncFromHash);
+      window.removeEventListener("popstate", syncFromHash);
+    };
   }, []);
 
   useEffect(() => {
@@ -236,6 +255,13 @@ export function MarketingQuickNav() {
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
+          <span
+            className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70"
+            title={`Section ${activePositionLabel}`}
+          >
+            {activePositionLabel}
+          </span>
+
           <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
             {activeHashLabel}
           </span>
