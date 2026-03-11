@@ -521,7 +521,7 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
         )}
 
         {/* Chat history */}
-        <ChatHistory messages={state.messages} />
+        <ChatHistory messages={state.messages} uiLocale={state.uiLocale} />
       </div>
     </div>
   );
