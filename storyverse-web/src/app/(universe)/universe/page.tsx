@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy, X } from "lucide-react";
+import { Check, Copy, ExternalLink, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
@@ -55,6 +55,7 @@ const COPY = {
     generateBridgeCta: "Generate bridge",
     pairLinkCopied: "Pair link copied",
     copyPairLink: "Copy pair link",
+    openPairLink: "Open pair link",
     bridgePromptCopied: "Bridge prompt copied",
     copyPrompt: "Copy prompt",
     swapPair: "Swap pair",
@@ -110,6 +111,7 @@ const COPY = {
     generateBridgeCta: "브리지 생성",
     pairLinkCopied: "페어 링크 복사됨",
     copyPairLink: "페어 링크 복사",
+    openPairLink: "페어 링크 열기",
     bridgePromptCopied: "브리지 프롬프트 복사됨",
     copyPrompt: "프롬프트 복사",
     swapPair: "페어 바꾸기",
@@ -861,6 +863,15 @@ function UniverseContent() {
                       className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {copyFeedback === "success" ? copy.pairLinkCopied : copyFeedback === "error" ? copy.copyFilteredViewFailed : copy.copyPairLink}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSelectionLink()}
+                      disabled={!hasReadySelection}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      {copy.openPairLink}
                     </button>
                     <button
                       type="button"
