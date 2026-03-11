@@ -435,11 +435,13 @@ function UniverseContent() {
   const visibleStoryIds = useMemo(() => new Set(filteredCatalog.map((story) => story.id)), [filteredCatalog]);
   const validRecentPairs = useMemo(
     () =>
-      state.recentPairs.filter((pair) => {
-        const source = catalog.find((story) => story.id === pair.sourceId);
-        const target = catalog.find((story) => story.id === pair.targetId);
-        return Boolean(source && target && source.id !== target.id);
-      }).slice(0, 3),
+      state.recentPairs
+        .flatMap((pair, recentIndex) => {
+          const source = catalog.find((story) => story.id === pair.sourceId);
+          const target = catalog.find((story) => story.id === pair.targetId);
+          return source && target && source.id !== target.id ? [{ ...pair, recentIndex }] : [];
+        })
+        .slice(0, 3),
     [catalog, state.recentPairs],
   );
   const hiddenSourceStory = useMemo(
@@ -924,7 +926,7 @@ function UniverseContent() {
                       </a>
                       <button
                         type="button"
-                        onClick={() => state.removeRecentPairAt(index)}
+                        onClick={() => state.removeRecentPairAt(pair.recentIndex)}
                         className="border-l border-cyan-200/10 px-2 py-1 text-cyan-100/75 transition hover:bg-cyan-200/10 hover:text-cyan-50"
                         aria-label={`${copy.recentPairsRemove} ${pair.sourceTitle} → ${pair.targetTitle}`}
                         title={`${copy.recentPairsRemove} ${pair.sourceTitle} → ${pair.targetTitle}`}

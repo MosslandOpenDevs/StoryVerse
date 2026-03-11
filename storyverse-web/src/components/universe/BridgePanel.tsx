@@ -159,10 +159,10 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
   }>({ pairKey: null, state: "idle" });
   const validRecentPairs = useMemo(
     () =>
-      state.recentPairs.filter((pair) => {
+      state.recentPairs.flatMap((pair, recentIndex) => {
         const sourceExists = state.catalog.some((story) => story.id === pair.sourceId);
         const targetExists = state.catalog.some((story) => story.id === pair.targetId);
-        return sourceExists && targetExists;
+        return sourceExists && targetExists ? [{ ...pair, recentIndex }] : [];
       }),
     [state.catalog, state.recentPairs],
   );
@@ -236,7 +236,7 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
 
         if (event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey) {
           event.preventDefault();
-          state.removeRecentPairAt(digit - 1);
+          state.removeRecentPairAt(pair.recentIndex);
           return;
         }
 
@@ -449,7 +449,7 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
                     <button
                       type="button"
                       className="self-stretch border-l border-cosmos-700/50 px-2 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100"
-                      onClick={() => state.removeRecentPairAt(index)}
+                      onClick={() => state.removeRecentPairAt(pair.recentIndex)}
                       aria-label={recentPairCopy.remove}
                       title={recentPairCopy.remove}
                     >
