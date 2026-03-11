@@ -47,6 +47,18 @@ const COPY = {
     hiddenSelectionPrefix: "Active selection is hidden by the current filters:",
     hiddenSource: "Source",
     hiddenTarget: "Target",
+    selectedPairLabel: "Selected pair",
+    selectedPairReady: "Ready to generate",
+    selectedPairPending: "Pick target",
+    pickSource: "Pick source",
+    pickTarget: "Pick target",
+    generateBridgeCta: "Generate bridge",
+    pairLinkCopied: "Pair link copied",
+    copyPairLink: "Copy pair link",
+    bridgePromptCopied: "Bridge prompt copied",
+    copyPrompt: "Copy prompt",
+    swapPair: "Swap pair",
+    clearSelection: "Clear selection",
     showingPrefix: "Showing",
     filtersActive: "Filters active",
     selectedStoriesPreserved: "Selected stories preserved",
@@ -85,6 +97,18 @@ const COPY = {
     hiddenSelectionPrefix: "현재 선택이 필터에 가려져 있어요:",
     hiddenSource: "출발",
     hiddenTarget: "도착",
+    selectedPairLabel: "선택된 페어",
+    selectedPairReady: "생성 준비 완료",
+    selectedPairPending: "도착 노드를 고르세요",
+    pickSource: "출발 선택",
+    pickTarget: "도착 선택",
+    generateBridgeCta: "브리지 생성",
+    pairLinkCopied: "페어 링크 복사됨",
+    copyPairLink: "페어 링크 복사",
+    bridgePromptCopied: "브리지 프롬프트 복사됨",
+    copyPrompt: "프롬프트 복사",
+    swapPair: "페어 바꾸기",
+    clearSelection: "선택 초기화",
     showingPrefix: "표시 중",
     filtersActive: "필터 적용 중",
     selectedStoriesPreserved: "선택 스토리 유지됨",
@@ -758,13 +782,16 @@ function UniverseContent() {
           {(selectedSourceStory || selectedTargetStory) ? (
             <div className="mb-3 flex flex-col gap-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-3 text-xs text-cyan-50/95 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-cyan-100/70">Selected pair</span>
+                <span className="text-cyan-100/70">{copy.selectedPairLabel}</span>
+                <span className={`rounded-full border px-2.5 py-1 font-medium ${hasReadySelection ? "border-emerald-200/35 bg-emerald-300/15 text-emerald-50" : "border-amber-200/30 bg-amber-300/10 text-amber-50"}`}>
+                  {hasReadySelection ? copy.selectedPairReady : copy.selectedPairPending}
+                </span>
                 <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
-                  {selectedSourceStory?.title ?? "Pick source"}
+                  {selectedSourceStory?.title ?? copy.pickSource}
                 </span>
                 <span className="text-cyan-100/60">→</span>
                 <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
-                  {selectedTargetStory?.title ?? "Pick target"}
+                  {selectedTargetStory?.title ?? copy.pickTarget}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -774,7 +801,7 @@ function UniverseContent() {
                   disabled={!hasReadySelection || state.isPending}
                   className="rounded-full border border-cyan-200/40 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Generate bridge
+                  {copy.generateBridgeCta}
                 </button>
                 <button
                   type="button"
@@ -784,7 +811,7 @@ function UniverseContent() {
                   disabled={!hasReadySelection}
                   className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {copyFeedback === "success" ? "Pair link copied" : copyFeedback === "error" ? "Copy failed" : "Copy pair link"}
+                  {copyFeedback === "success" ? copy.pairLinkCopied : copyFeedback === "error" ? copy.copyFilteredViewFailed : copy.copyPairLink}
                 </button>
                 <button
                   type="button"
@@ -795,10 +822,10 @@ function UniverseContent() {
                   className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {promptCopyFeedback === "success"
-                    ? "Bridge prompt copied"
+                    ? copy.bridgePromptCopied
                     : promptCopyFeedback === "error"
-                      ? "Copy failed"
-                      : "Copy prompt"}
+                      ? copy.copyFilteredViewFailed
+                      : copy.copyPrompt}
                 </button>
                 <button
                   type="button"
@@ -806,7 +833,7 @@ function UniverseContent() {
                   disabled={!hasReadySelection || state.isPending}
                   className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Swap pair
+                  {copy.swapPair}
                 </button>
                 <button
                   type="button"
@@ -814,7 +841,7 @@ function UniverseContent() {
                   disabled={!selectedSourceStory && !selectedTargetStory}
                   className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Clear selection
+                  {copy.clearSelection}
                 </button>
               </div>
             </div>
