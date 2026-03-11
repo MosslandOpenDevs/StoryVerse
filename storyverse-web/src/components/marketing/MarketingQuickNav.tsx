@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Copy, ExternalLink, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,9 @@ type MarketingSection = {
 
 const LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY = "storyverse-last-marketing-section";
 const RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY = "storyverse-recent-marketing-sections";
+const PINNED_MARKETING_SECTION_STORAGE_KEY = "storyverse-pinned-marketing-sections";
 const MAX_RECENT_MARKETING_SECTION_TRAIL = 3;
+const MAX_PINNED_MARKETING_SECTIONS = 4;
 
 const SECTIONS: MarketingSection[] = [
   { id: "hero", label: "Hero", hint: "Top overview" },
@@ -99,10 +101,46 @@ function saveRecentTrail(sectionIds: string[]) {
   }
 }
 
+function loadPinnedSections() {
+  if (typeof window === "undefined") {
+    return [] as string[];
+  }
+
+  try {
+    const storedPinned = window.localStorage.getItem(PINNED_MARKETING_SECTION_STORAGE_KEY);
+    if (!storedPinned) return [] as string[];
+
+    const parsedPinned = JSON.parse(storedPinned);
+    if (!Array.isArray(parsedPinned)) return [] as string[];
+
+    return parsedPinned
+      .filter((value): value is string => typeof value === "string")
+      .slice(0, MAX_PINNED_MARKETING_SECTIONS);
+  } catch {
+    return [] as string[];
+  }
+}
+
+function savePinnedSections(sectionIds: string[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      PINNED_MARKETING_SECTION_STORAGE_KEY,
+      JSON.stringify(sectionIds.slice(0, MAX_PINNED_MARKETING_SECTIONS)),
+    );
+  } catch {
+    // Ignore storage access issues.
+  }
+}
+
 export function MarketingQuickNav() {
   const [activeId, setActiveId] = useState<string>(SECTIONS[0]?.id ?? "hero");
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [recentTrail, setRecentTrail] = useState<string[]>([]);
+  const [pinnedSections, setPinnedSections] = useState<string[]>([]);
   const [copyState, setCopyState] = useState<"idle" | "done" | "error">("idle");
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
 
@@ -148,6 +186,7 @@ export function MarketingQuickNav() {
     sections.forEach((section) => observer.observe(section));
 
     setRecentTrail(loadRecentTrail().filter((sectionId) => SECTIONS.some((section) => section.id === sectionId)));
+    setPinnedSections(loadPinnedSections().filter((sectionId) => SECTIONS.some((section) => section.id === sectionId)));
 
     const hashId = window.location.hash.replace(/^#/, "");
     if (hashId && SECTIONS.some((section) => section.id === hashId)) {
@@ -203,6 +242,16 @@ export function MarketingQuickNav() {
       return nextTrail;
     });
   }, [activeId]);
+
+  const togglePinnedSection = useCallback((sectionId: string) => {
+    setPinnedSections((current) => {
+      const nextPinned = current.includes(sectionId)
+        ? current.filter((value) => value !== sectionId)
+        : [sectionId, ...current.filter((value) => value !== sectionId)].slice(0, MAX_PINNED_MARKETING_SECTIONS);
+      savePinnedSections(nextPinned);
+      return nextPinned;
+    });
+  }, []);
 
   useEffect(() => {
     if (copyState === "idle") return;
@@ -292,16 +341,26 @@ export function MarketingQuickNav() {
         event.preventDefault();
         if (!jumpToSection(resumeId)) return;
         setActiveId(resumeId);
+        return;
+      }
+
+      if (event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        togglePinnedSection(activeSection.id);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, resumeId]);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, resumeId, togglePinnedSection]);
 
   const recentTrailSections = recentTrail
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
     .filter((section): section is MarketingSection => Boolean(section));
+  const pinnedSectionItems = pinnedSections
+    .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
+    .filter((section): section is MarketingSection => Boolean(section));
+  const isActiveSectionPinned = pinnedSections.includes(activeSection.id);
 
   return (
     <div className="sticky top-16 z-40 px-6 pb-2">
@@ -424,8 +483,24 @@ export function MarketingQuickNav() {
           </span>
 
           <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
-            1-4 / [ ] / J K / Home / End / C / O / R
+            1-4 / [ ] / J K / Home / End / C / O / R / F
           </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              togglePinnedSection(activeSection.id);
+            }}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              isActiveSectionPinned
+                ? "border-neon-cyan/50 bg-neon-cyan/12 text-cosmos-100"
+                : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+            )}
+            title={`${isActiveSectionPinned ? "Unpin" : "Pin"} ${activeSection.label}`}
+          >
+            {isActiveSectionPinned ? "Pinned" : "Pin current"}
+          </button>
 
           <button
             type="button"
@@ -457,6 +532,48 @@ export function MarketingQuickNav() {
                 : `Copy ${activeSection.label}`}
           </button>
         </div>
+
+        {pinnedSectionItems.length > 0 ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
+            <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Pinned lanes</span>
+            {pinnedSectionItems.map((section, index) => {
+              const isActive = section.id === activeSection.id;
+
+              return (
+                <button
+                  key={`pinned-${section.id}`}
+                  type="button"
+                  onClick={() => {
+                    if (!jumpToSection(section.id)) return;
+                    setActiveId(section.id);
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                    isActive
+                      ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
+                      : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                  )}
+                  title={`Jump to pinned section ${section.label}`}
+                >
+                  Pin {index + 1}
+                  <span className="text-cosmos-200/55">{section.label}</span>
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => {
+                setPinnedSections([]);
+                savePinnedSections([]);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              title="Clear pinned sections"
+            >
+              Clear pins
+            </button>
+          </div>
+        ) : null}
 
         {recentTrailSections.length > 0 ? (
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
