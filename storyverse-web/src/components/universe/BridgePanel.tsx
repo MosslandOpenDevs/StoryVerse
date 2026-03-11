@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const SHORTCUT_GUIDE_STORAGE_KEY = "storyverse-universe-shortcut-guide-open";
-import { Compass, Keyboard } from "lucide-react";
+import { Compass, ExternalLink, Keyboard, Link2 } from "lucide-react";
 import { QueryInput } from "./QueryInput";
 import { SelectedPairBar } from "./SelectedPairBar";
 import { BridgeResultCard } from "./BridgeResultCard";
@@ -50,6 +50,8 @@ const SHORTCUT_COPY = {
     recentPairs: "Recent pairs",
     resumeRecentPair: "Resume recent pair by slot",
     removeRecentPair: "Remove recent pair by slot",
+    copyRecentPair: "Copy recent pair link by slot",
+    openRecentPair: "Open recent pair in a new tab by slot",
   },
   ko: {
     title: "단축키 가이드",
@@ -76,6 +78,8 @@ const SHORTCUT_COPY = {
     recentPairs: "최근 페어",
     resumeRecentPair: "번호 슬롯으로 최근 페어 복구",
     removeRecentPair: "번호 슬롯으로 최근 페어 삭제",
+    copyRecentPair: "번호 슬롯의 최근 페어 링크 복사",
+    openRecentPair: "번호 슬롯의 최근 페어를 새 탭으로 열기",
   },
 } as const;
 
@@ -85,6 +89,10 @@ const RECENT_PAIR_COPY = {
     summary: "Resume a recent source → target pair without searching again.",
     clearAll: "Clear all",
     remove: "Remove recent pair",
+    copyLink: "Copy pair link",
+    copiedLink: "Pair link copied",
+    copyFailed: "Copy failed",
+    openLink: "Open pair in new tab",
     empty: "Recent bridge pairs will appear here after you generate one.",
     localeLabel: "Locale",
     mediumLabel: "Mediums",
@@ -95,12 +103,37 @@ const RECENT_PAIR_COPY = {
     summary: "방금 쓴 source → target 페어를 다시 검색하지 않고 바로 복구해요.",
     clearAll: "전체 지우기",
     remove: "최근 페어 삭제",
+    copyLink: "페어 링크 복사",
+    copiedLink: "페어 링크 복사됨",
+    copyFailed: "복사 실패",
+    openLink: "새 탭에서 페어 열기",
     empty: "브리지를 한 번 생성하면 최근 페어가 여기에 쌓여요.",
     localeLabel: "로케일",
     mediumLabel: "매체",
     unknownTime: "방금 저장됨",
   },
 } as const;
+
+function buildRecentPairUrl(sourceId: string, targetId: string) {
+  if (typeof window === "undefined") {
+    return `/universe?source=${encodeURIComponent(sourceId)}&target=${encodeURIComponent(targetId)}`;
+  }
+
+  const url = new URL(window.location.href);
+  url.pathname = "/universe";
+  url.searchParams.set("source", sourceId);
+  url.searchParams.set("target", targetId);
+  url.hash = "";
+  return url.toString();
+}
+
+async function copyRecentPairUrl(sourceId: string, targetId: string) {
+  if (typeof navigator === "undefined" || !navigator.clipboard) {
+    throw new Error("clipboard_unavailable");
+  }
+
+  await navigator.clipboard.writeText(buildRecentPairUrl(sourceId, targetId));
+}
 
 function formatRecentPairSavedAt(savedAt: string, locale: "en" | "ko") {
   const date = new Date(savedAt);
@@ -120,6 +153,10 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
   const shortcutCopy = SHORTCUT_COPY[state.uiLocale] ?? SHORTCUT_COPY.en;
   const recentPairCopy = RECENT_PAIR_COPY[state.uiLocale] ?? RECENT_PAIR_COPY.en;
   const [isShortcutGuideOpen, setIsShortcutGuideOpen] = useState(false);
+  const [recentPairCopyFeedback, setRecentPairCopyFeedback] = useState<{
+    pairKey: string | null;
+    state: "idle" | "success" | "error";
+  }>({ pairKey: null, state: "idle" });
   const validRecentPairs = useMemo(
     () =>
       state.recentPairs.filter((pair) => {
@@ -154,6 +191,18 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
   }, [isShortcutGuideOpen]);
 
   useEffect(() => {
+    if (recentPairCopyFeedback.state === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setRecentPairCopyFeedback({ pairKey: null, state: "idle" });
+    }, recentPairCopyFeedback.state === "success" ? 1600 : 2200);
+
+    return () => window.clearTimeout(timeout);
+  }, [recentPairCopyFeedback]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isEditableTarget =
@@ -180,18 +229,35 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
 
       const digit = Number.parseInt(event.key, 10);
       if (!Number.isNaN(digit) && digit >= 1 && digit <= validRecentPairs.length) {
-        if (event.shiftKey) {
+        const pair = validRecentPairs[digit - 1];
+        if (!pair) {
+          return;
+        }
+
+        if (event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey) {
           event.preventDefault();
           state.removeRecentPairAt(digit - 1);
           return;
         }
 
-        if (!event.metaKey && !event.ctrlKey && !event.altKey) {
-          const pair = validRecentPairs[digit - 1];
-          if (!pair) {
+        if (event.altKey && !event.metaKey && !event.ctrlKey) {
+          event.preventDefault();
+          if (event.shiftKey) {
+            window.open(buildRecentPairUrl(pair.sourceId, pair.targetId), "_blank", "noopener,noreferrer");
             return;
           }
 
+          void copyRecentPairUrl(pair.sourceId, pair.targetId)
+            .then(() => {
+              setRecentPairCopyFeedback({ pairKey: `${pair.sourceId}:${pair.targetId}`, state: "success" });
+            })
+            .catch(() => {
+              setRecentPairCopyFeedback({ pairKey: `${pair.sourceId}:${pair.targetId}`, state: "error" });
+            });
+          return;
+        }
+
+        if (!event.metaKey && !event.ctrlKey && !event.altKey) {
           event.preventDefault();
           state.resumeRecentPair(pair);
           return;
@@ -277,6 +343,8 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
               <ul className="space-y-1 text-[11px] leading-5 text-cosmos-200/75">
                 <li><span className="text-cosmos-100">1-5</span> — {shortcutCopy.resumeRecentPair}</li>
                 <li><span className="text-cosmos-100">Shift+1-5</span> — {shortcutCopy.removeRecentPair}</li>
+                <li><span className="text-cosmos-100">Alt+1-5</span> — {shortcutCopy.copyRecentPair}</li>
+                <li><span className="text-cosmos-100">Alt+Shift+1-5</span> — {shortcutCopy.openRecentPair}</li>
               </ul>
             </div>
           </div>
@@ -321,10 +389,17 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
                 const mediumLabel = source && target ? `${source.medium} → ${target.medium}` : "—";
                 const savedAtLabel = formatRecentPairSavedAt(pair.savedAt, state.uiLocale);
                 const localeLabel = pair.locale.toUpperCase();
+                const pairKey = `${pair.sourceId}:${pair.targetId}`;
+                const pairLinkLabel =
+                  recentPairCopyFeedback.pairKey === pairKey && recentPairCopyFeedback.state === "success"
+                    ? recentPairCopy.copiedLink
+                    : recentPairCopyFeedback.pairKey === pairKey && recentPairCopyFeedback.state === "error"
+                      ? recentPairCopy.copyFailed
+                      : recentPairCopy.copyLink;
 
                 return (
                   <div
-                    key={`${pair.sourceId}:${pair.targetId}`}
+                    key={pairKey}
                     className="group flex max-w-full items-center overflow-hidden rounded-2xl border border-cosmos-700/50 bg-cosmos-900/40 text-[11px] text-cosmos-200/80 transition-colors hover:border-cosmos-500 hover:text-cosmos-100"
                   >
                     <button
@@ -342,6 +417,34 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
                         <span className="rounded-full border border-cosmos-700/60 px-1.5 py-0.5">{mediumLabel}</span>
                         <span>{savedAtLabel}</span>
                       </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="self-stretch border-l border-cosmos-700/50 px-2 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100"
+                      onClick={() => {
+                        void copyRecentPairUrl(pair.sourceId, pair.targetId)
+                          .then(() => {
+                            setRecentPairCopyFeedback({ pairKey, state: "success" });
+                          })
+                          .catch(() => {
+                            setRecentPairCopyFeedback({ pairKey, state: "error" });
+                          });
+                      }}
+                      aria-label={pairLinkLabel}
+                      title={pairLinkLabel}
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className="self-stretch border-l border-cosmos-700/50 px-2 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100"
+                      onClick={() => {
+                        window.open(buildRecentPairUrl(pair.sourceId, pair.targetId), "_blank", "noopener,noreferrer");
+                      }}
+                      aria-label={recentPairCopy.openLink}
+                      title={recentPairCopy.openLink}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
                     </button>
                     <button
                       type="button"
