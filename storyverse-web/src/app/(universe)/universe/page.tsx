@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
@@ -65,6 +65,7 @@ const COPY = {
     recentPairsLabel: "Recent pairs",
     recentPairsEmpty: "No recent pairs yet. Generate a bridge to pin one here.",
     recentPairsResume: "Resume",
+    recentPairsRemove: "Remove pair",
     recentPairsClearAll: "Clear all",
     loadingUniverse: "Loading universe...",
     mediumLabels: {
@@ -119,6 +120,7 @@ const COPY = {
     recentPairsLabel: "최근 페어",
     recentPairsEmpty: "아직 최근 페어가 없어요. 브리지를 한 번 생성하면 여기에 고정돼요.",
     recentPairsResume: "이어보기",
+    recentPairsRemove: "페어 제거",
     recentPairsClearAll: "전체 지우기",
     loadingUniverse: "유니버스 로딩 중...",
     mediumLabels: {
@@ -873,16 +875,29 @@ function UniverseContent() {
                 <span className="text-cyan-100/70">{copy.recentPairsLabel}</span>
                 {validRecentPairs.length > 0 ? (
                   validRecentPairs.map((pair, index) => (
-                    <button
+                    <div
                       key={`${pair.sourceId}:${pair.targetId}:${pair.savedAt}`}
-                      type="button"
-                      onClick={() => state.resumeRecentPair(pair)}
-                      className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10"
-                      title={`${copy.recentPairsResume} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                      className="flex items-center overflow-hidden rounded-full border border-cyan-200/20 bg-cosmos-950/40 text-[11px] font-medium text-cyan-50"
                     >
-                      <span className="mr-1 text-cyan-200/60">#{index + 1}</span>
-                      {pair.sourceTitle} → {pair.targetTitle}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => state.resumeRecentPair(pair)}
+                        className="px-2.5 py-1 transition hover:bg-cyan-200/10"
+                        title={`${copy.recentPairsResume} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                      >
+                        <span className="mr-1 text-cyan-200/60">#{index + 1}</span>
+                        {pair.sourceTitle} → {pair.targetTitle}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => state.removeRecentPairAt(index)}
+                        className="border-l border-cyan-200/10 px-2 py-1 text-cyan-100/75 transition hover:bg-cyan-200/10 hover:text-cyan-50"
+                        aria-label={`${copy.recentPairsRemove} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                        title={`${copy.recentPairsRemove} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
                   ))
                 ) : (
                   <span className="text-cyan-100/60">{copy.recentPairsEmpty}</span>
