@@ -471,11 +471,7 @@ function UniverseContent() {
     selectedSourceStory.id !== selectedTargetStory.id,
   );
 
-  const handleCopySelectionLink = useCallback(async () => {
-    if (!state.selectedSourceId || !state.selectedTargetId) {
-      return;
-    }
-
+  const buildPairLink = useCallback((sourceId: string, targetId: string) => {
     const params = new URLSearchParams();
     const trimmedQueryForLink = searchQuery.trim();
 
@@ -487,10 +483,18 @@ function UniverseContent() {
       params.set(MEDIUM_FILTER_PARAM, mediumFilter);
     }
 
-    params.set(SOURCE_PARAM, state.selectedSourceId);
-    params.set(TARGET_PARAM, state.selectedTargetId);
+    params.set(SOURCE_PARAM, sourceId);
+    params.set(TARGET_PARAM, targetId);
 
-    const nextUrl = `${window.location.origin}${pathname}?${params.toString()}`;
+    return `${window.location.origin}${pathname}?${params.toString()}`;
+  }, [mediumFilter, pathname, searchQuery]);
+
+  const handleCopySelectionLink = useCallback(async () => {
+    if (!state.selectedSourceId || !state.selectedTargetId) {
+      return;
+    }
+
+    const nextUrl = buildPairLink(state.selectedSourceId, state.selectedTargetId);
 
     try {
       await navigator.clipboard.writeText(nextUrl);
@@ -498,7 +502,16 @@ function UniverseContent() {
     } catch {
       setCopyFeedback("error");
     }
-  }, [mediumFilter, pathname, searchQuery, state.selectedSourceId, state.selectedTargetId]);
+  }, [buildPairLink, state.selectedSourceId, state.selectedTargetId]);
+
+  const handleCopyRecentPairLink = useCallback(async (sourceId: string, targetId: string) => {
+    try {
+      await navigator.clipboard.writeText(buildPairLink(sourceId, targetId));
+      setCopyFeedback("success");
+    } catch {
+      setCopyFeedback("error");
+    }
+  }, [buildPairLink]);
 
   const handleCopyFilteredView = useCallback(async () => {
     const params = new URLSearchParams();
@@ -888,6 +901,27 @@ function UniverseContent() {
                         <span className="mr-1 text-cyan-200/60">#{index + 1}</span>
                         {pair.sourceTitle} → {pair.targetTitle}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleCopyRecentPairLink(pair.sourceId, pair.targetId);
+                        }}
+                        className="border-l border-cyan-200/10 px-2 py-1 text-cyan-100/75 transition hover:bg-cyan-200/10 hover:text-cyan-50"
+                        aria-label={`${copy.copyPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                        title={`${copy.copyPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </button>
+                      <a
+                        href={buildPairLink(pair.sourceId, pair.targetId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="border-l border-cyan-200/10 px-2 py-1 text-cyan-100/75 transition hover:bg-cyan-200/10 hover:text-cyan-50"
+                        aria-label={`${copy.copyPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                        title={`${copy.recentPairsResume} ${pair.sourceTitle} → ${pair.targetTitle}`}
+                      >
+                        ↗
+                      </a>
                       <button
                         type="button"
                         onClick={() => state.removeRecentPairAt(index)}
