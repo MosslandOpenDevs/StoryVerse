@@ -35,6 +35,15 @@ export type ChatMessage = {
 
 export type LatestResult = UniverseCommandActionSuccess["result"] | null;
 
+export type RecentBridgePair = {
+  sourceId: string;
+  targetId: string;
+  sourceTitle: string;
+  targetTitle: string;
+  locale: "en" | "ko";
+  savedAt: string;
+};
+
 export const STARTER_PROMPTS: Record<"en" | "ko", string[]> = {
   en: [
     "Connect Sherlock Holmes to Star Wars.",
@@ -50,6 +59,8 @@ export const STARTER_PROMPTS: Record<"en" | "ko", string[]> = {
 
 const RECENT_QUERIES_KEY = "storyverse:recent-queries";
 const RECENT_QUERIES_LIMIT = 5;
+const RECENT_PAIRS_KEY = "storyverse:recent-pairs";
+const RECENT_PAIRS_LIMIT = 5;
 export const MAX_QUERY_LENGTH = 240;
 
 function normalizeQuery(rawQuery: string): string {
@@ -156,6 +167,7 @@ export function useUniverseState(
   const [uiLocale, setUiLocale] =
     useState<ResolutionMetadata["locale"]>("en");
   const [recentQueries, setRecentQueries] = useState<string[]>([]);
+  const [recentPairs, setRecentPairs] = useState<RecentBridgePair[]>([]);
   const [latestResult, setLatestResult] = useState<LatestResult>(null);
   const [isPending, startTransition] = useTransition();
   const initialPairAutoRunRef = useRef<string | null>(null);
@@ -202,10 +214,68 @@ export function useUniverseState(
     });
   }, []);
 
+  const pushRecentPair = useCallback((pair: RecentBridgePair) => {
+    const pairKey = `${pair.sourceId}:${pair.targetId}`;
+
+    setRecentPairs((prev) => {
+      const next = [
+        pair,
+        ...prev.filter((item) => `${item.sourceId}:${item.targetId}` !== pairKey),
+      ].slice(0, RECENT_PAIRS_LIMIT);
+
+      try {
+        window.localStorage.setItem(RECENT_PAIRS_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore write failures.
+      }
+
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(RECENT_PAIRS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        return;
+      }
+
+      setRecentPairs(
+        parsed
+          .filter(
+            (item): item is RecentBridgePair =>
+              Boolean(item) &&
+              typeof item === "object" &&
+              typeof item.sourceId === "string" &&
+              typeof item.targetId === "string" &&
+              typeof item.sourceTitle === "string" &&
+              typeof item.targetTitle === "string" &&
+              (item.locale === "en" || item.locale === "ko") &&
+              typeof item.savedAt === "string",
+          )
+          .filter((item) => item.sourceId !== item.targetId)
+          .slice(0, RECENT_PAIRS_LIMIT),
+      );
+    } catch {
+      // Ignore malformed local storage.
+    }
+  }, []);
+
   const clearRecentQueries = () => {
     setRecentQueries([]);
     try {
       window.localStorage.removeItem(RECENT_QUERIES_KEY);
+    } catch {
+      // Ignore write failures.
+    }
+  };
+
+  const clearRecentPairs = () => {
+    setRecentPairs([]);
+    try {
+      window.localStorage.removeItem(RECENT_PAIRS_KEY);
     } catch {
       // Ignore write failures.
     }
@@ -229,12 +299,38 @@ export function useUniverseState(
     });
   };
 
+  const removeRecentPairAt = (index: number) => {
+    if (!Number.isInteger(index) || index < 0) return;
+    setRecentPairs((prev) => {
+      if (index >= prev.length) return prev;
+      const next = prev.filter((_, itemIndex) => itemIndex !== index);
+      try {
+        if (next.length === 0) {
+          window.localStorage.removeItem(RECENT_PAIRS_KEY);
+        } else {
+          window.localStorage.setItem(RECENT_PAIRS_KEY, JSON.stringify(next));
+        }
+      } catch {
+        // Ignore write failures.
+      }
+      return next;
+    });
+  };
+
   const applyActionResult = useCallback((result: UniverseCommandActionResult) => {
     if (result.ok) {
       setUiLocale(result.result.resolution.locale);
       setLatestResult(result.result);
       setSelectedSourceId(result.result.source.id);
       setSelectedTargetId(result.result.target.id);
+      pushRecentPair({
+        sourceId: result.result.source.id,
+        targetId: result.result.target.id,
+        sourceTitle: result.result.source.title,
+        targetTitle: result.result.target.title,
+        locale: result.result.resolution.locale,
+        savedAt: new Date().toISOString(),
+      });
     }
 
     if (result.ok && result.result.resolution.needsClarification) {
@@ -259,7 +355,7 @@ export function useUniverseState(
       ...prev,
       createMessage("assistant", buildAssistantSummary(result)),
     ]);
-  }, []);
+  }, [pushRecentPair]);
 
   const runQuery = (rawQuery: string) => {
     if (isPending) return;
@@ -429,6 +525,12 @@ export function useUniverseState(
     uiLocale,
   ]);
 
+  const resumeRecentPair = (pair: RecentBridgePair) => {
+    setSelectedSourceId(pair.sourceId);
+    setSelectedTargetId(pair.targetId);
+    setUiLocale(pair.locale);
+  };
+
   const submitQuery = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     runQuery(query);
@@ -454,6 +556,7 @@ export function useUniverseState(
     setSelectedTargetId,
     uiLocale,
     recentQueries,
+    recentPairs,
     latestResult,
     isPending,
     isCorrectedRunReady,
@@ -467,7 +570,10 @@ export function useUniverseState(
     swapSelection,
     clearSelection,
     clearRecentQueries,
+    clearRecentPairs,
     removeRecentQueryAt,
+    removeRecentPairAt,
+    resumeRecentPair,
     generateBridge,
     submitQuery,
   };

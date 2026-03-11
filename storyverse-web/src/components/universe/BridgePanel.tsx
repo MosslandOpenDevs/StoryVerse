@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const SHORTCUT_GUIDE_STORAGE_KEY = "storyverse-universe-shortcut-guide-open";
 import { Compass, Keyboard } from "lucide-react";
@@ -73,9 +73,36 @@ const SHORTCUT_COPY = {
   },
 } as const;
 
+const RECENT_PAIR_COPY = {
+  en: {
+    title: "Recent bridge pairs",
+    summary: "Resume a recent source → target pair without searching again.",
+    clearAll: "Clear all",
+    remove: "Remove recent pair",
+    empty: "Recent bridge pairs will appear here after you generate one.",
+  },
+  ko: {
+    title: "최근 브리지 페어",
+    summary: "방금 쓴 source → target 페어를 다시 검색하지 않고 바로 복구해요.",
+    clearAll: "전체 지우기",
+    remove: "최근 페어 삭제",
+    empty: "브리지를 한 번 생성하면 최근 페어가 여기에 쌓여요.",
+  },
+} as const;
+
 export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, promptCopyFeedback }: BridgePanelProps) {
   const shortcutCopy = SHORTCUT_COPY[state.uiLocale] ?? SHORTCUT_COPY.en;
+  const recentPairCopy = RECENT_PAIR_COPY[state.uiLocale] ?? RECENT_PAIR_COPY.en;
   const [isShortcutGuideOpen, setIsShortcutGuideOpen] = useState(false);
+  const validRecentPairs = useMemo(
+    () =>
+      state.recentPairs.filter((pair) => {
+        const sourceExists = state.catalog.some((story) => story.id === pair.sourceId);
+        const targetExists = state.catalog.some((story) => story.id === pair.targetId);
+        return sourceExists && targetExists;
+      }),
+    [state.catalog, state.recentPairs],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -213,6 +240,54 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
           uiLocale={state.uiLocale}
           isPending={state.isPending}
         />
+
+        <div className="rounded-xl border border-cosmos-200/15 bg-panel/40 p-3 text-xs text-cosmos-200/75 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-cosmos-100">{recentPairCopy.title}</p>
+              <p className="mt-1 text-[11px] text-cosmos-200/55">{recentPairCopy.summary}</p>
+            </div>
+            <button
+              type="button"
+              className="text-[10px] uppercase tracking-wide text-cosmos-300/70 transition-colors hover:text-cosmos-100 disabled:opacity-40"
+              onClick={state.clearRecentPairs}
+              disabled={validRecentPairs.length === 0}
+            >
+              {recentPairCopy.clearAll}
+            </button>
+          </div>
+          {validRecentPairs.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {validRecentPairs.map((pair, index) => (
+                <div
+                  key={`${pair.sourceId}:${pair.targetId}`}
+                  className="group flex max-w-full items-center overflow-hidden rounded-full border border-cosmos-700/50 bg-cosmos-900/40 text-[11px] text-cosmos-200/80 transition-colors hover:border-cosmos-500 hover:text-cosmos-100"
+                >
+                  <button
+                    type="button"
+                    className="max-w-[min(70vw,24rem)] truncate px-2.5 py-1 text-left"
+                    onClick={() => state.resumeRecentPair(pair)}
+                    title={`${pair.sourceTitle} → ${pair.targetTitle}`}
+                  >
+                    <span className="mr-1 text-cosmos-400/80">#{index + 1}</span>
+                    {pair.sourceTitle} → {pair.targetTitle}
+                  </button>
+                  <button
+                    type="button"
+                    className="border-l border-cosmos-700/50 px-1.5 py-1 text-cosmos-300/70 transition-colors hover:text-cosmos-100"
+                    onClick={() => state.removeRecentPairAt(index)}
+                    aria-label={recentPairCopy.remove}
+                    title={recentPairCopy.remove}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-[11px] text-cosmos-300/60">{recentPairCopy.empty}</p>
+          )}
+        </div>
 
         {/* Query input */}
         <QueryInput
