@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 export function CtaSection() {
   return (
-    <section className="relative px-6 py-24">
+    <section id="launch-storyverse" tabIndex={-1} className="relative scroll-mt-24 px-6 py-24">
       <div className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-cosmos-200/10 bg-gradient-to-br from-cosmos-900/80 via-cosmos-800/60 to-cosmos-900/80 p-10 text-center backdrop-blur-xl sm:p-14">
         {/* Decorative glow */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,211,238,0.08),transparent_60%)]" />

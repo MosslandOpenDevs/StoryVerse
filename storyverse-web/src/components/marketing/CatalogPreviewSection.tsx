@@ -29,7 +29,7 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
   const hasStories = catalog.length > 0;
 
   return (
-    <section className="relative px-6 py-24">
+    <section id="story-catalog" tabIndex={-1} className="relative scroll-mt-24 px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <h2 className="text-center font-display text-2xl tracking-wide text-cosmos-100 sm:text-3xl">
           Story Catalog

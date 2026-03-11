@@ -50,7 +50,7 @@ const DOMAIN_ICONS = [
 
 export function HeroSection() {
   return (
-    <section className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6 py-24">
+    <section id="hero" tabIndex={-1} className="relative flex min-h-dvh scroll-mt-24 flex-col items-center justify-center overflow-hidden px-6 py-24">
       {/* Background layers */}
       <div className="pointer-events-none absolute inset-0 bg-space-grid bg-[size:42px_42px] opacity-20" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(34,211,238,0.18),transparent_50%)]" />

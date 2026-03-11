@@ -37,7 +37,8 @@ export function HowItWorksSection() {
   return (
     <section
       id="how-it-works"
-      className="relative px-6 py-24"
+      tabIndex={-1}
+      className="relative scroll-mt-24 px-6 py-24"
     >
       <div className="mx-auto max-w-5xl">
         <h2 className="text-center font-display text-2xl tracking-wide text-cosmos-100 sm:text-3xl">
