@@ -11,6 +11,8 @@ type MarketingSection = {
 };
 
 const LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY = "storyverse-last-marketing-section";
+const RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY = "storyverse-recent-marketing-sections";
+const MAX_RECENT_MARKETING_SECTION_TRAIL = 3;
 
 const SECTIONS: MarketingSection[] = [
   { id: "hero", label: "Hero", hint: "Top overview" },
@@ -55,9 +57,43 @@ async function copySectionLink(anchorId: string) {
   await navigator.clipboard.writeText(buildAnchorUrl(anchorId));
 }
 
+function loadRecentTrail() {
+  if (typeof window === "undefined") {
+    return [] as string[];
+  }
+
+  try {
+    const storedTrail = window.localStorage.getItem(RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY);
+    if (!storedTrail) return [] as string[];
+
+    const parsedTrail = JSON.parse(storedTrail);
+    if (!Array.isArray(parsedTrail)) return [] as string[];
+
+    return parsedTrail.filter((value): value is string => typeof value === "string").slice(0, MAX_RECENT_MARKETING_SECTION_TRAIL);
+  } catch {
+    return [] as string[];
+  }
+}
+
+function saveRecentTrail(sectionIds: string[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY,
+      JSON.stringify(sectionIds.slice(0, MAX_RECENT_MARKETING_SECTION_TRAIL)),
+    );
+  } catch {
+    // Ignore storage access issues.
+  }
+}
+
 export function MarketingQuickNav() {
   const [activeId, setActiveId] = useState<string>(SECTIONS[0]?.id ?? "hero");
   const [resumeId, setResumeId] = useState<string | null>(null);
+  const [recentTrail, setRecentTrail] = useState<string[]>([]);
   const [copyState, setCopyState] = useState<"idle" | "done" | "error">("idle");
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
 
@@ -101,6 +137,8 @@ export function MarketingQuickNav() {
     );
 
     sections.forEach((section) => observer.observe(section));
+
+    setRecentTrail(loadRecentTrail().filter((sectionId) => SECTIONS.some((section) => section.id === sectionId)));
 
     const hashId = window.location.hash.replace(/^#/, "");
     if (hashId && SECTIONS.some((section) => section.id === hashId)) {
@@ -149,6 +187,12 @@ export function MarketingQuickNav() {
     } catch {
       // Ignore storage access issues.
     }
+
+    setRecentTrail((current) => {
+      const nextTrail = [activeId, ...current.filter((sectionId) => sectionId !== activeId)].slice(0, MAX_RECENT_MARKETING_SECTION_TRAIL);
+      saveRecentTrail(nextTrail);
+      return nextTrail;
+    });
   }, [activeId]);
 
   useEffect(() => {
@@ -218,12 +262,29 @@ export function MarketingQuickNav() {
         copySectionLink(activeSection.id)
           .then(() => setCopyState("done"))
           .catch(() => setCopyState("error"));
+        return;
+      }
+
+      if (event.key.toLowerCase() === "o") {
+        event.preventDefault();
+        openSectionLink(activeSection.id);
+        return;
+      }
+
+      if (event.key.toLowerCase() === "r" && resumeId) {
+        event.preventDefault();
+        if (!jumpToSection(resumeId)) return;
+        setActiveId(resumeId);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev]);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, resumeId]);
+
+  const recentTrailSections = recentTrail
+    .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
+    .filter((section): section is MarketingSection => Boolean(section));
 
   return (
     <div className="sticky top-16 z-40 px-6 pb-2">
@@ -341,7 +402,7 @@ export function MarketingQuickNav() {
           </span>
 
           <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
-            [ ] / Home / End / C
+            [ ] / Home / End / C / O / R
           </span>
 
           <button
@@ -374,6 +435,48 @@ export function MarketingQuickNav() {
                 : `Copy ${activeSection.label}`}
           </button>
         </div>
+
+        {recentTrailSections.length > 0 ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
+            <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Recent trail</span>
+            {recentTrailSections.map((section, index) => {
+              const isActive = section.id === activeSection.id;
+
+              return (
+                <button
+                  key={`trail-${section.id}`}
+                  type="button"
+                  onClick={() => {
+                    if (!jumpToSection(section.id)) return;
+                    setActiveId(section.id);
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                    isActive
+                      ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
+                      : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                  )}
+                  title={`Jump back to ${section.label}`}
+                >
+                  Trail {index + 1}
+                  <span className="text-cosmos-200/55">{section.label}</span>
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => {
+                setRecentTrail([]);
+                saveRecentTrail([]);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              title="Clear recent section trail"
+            >
+              Clear trail
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   </div>
