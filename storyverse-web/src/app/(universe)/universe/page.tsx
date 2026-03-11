@@ -266,6 +266,10 @@ function UniverseContent() {
       }
 
       if (event.key === "Escape") {
+        if (state.selectedSourceId || state.selectedTargetId) {
+          return;
+        }
+
         const isSearchFocused = document.activeElement === searchInputRef.current;
         if (!isSearchFocused && !hasActiveFilters) {
           return;
