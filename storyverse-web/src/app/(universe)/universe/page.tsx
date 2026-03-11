@@ -788,6 +788,28 @@ function UniverseContent() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => {
+                    void handleCopyPrompt();
+                  }}
+                  disabled={!hasReadySelection}
+                  className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {promptCopyFeedback === "success"
+                    ? "Bridge prompt copied"
+                    : promptCopyFeedback === "error"
+                      ? "Copy failed"
+                      : "Copy prompt"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => state.swapSelection()}
+                  disabled={!hasReadySelection || state.isPending}
+                  className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Swap pair
+                </button>
+                <button
+                  type="button"
                   onClick={() => state.clearSelection()}
                   disabled={!selectedSourceStory && !selectedTargetStory}
                   className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
