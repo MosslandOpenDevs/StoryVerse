@@ -47,6 +47,9 @@ const SHORTCUT_COPY = {
     copyNextHops: "Copy next story hops from the latest bridge",
     swap: "Swap source and target",
     reset: "Clear selected pair",
+    recentPairs: "Recent pairs",
+    resumeRecentPair: "Resume recent pair by slot",
+    removeRecentPair: "Remove recent pair by slot",
   },
   ko: {
     title: "단축키 가이드",
@@ -70,6 +73,9 @@ const SHORTCUT_COPY = {
     copyNextHops: "최근 브리지의 다음 확장 후보 복사",
     swap: "출발/도착 교체",
     reset: "선택 페어 초기화",
+    recentPairs: "최근 페어",
+    resumeRecentPair: "번호 슬롯으로 최근 페어 복구",
+    removeRecentPair: "번호 슬롯으로 최근 페어 삭제",
   },
 } as const;
 
@@ -148,6 +154,26 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
         return;
       }
 
+      const digit = Number.parseInt(event.key, 10);
+      if (!Number.isNaN(digit) && digit >= 1 && digit <= validRecentPairs.length) {
+        if (event.shiftKey) {
+          event.preventDefault();
+          state.removeRecentPairAt(digit - 1);
+          return;
+        }
+
+        if (!event.metaKey && !event.ctrlKey && !event.altKey) {
+          const pair = validRecentPairs[digit - 1];
+          if (!pair) {
+            return;
+          }
+
+          event.preventDefault();
+          state.resumeRecentPair(pair);
+          return;
+        }
+      }
+
       if (event.key === "Escape") {
         setIsShortcutGuideOpen(false);
       }
@@ -157,7 +183,7 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [state, validRecentPairs]);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto max-h-[calc(100dvh-5rem)]">
@@ -190,7 +216,7 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
             <span className="text-[11px] text-cosmos-300/60">? · Esc · / · ⌘/Ctrl+K · ↑/↓ · L · Shift+L · Enter</span>
           </summary>
           <p className="mt-2 text-[11px] text-cosmos-200/55">{shortcutCopy.summary}</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-1.5">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cosmos-300/60">{shortcutCopy.query}</p>
               <ul className="space-y-1 text-[11px] leading-5 text-cosmos-200/75">
@@ -220,6 +246,13 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
                 <li><span className="text-cosmos-100">N</span> — {shortcutCopy.copyNextHops}</li>
                 <li><span className="text-cosmos-100">S</span> — {shortcutCopy.swap}</li>
                 <li><span className="text-cosmos-100">Esc</span>, <span className="text-cosmos-100">⌫</span> — {shortcutCopy.reset}</li>
+              </ul>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cosmos-300/60">{shortcutCopy.recentPairs}</p>
+              <ul className="space-y-1 text-[11px] leading-5 text-cosmos-200/75">
+                <li><span className="text-cosmos-100">1-5</span> — {shortcutCopy.resumeRecentPair}</li>
+                <li><span className="text-cosmos-100">Shift+1-5</span> — {shortcutCopy.removeRecentPair}</li>
               </ul>
             </div>
           </div>
