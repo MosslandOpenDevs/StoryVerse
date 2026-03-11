@@ -19,6 +19,7 @@ type UniverseState = ReturnType<typeof useUniverseState>;
 interface BridgePanelProps {
   state: UniverseState;
   onCopyLink: () => void;
+  onOpenLink: () => void;
   onCopyPrompt: () => void;
   copyFeedback: "idle" | "success" | "error";
   promptCopyFeedback: "idle" | "success" | "error";
@@ -149,7 +150,7 @@ function formatRecentPairSavedAt(savedAt: string, locale: "en" | "ko") {
   }).format(date);
 }
 
-export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, promptCopyFeedback }: BridgePanelProps) {
+export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyFeedback, promptCopyFeedback }: BridgePanelProps) {
   const shortcutCopy = SHORTCUT_COPY[state.uiLocale] ?? SHORTCUT_COPY.en;
   const recentPairCopy = RECENT_PAIR_COPY[state.uiLocale] ?? RECENT_PAIR_COPY.en;
   const [isShortcutGuideOpen, setIsShortcutGuideOpen] = useState(false);
@@ -359,6 +360,7 @@ export function BridgePanel({ state, onCopyLink, onCopyPrompt, copyFeedback, pro
           onClear={state.clearSelection}
           onGenerate={state.generateBridge}
           onCopyLink={onCopyLink}
+          onOpenLink={onOpenLink}
           onCopyPrompt={onCopyPrompt}
           copyFeedback={copyFeedback}
           promptCopyFeedback={promptCopyFeedback}

@@ -506,6 +506,15 @@ function UniverseContent() {
     }
   }, [buildPairLink, state.selectedSourceId, state.selectedTargetId]);
 
+  const handleOpenSelectionLink = useCallback(() => {
+    if (!state.selectedSourceId || !state.selectedTargetId) {
+      return;
+    }
+
+    const nextUrl = buildPairLink(state.selectedSourceId, state.selectedTargetId);
+    window.open(nextUrl, "_blank", "noopener,noreferrer");
+  }, [buildPairLink, state.selectedSourceId, state.selectedTargetId]);
+
   const handleCopyRecentPairLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
       await navigator.clipboard.writeText(buildPairLink(sourceId, targetId));
@@ -978,6 +987,7 @@ function UniverseContent() {
           <BridgePanel
             state={state}
             onCopyLink={handleCopySelectionLink}
+            onOpenLink={handleOpenSelectionLink}
             onCopyPrompt={handleCopyPrompt}
             copyFeedback={copyFeedback}
             promptCopyFeedback={promptCopyFeedback}

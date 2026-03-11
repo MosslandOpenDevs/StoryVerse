@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { ArrowLeftRight, Check, Copy, X, Zap } from "lucide-react";
+import { ArrowLeftRight, Check, Copy, ExternalLink, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import { findCatalogNodeIn } from "./useUniverseState";
@@ -21,6 +21,7 @@ interface SelectedPairBarProps {
   onClear: () => void;
   onGenerate: () => void;
   onCopyLink: () => void;
+  onOpenLink: () => void;
   onCopyPrompt: () => void;
   copyFeedback: "idle" | "success" | "error";
   promptCopyFeedback: "idle" | "success" | "error";
@@ -41,13 +42,14 @@ const LABELS = {
     generate: "Generate Bridge",
     generating: "Generating Bridge…",
     copyLink: "Copy selection link",
+    openLink: "Open selection link",
     copyPrompt: "Copy bridge prompt",
     copied: "Link copied",
     promptCopied: "Prompt copied",
     copyFailed: "Copy failed",
     ready: "Ready",
     incomplete: "Select one more node",
-    shortcuts: "Shortcuts: Enter generate · C copy link · P copy prompt · S swap · Esc/Backspace clear",
+    shortcuts: "Shortcuts: Enter generate · C copy link · O open link · P copy prompt · S swap · Esc/Backspace clear",
   },
   ko: {
     selectionTitle: "선택된 페어",
@@ -61,13 +63,14 @@ const LABELS = {
     generate: "브리지 생성",
     generating: "브리지 생성 중…",
     copyLink: "선택 링크 복사",
+    openLink: "선택 링크 열기",
     copyPrompt: "브리지 프롬프트 복사",
     copied: "링크 복사됨",
     promptCopied: "프롬프트 복사됨",
     copyFailed: "복사 실패",
     ready: "생성 준비 완료",
     incomplete: "노드를 하나 더 선택하세요",
-    shortcuts: "단축키: Enter 생성 · C 링크 복사 · P 프롬프트 복사 · S 교체 · Esc/Backspace 초기화",
+    shortcuts: "단축키: Enter 생성 · C 링크 복사 · O 링크 열기 · P 프롬프트 복사 · S 교체 · Esc/Backspace 초기화",
   },
 } as const;
 
@@ -79,6 +82,7 @@ export function SelectedPairBar({
   onClear,
   onGenerate,
   onCopyLink,
+  onOpenLink,
   onCopyPrompt,
   copyFeedback,
   promptCopyFeedback,
@@ -119,6 +123,12 @@ export function SelectedPairBar({
         return;
       }
 
+      if ((event.key === "o" || event.key === "O") && isPairReady) {
+        event.preventDefault();
+        onOpenLink();
+        return;
+      }
+
       if ((event.key === "p" || event.key === "P") && isPairReady) {
         event.preventDefault();
         onCopyPrompt();
@@ -141,7 +151,7 @@ export function SelectedPairBar({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isPairReady, isPending, onClear, onCopyLink, onCopyPrompt, onGenerate, onSwap, source, target]);
+  }, [isPairReady, isPending, onClear, onCopyLink, onCopyPrompt, onGenerate, onOpenLink, onSwap, source, target]);
 
   if (!source && !target) return null;
 
@@ -224,6 +234,17 @@ export function SelectedPairBar({
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={onOpenLink}
+                disabled={isPending}
+                title={labels.openLink}
+                aria-label={labels.openLink}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
               </Button>
               <Button
                 size="icon"
