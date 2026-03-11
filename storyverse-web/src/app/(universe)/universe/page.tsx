@@ -410,6 +410,19 @@ function UniverseContent() {
     [catalog, state.selectedTargetId, visibleStoryIds],
   );
   const hasHiddenSelection = hiddenSourceStory !== null || hiddenTargetStory !== null;
+  const selectedSourceStory = useMemo(
+    () => (state.selectedSourceId ? catalog.find((story) => story.id === state.selectedSourceId) ?? null : null),
+    [catalog, state.selectedSourceId],
+  );
+  const selectedTargetStory = useMemo(
+    () => (state.selectedTargetId ? catalog.find((story) => story.id === state.selectedTargetId) ?? null : null),
+    [catalog, state.selectedTargetId],
+  );
+  const hasReadySelection = Boolean(
+    selectedSourceStory &&
+    selectedTargetStory &&
+    selectedSourceStory.id !== selectedTargetStory.id,
+  );
 
   const handleCopySelectionLink = useCallback(async () => {
     if (!state.selectedSourceId || !state.selectedTargetId) {
@@ -740,6 +753,48 @@ function UniverseContent() {
               >
                 {copy.revealSelectedStories}
               </button>
+            </div>
+          ) : null}
+          {(selectedSourceStory || selectedTargetStory) ? (
+            <div className="mb-3 flex flex-col gap-3 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-3 text-xs text-cyan-50/95 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-cyan-100/70">Selected pair</span>
+                <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
+                  {selectedSourceStory?.title ?? "Pick source"}
+                </span>
+                <span className="text-cyan-100/60">→</span>
+                <span className="rounded-full border border-cyan-200/20 bg-cosmos-950/40 px-2.5 py-1 font-medium">
+                  {selectedTargetStory?.title ?? "Pick target"}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => state.generateBridge()}
+                  disabled={!hasReadySelection || state.isPending}
+                  className="rounded-full border border-cyan-200/40 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Generate bridge
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleCopySelectionLink();
+                  }}
+                  disabled={!hasReadySelection}
+                  className="rounded-full border border-cyan-200/30 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {copyFeedback === "success" ? "Pair link copied" : copyFeedback === "error" ? "Copy failed" : "Copy pair link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => state.clearSelection()}
+                  disabled={!selectedSourceStory && !selectedTargetStory}
+                  className="rounded-full border border-cyan-200/20 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition hover:bg-cyan-200/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Clear selection
+                </button>
+              </div>
             </div>
           ) : null}
           <StoryGrid
