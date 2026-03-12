@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { ArrowLeft, ArrowRight, Copy, ExternalLink, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CircleHelp, Copy, ExternalLink, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type MarketingSection = {
@@ -18,6 +18,7 @@ type SectionMatchMeta = {
 const LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY = "storyverse-last-marketing-section";
 const RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY = "storyverse-recent-marketing-sections";
 const PINNED_MARKETING_SECTION_STORAGE_KEY = "storyverse-pinned-marketing-sections";
+const MARKETING_SHORTCUT_GUIDE_STORAGE_KEY = "storyverse-marketing-shortcut-guide";
 const MAX_RECENT_MARKETING_SECTION_TRAIL = 3;
 const MAX_PINNED_MARKETING_SECTIONS = 4;
 
@@ -90,6 +91,30 @@ function openSectionLink(anchorId: string) {
 
 async function copySectionLink(anchorId: string) {
   await navigator.clipboard.writeText(buildAnchorUrl(anchorId));
+}
+
+async function copyShortcutGuide() {
+  const lines = [
+    "StoryVerse landing quick-nav",
+    "",
+    "? → Open or close the shortcuts guide",
+    "1-4 → Jump directly to Hero, How it works, Catalog, or Launch",
+    "[ / ] → Move to previous or next section",
+    "J / K → Vim-style previous or next section jump",
+    "Home / End → Jump to the first or last section",
+    "/ → Focus the section filter",
+    "↑ / ↓ → Move through filtered matches",
+    "Enter → Jump to the selected filtered match",
+    "Esc → Clear the filter or close the guide",
+    "C → Copy the direct link for the current section",
+    "O → Open the direct link for the current section in a new tab",
+    "R → Resume the last saved section",
+    "F → Pin or unpin the current section",
+    "",
+    ...SECTIONS.map((section, index) => `${index + 1} → ${section.label} (${buildAnchorUrl(section.id)})`),
+  ];
+
+  await navigator.clipboard.writeText(lines.join("\n"));
 }
 
 function loadRecentTrail() {
@@ -178,9 +203,12 @@ export function MarketingQuickNav() {
   const [recentTrail, setRecentTrail] = useState<string[]>([]);
   const [pinnedSections, setPinnedSections] = useState<string[]>([]);
   const [copyState, setCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [shortcutGuideOpen, setShortcutGuideOpen] = useState(false);
+  const [shortcutGuideCopyState, setShortcutGuideCopyState] = useState<"idle" | "done" | "error">("idle");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilteredIndex, setSelectedFilteredIndex] = useState(0);
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
+  const clearShortcutGuideCopyStateTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeIndex = useMemo(() => SECTIONS.findIndex((section) => section.id === activeId), [activeId]);
@@ -255,6 +283,12 @@ export function MarketingQuickNav() {
     setRecentTrail(loadRecentTrail().filter((sectionId) => SECTIONS.some((section) => section.id === sectionId)));
     setPinnedSections(loadPinnedSections().filter((sectionId) => SECTIONS.some((section) => section.id === sectionId)));
 
+    try {
+      setShortcutGuideOpen(window.localStorage.getItem(MARKETING_SHORTCUT_GUIDE_STORAGE_KEY) === "open");
+    } catch {
+      // Ignore storage access issues.
+    }
+
     const hashId = window.location.hash.replace(/^#/, "");
     if (hashId && SECTIONS.some((section) => section.id === hashId)) {
       setActiveId(hashId);
@@ -310,6 +344,14 @@ export function MarketingQuickNav() {
     });
   }, [activeId]);
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(MARKETING_SHORTCUT_GUIDE_STORAGE_KEY, shortcutGuideOpen ? "open" : "closed");
+    } catch {
+      // Ignore storage access issues.
+    }
+  }, [shortcutGuideOpen]);
+
   const togglePinnedSection = useCallback((sectionId: string) => {
     setPinnedSections((current) => {
       const nextPinned = current.includes(sectionId)
@@ -337,6 +379,25 @@ export function MarketingQuickNav() {
   }, [copyState]);
 
   useEffect(() => {
+    if (shortcutGuideCopyState === "idle") return;
+
+    if (clearShortcutGuideCopyStateTimeoutRef.current !== null) {
+      window.clearTimeout(clearShortcutGuideCopyStateTimeoutRef.current);
+    }
+
+    clearShortcutGuideCopyStateTimeoutRef.current = window.setTimeout(
+      () => setShortcutGuideCopyState("idle"),
+      shortcutGuideCopyState === "done" ? 1800 : 2200,
+    );
+
+    return () => {
+      if (clearShortcutGuideCopyStateTimeoutRef.current !== null) {
+        window.clearTimeout(clearShortcutGuideCopyStateTimeoutRef.current);
+      }
+    };
+  }, [shortcutGuideCopyState]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const tagName = target?.tagName;
@@ -348,6 +409,12 @@ export function MarketingQuickNav() {
 
       const isSearchFocused = document.activeElement === searchInputRef.current;
 
+      if ((event.key === "?" || (event.key === "/" && event.shiftKey)) && !event.altKey && !event.metaKey && !event.ctrlKey && !isTypingTarget) {
+        event.preventDefault();
+        setShortcutGuideOpen((current) => !current);
+        return;
+      }
+
       if (event.key === "/" && !event.altKey && !event.shiftKey && (!isTypingTarget || isSearchFocused)) {
         event.preventDefault();
         searchInputRef.current?.focus();
@@ -356,6 +423,12 @@ export function MarketingQuickNav() {
       }
 
       if (event.key === "Escape" && !event.altKey && !event.metaKey && !event.ctrlKey) {
+        if (shortcutGuideOpen) {
+          event.preventDefault();
+          setShortcutGuideOpen(false);
+          return;
+        }
+
         if (document.activeElement === searchInputRef.current || searchQuery) {
           event.preventDefault();
           setSearchQuery("");
@@ -459,7 +532,7 @@ export function MarketingQuickNav() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections.length, resumeId, searchQuery, selectedFilteredSection, togglePinnedSection]);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections.length, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
 
   const recentTrailSections = recentTrail
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
@@ -590,8 +663,24 @@ export function MarketingQuickNav() {
             </span>
 
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
-              1-4 / [ ] / J K / Home / End / / / C / O / R / F
+              1-4 / [ ] / J K / Home / End / / / C / O / R / F / ?
             </span>
+
+            <button
+              type="button"
+              onClick={() => setShortcutGuideOpen((current) => !current)}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                shortcutGuideOpen
+                  ? "border-neon-cyan/50 bg-neon-cyan/12 text-cosmos-100"
+                  : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+              )}
+              title="Show landing shortcuts guide"
+              aria-expanded={shortcutGuideOpen}
+            >
+              <CircleHelp className="h-3.5 w-3.5" />
+              {shortcutGuideOpen ? "Hide help" : "Shortcuts"}
+            </button>
 
             <button
               type="button"
@@ -871,6 +960,77 @@ export function MarketingQuickNav() {
         {normalizedSearchQuery && filteredSectionMatches.length === 0 ? (
           <div className="mt-3 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/55">
             No sections match that filter yet. Try hero, catalog, launch, or section ids like story-catalog.
+          </div>
+        ) : null}
+
+        {shortcutGuideOpen ? (
+          <div className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/70">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 font-medium text-cosmos-100">
+                <CircleHelp className="h-3.5 w-3.5" /> Landing shortcuts guide
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    copyShortcutGuide()
+                      .then(() => setShortcutGuideCopyState("done"))
+                      .catch(() => setShortcutGuideCopyState("error"));
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                >
+                  {shortcutGuideCopyState === "done"
+                    ? "Guide copied"
+                    : shortcutGuideCopyState === "error"
+                      ? "Copy failed"
+                      : "Copy guide"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShortcutGuideOpen(false)}
+                  className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">? toggle guide</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">1-4 jump sections</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">[ ] / J K previous-next</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Home / End first-last</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">/ filter</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">↑ / ↓ select</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Enter jump selected</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Esc clear or close</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">C copy current</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">O open current</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">R resume last stop</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">F pin current</span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {SECTIONS.map((section, index) => (
+                <button
+                  key={`guide-${section.id}`}
+                  type="button"
+                  onClick={() => {
+                    if (!jumpToSection(section.id)) return;
+                    setActiveId(section.id);
+                    setShortcutGuideOpen(false);
+                  }}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-cosmos-200/10 bg-cosmos-900/45 px-3 py-2 text-left transition-colors hover:border-neon-cyan/35 hover:bg-cosmos-900/70"
+                  title={`Jump to ${section.label}`}
+                >
+                  <span className="inline-flex items-center gap-2 font-medium text-cosmos-100">
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-current/20 px-1 text-[10px] font-semibold leading-none text-cosmos-200/55">
+                      {index + 1}
+                    </span>
+                    {section.label}
+                  </span>
+                  <span className="text-cosmos-200/50">#{section.id}</span>
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
 
