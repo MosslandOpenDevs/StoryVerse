@@ -153,8 +153,24 @@ async function copyShortcutGuide() {
     "O → Open the direct link for the current section in a new tab",
     "R → Resume the last saved section",
     "F → Pin or unpin the current section",
+    "Shift+C (while filter is focused) → Copy the filtered result bundle",
     "",
     ...SECTIONS.map((section, index) => `${index + 1} → ${section.label} (${buildAnchorUrl(section.id)})`),
+  ];
+
+  await navigator.clipboard.writeText(lines.join("\n"));
+}
+
+async function copyFilteredResultsBundle(query: string, sections: MarketingSection[]) {
+  const lines = [
+    "StoryVerse filtered landing quick-nav",
+    "",
+    `Filter query: ${query || "—"}`,
+    `Match count: ${sections.length}`,
+    "",
+    ...(sections.length
+      ? sections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
+      : ["No matched sections."]),
   ];
 
   await navigator.clipboard.writeText(lines.join("\n"));
@@ -248,11 +264,13 @@ export function MarketingQuickNav() {
   const [copyState, setCopyState] = useState<"idle" | "done" | "error">("idle");
   const [shortcutGuideOpen, setShortcutGuideOpen] = useState(false);
   const [shortcutGuideCopyState, setShortcutGuideCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [filteredResultsCopyState, setFilteredResultsCopyState] = useState<"idle" | "done" | "error">("idle");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilteredIndex, setSelectedFilteredIndex] = useState(0);
   const [showAllFilteredResults, setShowAllFilteredResults] = useState(false);
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
   const clearShortcutGuideCopyStateTimeoutRef = useRef<number | null>(null);
+  const clearFilteredResultsCopyStateTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeIndex = useMemo(() => SECTIONS.findIndex((section) => section.id === activeId), [activeId]);
@@ -447,6 +465,25 @@ export function MarketingQuickNav() {
   }, [shortcutGuideCopyState]);
 
   useEffect(() => {
+    if (filteredResultsCopyState === "idle") return;
+
+    if (clearFilteredResultsCopyStateTimeoutRef.current !== null) {
+      window.clearTimeout(clearFilteredResultsCopyStateTimeoutRef.current);
+    }
+
+    clearFilteredResultsCopyStateTimeoutRef.current = window.setTimeout(
+      () => setFilteredResultsCopyState("idle"),
+      filteredResultsCopyState === "done" ? 1600 : 2200,
+    );
+
+    return () => {
+      if (clearFilteredResultsCopyStateTimeoutRef.current !== null) {
+        window.clearTimeout(clearFilteredResultsCopyStateTimeoutRef.current);
+      }
+    };
+  }, [filteredResultsCopyState]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const tagName = target?.tagName;
@@ -497,6 +534,14 @@ export function MarketingQuickNav() {
         if (event.key === "ArrowUp") {
           event.preventDefault();
           setSelectedFilteredIndex((current) => (current - 1 + filteredSections.length) % filteredSections.length);
+          return;
+        }
+
+        if (event.shiftKey && event.key.toLowerCase() === "c") {
+          event.preventDefault();
+          copyFilteredResultsBundle(searchQuery.trim(), filteredSections)
+            .then(() => setFilteredResultsCopyState("done"))
+            .catch(() => setFilteredResultsCopyState("error"));
           return;
         }
       }
@@ -581,7 +626,7 @@ export function MarketingQuickNav() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections.length, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
 
   const recentTrailSections = recentTrail
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
@@ -903,6 +948,22 @@ export function MarketingQuickNav() {
               className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
             >
               Copy #{selectedFilteredSection.id}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                copyFilteredResultsBundle(searchQuery.trim(), filteredSections)
+                  .then(() => setFilteredResultsCopyState("done"))
+                  .catch(() => setFilteredResultsCopyState("error"));
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              title={`Copy filtered result bundle for ${filteredSections.length} matches`}
+            >
+              {filteredResultsCopyState === "done"
+                ? `Copied ${filteredSections.length} matches`
+                : filteredResultsCopyState === "error"
+                  ? "Copy failed"
+                  : `Copy ${filteredSections.length} matches`}
             </button>
           </div>
         ) : null}
