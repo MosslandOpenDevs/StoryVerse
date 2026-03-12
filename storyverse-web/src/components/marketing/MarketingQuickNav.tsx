@@ -250,6 +250,7 @@ export function MarketingQuickNav() {
   const [shortcutGuideCopyState, setShortcutGuideCopyState] = useState<"idle" | "done" | "error">("idle");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilteredIndex, setSelectedFilteredIndex] = useState(0);
+  const [showAllFilteredResults, setShowAllFilteredResults] = useState(false);
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
   const clearShortcutGuideCopyStateTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -272,6 +273,10 @@ export function MarketingQuickNav() {
   const filteredSections = filteredSectionMatches.map((match) => match.section);
   const selectedFilteredSection = filteredSections[Math.min(selectedFilteredIndex, Math.max(filteredSections.length - 1, 0))] ?? null;
   const selectedFilteredMatch = filteredSectionMatches[Math.min(selectedFilteredIndex, Math.max(filteredSectionMatches.length - 1, 0))] ?? null;
+  const visibleFilteredMatches = (showAllFilteredResults ? filteredSectionMatches : filteredSectionMatches.slice(0, 5)).map((match) => ({
+    match,
+    index: filteredSectionMatches.findIndex((itemMatch) => itemMatch.section.id === match.section.id),
+  }));
   const activeHashLabel = `#${activeSection.id}`;
   const activePositionLabel = activeIndex >= 0 ? `${activeIndex + 1}/${SECTIONS.length}` : `1/${SECTIONS.length}`;
   const canJumpPrev = activeIndex > 0;
@@ -287,6 +292,7 @@ export function MarketingQuickNav() {
 
   useEffect(() => {
     setSelectedFilteredIndex(0);
+    setShowAllFilteredResults(false);
   }, [normalizedSearchQuery]);
 
   useEffect(() => {
@@ -899,7 +905,7 @@ export function MarketingQuickNav() {
 
         {normalizedSearchQuery && filteredSectionMatches.length > 0 ? (
           <div className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3">
-            {filteredSectionMatches.slice(0, 5).map((match, index) => {
+            {visibleFilteredMatches.map(({ match, index }) => {
               const { section, matchedFields } = match;
               const isSelected = selectedFilteredSection?.id === section.id;
               const isActive = activeSection.id === section.id;
@@ -993,8 +999,19 @@ export function MarketingQuickNav() {
               );
             })}
             {filteredSectionMatches.length > 5 ? (
-              <div className="text-xs text-cosmos-200/50">
-                Showing top 5 matches. Use ↑ / ↓ to move through the full result set, then Enter to jump.
+              <div className="flex flex-wrap items-center gap-2 text-xs text-cosmos-200/50">
+                <span>
+                  {showAllFilteredResults
+                    ? `Showing all ${filteredSectionMatches.length} matches. Use ↑ / ↓ to move through the full result set, then Enter to jump.`
+                    : "Showing top 5 matches. Use ↑ / ↓ to move through the full result set, then Enter to jump."}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowAllFilteredResults((current) => !current)}
+                  className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                >
+                  {showAllFilteredResults ? "Show top 5" : `Show all ${filteredSectionMatches.length}`}
+                </button>
               </div>
             ) : null}
           </div>
