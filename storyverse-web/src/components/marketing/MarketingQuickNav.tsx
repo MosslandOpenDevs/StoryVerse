@@ -53,6 +53,7 @@ const LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY = "storyverse-last-marketing-sec
 const RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY = "storyverse-recent-marketing-sections";
 const PINNED_MARKETING_SECTION_STORAGE_KEY = "storyverse-pinned-marketing-sections";
 const MARKETING_SHORTCUT_GUIDE_STORAGE_KEY = "storyverse-marketing-shortcut-guide";
+const MARKETING_FILTER_QUERY_STORAGE_KEY = "storyverse-marketing-filter-query";
 const MAX_RECENT_MARKETING_SECTION_TRAIL = 3;
 const MAX_PINNED_MARKETING_SECTIONS = 4;
 
@@ -273,6 +274,35 @@ function clearStoredLastStop() {
   }
 }
 
+function loadStoredFilterQuery() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return window.localStorage.getItem(MARKETING_FILTER_QUERY_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveStoredFilterQuery(value: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    if (value) {
+      window.localStorage.setItem(MARKETING_FILTER_QUERY_STORAGE_KEY, value);
+      return;
+    }
+
+    window.localStorage.removeItem(MARKETING_FILTER_QUERY_STORAGE_KEY);
+  } catch {
+    // Ignore storage access issues.
+  }
+}
+
 export function MarketingQuickNav() {
   const [activeId, setActiveId] = useState<string>(SECTIONS[0]?.id ?? "hero");
   const [resumeId, setResumeId] = useState<string | null>(null);
@@ -373,6 +403,11 @@ export function MarketingQuickNav() {
       // Ignore storage access issues.
     }
 
+    const storedFilterQuery = loadStoredFilterQuery().trim();
+    if (storedFilterQuery) {
+      setSearchQuery((current) => current || storedFilterQuery);
+    }
+
     const hashId = window.location.hash.replace(/^#/, "");
     if (hashId && SECTIONS.some((section) => section.id === hashId)) {
       setActiveId(hashId);
@@ -435,6 +470,10 @@ export function MarketingQuickNav() {
       // Ignore storage access issues.
     }
   }, [shortcutGuideOpen]);
+
+  useEffect(() => {
+    saveStoredFilterQuery(searchQuery.trim());
+  }, [searchQuery]);
 
   const togglePinnedSection = useCallback((sectionId: string) => {
     setPinnedSections((current) => {
@@ -1229,7 +1268,7 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">1-4 jump sections</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">[ ] / J K previous-next</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Home / End first-last</span>
-              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">/ filter</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">/ filter (restores after refresh)</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">↑ / ↓ select</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Enter jump selected</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Esc clear or close</span>
