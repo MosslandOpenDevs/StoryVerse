@@ -153,6 +153,8 @@ async function copyShortcutGuide() {
     "O → Open the direct link for the current section in a new tab",
     "R → Resume the last saved section",
     "F → Pin or unpin the current section",
+    "5-8 → Jump to pinned sections",
+    "9 → Jump to the latest recent-trail section",
     "Shift+C (while filter is focused) → Copy the filtered result bundle",
     "",
     ...SECTIONS.map((section, index) => `${index + 1} → ${section.label} (${buildAnchorUrl(section.id)})`),
@@ -618,6 +620,29 @@ export function MarketingQuickNav() {
         return;
       }
 
+      if (/^[5-8]$/.test(event.key)) {
+        const pinnedIndex = Number(event.key) - 5;
+        const pinnedSectionId = pinnedSections[pinnedIndex] ?? null;
+        const pinnedSection = pinnedSectionId ? SECTIONS.find((section) => section.id === pinnedSectionId) ?? null : null;
+        if (!pinnedSection) return;
+
+        event.preventDefault();
+        if (!jumpToSection(pinnedSection.id)) return;
+        setActiveId(pinnedSection.id);
+        return;
+      }
+
+      if (event.key === "9") {
+        const recentSectionId = recentTrail.find((sectionId) => sectionId !== activeSection.id) ?? null;
+        const recentSection = recentSectionId ? SECTIONS.find((section) => section.id === recentSectionId) ?? null : null;
+        if (!recentSection) return;
+
+        event.preventDefault();
+        if (!jumpToSection(recentSection.id)) return;
+        setActiveId(recentSection.id);
+        return;
+      }
+
       if (event.key.toLowerCase() === "f") {
         event.preventDefault();
         togglePinnedSection(activeSection.id);
@@ -626,7 +651,7 @@ export function MarketingQuickNav() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections, pinnedSections, recentTrail, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
 
   const recentTrailSections = recentTrail
     .filter((sectionId) => sectionId !== activeSection.id)
@@ -1178,6 +1203,8 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">O open current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">R resume last stop</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">F pin current</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">5-8 pinned recall</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">9 recent bounceback</span>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {SECTIONS.map((section, index) => (
@@ -1210,7 +1237,7 @@ export function MarketingQuickNav() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Pinned lanes</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
-                1-4 keyboard recall
+                5-8 keyboard recall
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -1307,7 +1334,7 @@ export function MarketingQuickNav() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Recent trail</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
-                5-7 operator bounceback
+                9 operator bounceback
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
