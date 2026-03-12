@@ -15,6 +15,40 @@ type SectionMatchMeta = {
   matchedFields: string[];
 };
 
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function tokenizeSearchText(value: string) {
+  return normalizeSearchText(value).split(/\s+/).filter(Boolean);
+}
+
+function buildSectionAliases(section: MarketingSection) {
+  const labelTokens = tokenizeSearchText(section.label);
+  const idTokens = tokenizeSearchText(section.id);
+  const hintTokens = tokenizeSearchText(section.hint);
+  const acronym = labelTokens.map((token) => token[0]).join("");
+
+  return Array.from(new Set([
+    section.label,
+    section.id,
+    section.hint,
+    labelTokens.join(" "),
+    idTokens.join(" "),
+    idTokens.join(""),
+    hintTokens.join(" "),
+    acronym,
+  ].filter(Boolean)));
+}
+
+function includesAllSearchTokens(haystacks: string[], searchTokens: string[]) {
+  if (searchTokens.length === 0) {
+    return false;
+  }
+
+  return searchTokens.every((token) => haystacks.some((haystack) => haystack.includes(token)));
+}
+
 const LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY = "storyverse-last-marketing-section";
 const RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY = "storyverse-recent-marketing-sections";
 const PINNED_MARKETING_SECTION_STORAGE_KEY = "storyverse-pinned-marketing-sections";
@@ -43,18 +77,27 @@ function getSectionMatchMeta(section: MarketingSection, normalizedSearchQuery: s
     return { section, matchedFields: [] };
   }
 
+  const searchTokens = tokenizeSearchText(normalizedSearchQuery);
+  const normalizedLabel = normalizeSearchText(section.label);
+  const normalizedId = normalizeSearchText(section.id);
+  const normalizedHint = normalizeSearchText(section.hint);
+  const normalizedAliases = buildSectionAliases(section).map((alias) => normalizeSearchText(alias));
   const matchedFields: string[] = [];
-  if (section.label.toLowerCase().includes(normalizedSearchQuery)) {
+
+  if (normalizedLabel.includes(normalizedSearchQuery) || includesAllSearchTokens([normalizedLabel], searchTokens)) {
     matchedFields.push("label");
   }
-  if (section.id.toLowerCase().includes(normalizedSearchQuery)) {
+  if (normalizedId.includes(normalizedSearchQuery) || includesAllSearchTokens([normalizedId], searchTokens)) {
     matchedFields.push("section id");
   }
-  if (section.hint.toLowerCase().includes(normalizedSearchQuery)) {
+  if (normalizedHint.includes(normalizedSearchQuery) || includesAllSearchTokens([normalizedHint], searchTokens)) {
     matchedFields.push("hint");
   }
+  if (includesAllSearchTokens(normalizedAliases, searchTokens)) {
+    matchedFields.push("aliases");
+  }
 
-  return matchedFields.length > 0 ? { section, matchedFields } : null;
+  return matchedFields.length > 0 ? { section, matchedFields: Array.from(new Set(matchedFields)) } : null;
 }
 
 function buildAnchorUrl(anchorId: string) {
@@ -216,7 +259,7 @@ export function MarketingQuickNav() {
     () => SECTIONS.find((section) => section.id === activeId) ?? SECTIONS[0] ?? { id: "hero", label: "Hero", hint: "Top overview" },
     [activeId],
   );
-  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const normalizedSearchQuery = normalizeSearchText(searchQuery);
   const filteredSectionMatches = useMemo(() => {
     if (!normalizedSearchQuery) {
       return SECTIONS.map((section) => ({ section, matchedFields: [] }));
