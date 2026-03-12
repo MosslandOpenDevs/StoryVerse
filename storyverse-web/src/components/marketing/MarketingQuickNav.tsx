@@ -158,6 +158,7 @@ async function copyShortcutGuide() {
     "9 → Jump to the latest recent-trail section",
     "Shift+C (while filter is focused) → Copy the filtered result bundle",
     "Shift+P → Copy the pinned section bundle",
+    "Shift+T → Copy the recent trail bundle",
     "",
     ...SECTIONS.map((section, index) => `${index + 1} → ${section.label} (${buildAnchorUrl(section.id)})`),
   ];
@@ -189,6 +190,20 @@ async function copyPinnedResultsBundle(sections: MarketingSection[]) {
     ...(sections.length
       ? sections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
       : ["No pinned sections."]),
+  ];
+
+  await navigator.clipboard.writeText(lines.join("\n"));
+}
+
+async function copyRecentTrailBundle(sections: MarketingSection[]) {
+  const lines = [
+    "StoryVerse recent landing quick-nav trail",
+    "",
+    `Recent count: ${sections.length}`,
+    "",
+    ...(sections.length
+      ? sections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
+      : ["No recent sections."]),
   ];
 
   await navigator.clipboard.writeText(lines.join("\n"));
@@ -349,6 +364,10 @@ export function MarketingQuickNav() {
   const progressPercent = SECTIONS.length > 1 && activeIndex >= 0 ? Math.round((activeIndex / (SECTIONS.length - 1)) * 100) : 100;
   const previousSection = canJumpPrev ? SECTIONS[Math.max(0, activeIndex - 1)] ?? null : null;
   const nextSection = canJumpNext ? SECTIONS[Math.min(SECTIONS.length - 1, activeIndex + 1)] ?? null : null;
+  const recentTrailSections = recentTrail
+    .filter((sectionId) => sectionId !== activeSection.id)
+    .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
+    .filter((section): section is MarketingSection => Boolean(section));
   const resumeSection = useMemo(
     () => (resumeId ? SECTIONS.find((section) => section.id === resumeId) ?? null : null),
     [resumeId],
@@ -621,6 +640,18 @@ export function MarketingQuickNav() {
         return;
       }
 
+      if (event.shiftKey && event.key.toLowerCase() === "t") {
+        if (!recentTrailSections.length) {
+          return;
+        }
+
+        event.preventDefault();
+        copyRecentTrailBundle(recentTrailSections)
+          .then(() => setFilteredResultsCopyState("done"))
+          .catch(() => setFilteredResultsCopyState("error"));
+        return;
+      }
+
       if (isTypingTarget || event.metaKey || event.ctrlKey) {
         return;
       }
@@ -724,12 +755,8 @@ export function MarketingQuickNav() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections, pinnedSections, recentTrail, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections, pinnedSections, recentTrail, recentTrailSections, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
 
-  const recentTrailSections = recentTrail
-    .filter((sectionId) => sectionId !== activeSection.id)
-    .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
-    .filter((section): section is MarketingSection => Boolean(section));
   const pinnedSectionItems = pinnedSections
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
     .filter((section): section is MarketingSection => Boolean(section));
@@ -1279,6 +1306,7 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">5-8 pinned recall</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">9 recent bounceback</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Shift+P copy pinned bundle</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Shift+T copy recent trail</span>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {SECTIONS.map((section, index) => (
@@ -1430,6 +1458,9 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
                 9 operator bounceback
               </span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                Shift+T copy trail
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {recentTrailSections.map((section, index) => {
@@ -1504,6 +1535,23 @@ export function MarketingQuickNav() {
                   </div>
                 );
               })}
+
+              <button
+                type="button"
+                onClick={() => {
+                  copyRecentTrailBundle(recentTrailSections)
+                    .then(() => setFilteredResultsCopyState("done"))
+                    .catch(() => setFilteredResultsCopyState("error"));
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title={`Copy recent trail bundle for ${recentTrailSections.length} sections`}
+              >
+                {filteredResultsCopyState === "done"
+                  ? `Copied ${recentTrailSections.length} trail items`
+                  : filteredResultsCopyState === "error"
+                    ? "Copy failed"
+                    : `Copy ${recentTrailSections.length} trail items`}
+              </button>
 
               <button
                 type="button"
