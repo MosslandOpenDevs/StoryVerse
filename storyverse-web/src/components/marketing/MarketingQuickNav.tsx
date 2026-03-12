@@ -703,10 +703,11 @@ export function MarketingQuickNav() {
 
         {normalizedSearchQuery && filteredSectionMatches.length > 0 ? (
           <div className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3">
-            {filteredSectionMatches.map((match, index) => {
+            {filteredSectionMatches.slice(0, 5).map((match, index) => {
               const { section, matchedFields } = match;
               const isSelected = selectedFilteredSection?.id === section.id;
               const isActive = activeSection.id === section.id;
+              const isPinned = pinnedSections.includes(section.id);
 
               return (
                 <div
@@ -753,9 +754,53 @@ export function MarketingQuickNav() {
                       live section
                     </span>
                   ) : null}
+                  <div className="ml-auto flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFilteredIndex(index);
+                        openSectionLink(section.id);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                    >
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFilteredIndex(index);
+                        togglePinnedSection(section.id);
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                        isPinned
+                          ? "border-neon-cyan/45 bg-neon-cyan/10 text-cosmos-100"
+                          : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                      )}
+                    >
+                      {isPinned ? "Unpin" : "Pin"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFilteredIndex(index);
+                        copySectionLink(section.id)
+                          .then(() => setCopyState("done"))
+                          .catch(() => setCopyState("error"));
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                    >
+                      Copy link
+                    </button>
+                  </div>
                 </div>
               );
             })}
+            {filteredSectionMatches.length > 5 ? (
+              <div className="text-xs text-cosmos-200/50">
+                Showing top 5 matches. Use ↑ / ↓ to move through the full result set, then Enter to jump.
+              </div>
+            ) : null}
           </div>
         ) : null}
 
