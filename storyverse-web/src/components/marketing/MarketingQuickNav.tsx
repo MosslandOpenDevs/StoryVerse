@@ -154,6 +154,7 @@ async function copyShortcutGuide() {
     "O → Open the direct link for the current section in a new tab",
     "B → Copy the reusable navigation bundle",
     "R → Resume the last saved section",
+    "Shift+R → Reset saved nav state (pins, trail, last stop, filter)",
     "F → Pin or unpin the current section",
     "5-8 → Jump to pinned sections",
     "9 → Jump to the latest recent-trail section",
@@ -343,6 +344,21 @@ function clearStoredLastStop() {
 
   try {
     window.localStorage.removeItem(LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY);
+  } catch {
+    // Ignore storage access issues.
+  }
+}
+
+function clearStoredNavigationState() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY);
+    window.localStorage.removeItem(RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY);
+    window.localStorage.removeItem(PINNED_MARKETING_SECTION_STORAGE_KEY);
+    window.localStorage.removeItem(MARKETING_FILTER_QUERY_STORAGE_KEY);
   } catch {
     // Ignore storage access issues.
   }
@@ -876,6 +892,12 @@ export function MarketingQuickNav() {
         return;
       }
 
+      if (event.shiftKey && event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        resetNavigationState();
+        return;
+      }
+
       if (event.key.toLowerCase() === "r" && resumeId) {
         event.preventDefault();
         if (!jumpToSection(resumeId)) return;
@@ -925,6 +947,24 @@ export function MarketingQuickNav() {
       .map((section) => [section.id, section]),
   ).values()).slice(0, 4);
   const isActiveSectionPinned = pinnedSections.includes(activeSection.id);
+
+  function resetNavigationState() {
+    clearStoredNavigationState();
+    setResumeId(null);
+    setPinnedSections([]);
+    setRecentTrail([]);
+    setSearchQuery("");
+    setSelectedFilteredIndex(0);
+    setShowAllFilteredResults(false);
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.setTimeout(() => {
+      const firstSection = SECTIONS[0];
+      if (!firstSection) return;
+      setActiveId(firstSection.id);
+      document.getElementById(firstSection.id)?.focus({ preventScroll: true });
+    }, 220);
+  }
 
   return (
     <div className="sticky top-16 z-40 px-6 pb-2">
@@ -1068,6 +1108,17 @@ export function MarketingQuickNav() {
             >
               <CircleHelp className="h-3.5 w-3.5" />
               {shortcutGuideOpen ? "Hide help" : "Shortcuts"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                resetNavigationState();
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              title="Reset saved landing navigation state"
+            >
+              Reset nav state
             </button>
 
             <button
@@ -1506,6 +1557,7 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">C copy current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">O open current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">R resume last stop</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Shift+R reset saved nav state</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">F pin current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">5-8 pinned recall</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">9 recent bounceback</span>
