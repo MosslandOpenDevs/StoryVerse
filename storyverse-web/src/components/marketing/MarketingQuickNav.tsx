@@ -1298,6 +1298,9 @@ export function MarketingQuickNav() {
               Selected {selectedFilteredIndex + 1}/{filteredSections.length} · {selectedFilteredSection.label}
               {selectedFilteredMatch?.matchedFields.length ? ` · via ${selectedFilteredMatch.matchedFields.join(", ")}` : ""}
             </span>
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+              {selectedFilteredSection.hint}
+            </span>
             <button
               type="button"
               onClick={() => {
@@ -1307,6 +1310,21 @@ export function MarketingQuickNav() {
               className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 text-xs font-medium text-cosmos-100 transition-colors hover:border-neon-cyan/60 hover:bg-neon-cyan/14"
             >
               Jump selected
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                togglePinnedSection(selectedFilteredSection.id);
+              }}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                pinnedSections.includes(selectedFilteredSection.id)
+                  ? "border-neon-cyan/45 bg-neon-cyan/10 text-cosmos-100"
+                  : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+              )}
+              title={`${pinnedSections.includes(selectedFilteredSection.id) ? "Unpin" : "Pin"} ${selectedFilteredSection.label}`}
+            >
+              {pinnedSections.includes(selectedFilteredSection.id) ? "Unpin selected" : "Pin selected"}
             </button>
             <button
               type="button"
