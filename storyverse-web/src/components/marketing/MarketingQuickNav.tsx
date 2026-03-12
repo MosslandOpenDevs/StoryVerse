@@ -388,6 +388,8 @@ export function MarketingQuickNav() {
   const [shortcutGuideOpen, setShortcutGuideOpen] = useState(false);
   const [shortcutGuideCopyState, setShortcutGuideCopyState] = useState<"idle" | "done" | "error">("idle");
   const [filteredResultsCopyState, setFilteredResultsCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [pinnedResultsCopyState, setPinnedResultsCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [recentTrailCopyState, setRecentTrailCopyState] = useState<"idle" | "done" | "error">("idle");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilteredIndex, setSelectedFilteredIndex] = useState(0);
   const [showAllFilteredResults, setShowAllFilteredResults] = useState(false);
@@ -396,6 +398,8 @@ export function MarketingQuickNav() {
   const clearRescueBundleCopyStateTimeoutRef = useRef<number | null>(null);
   const clearShortcutGuideCopyStateTimeoutRef = useRef<number | null>(null);
   const clearFilteredResultsCopyStateTimeoutRef = useRef<number | null>(null);
+  const clearPinnedResultsCopyStateTimeoutRef = useRef<number | null>(null);
+  const clearRecentTrailCopyStateTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeIndex = useMemo(() => SECTIONS.findIndex((section) => section.id === activeId), [activeId]);
@@ -660,6 +664,44 @@ export function MarketingQuickNav() {
   }, [filteredResultsCopyState]);
 
   useEffect(() => {
+    if (pinnedResultsCopyState === "idle") return;
+
+    if (clearPinnedResultsCopyStateTimeoutRef.current !== null) {
+      window.clearTimeout(clearPinnedResultsCopyStateTimeoutRef.current);
+    }
+
+    clearPinnedResultsCopyStateTimeoutRef.current = window.setTimeout(
+      () => setPinnedResultsCopyState("idle"),
+      pinnedResultsCopyState === "done" ? 1600 : 2200,
+    );
+
+    return () => {
+      if (clearPinnedResultsCopyStateTimeoutRef.current !== null) {
+        window.clearTimeout(clearPinnedResultsCopyStateTimeoutRef.current);
+      }
+    };
+  }, [pinnedResultsCopyState]);
+
+  useEffect(() => {
+    if (recentTrailCopyState === "idle") return;
+
+    if (clearRecentTrailCopyStateTimeoutRef.current !== null) {
+      window.clearTimeout(clearRecentTrailCopyStateTimeoutRef.current);
+    }
+
+    clearRecentTrailCopyStateTimeoutRef.current = window.setTimeout(
+      () => setRecentTrailCopyState("idle"),
+      recentTrailCopyState === "done" ? 1600 : 2200,
+    );
+
+    return () => {
+      if (clearRecentTrailCopyStateTimeoutRef.current !== null) {
+        window.clearTimeout(clearRecentTrailCopyStateTimeoutRef.current);
+      }
+    };
+  }, [recentTrailCopyState]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const tagName = target?.tagName;
@@ -736,8 +778,8 @@ export function MarketingQuickNav() {
 
         event.preventDefault();
         copyPinnedResultsBundle(pinnedSectionsForCopy)
-          .then(() => setFilteredResultsCopyState("done"))
-          .catch(() => setFilteredResultsCopyState("error"));
+          .then(() => setPinnedResultsCopyState("done"))
+          .catch(() => setPinnedResultsCopyState("error"));
         return;
       }
 
@@ -748,8 +790,8 @@ export function MarketingQuickNav() {
 
         event.preventDefault();
         copyRecentTrailBundle(recentTrailSections)
-          .then(() => setFilteredResultsCopyState("done"))
-          .catch(() => setFilteredResultsCopyState("error"));
+          .then(() => setRecentTrailCopyState("done"))
+          .catch(() => setRecentTrailCopyState("error"));
         return;
       }
 
@@ -1585,15 +1627,15 @@ export function MarketingQuickNav() {
                 type="button"
                 onClick={() => {
                   copyPinnedResultsBundle(pinnedSectionItems)
-                    .then(() => setFilteredResultsCopyState("done"))
-                    .catch(() => setFilteredResultsCopyState("error"));
+                    .then(() => setPinnedResultsCopyState("done"))
+                    .catch(() => setPinnedResultsCopyState("error"));
                 }}
                 className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
                 title={`Copy pinned section bundle for ${pinnedSectionItems.length} sections`}
               >
-                {filteredResultsCopyState === "done"
+                {pinnedResultsCopyState === "done"
                   ? `Copied ${pinnedSectionItems.length} pins`
-                  : filteredResultsCopyState === "error"
+                  : pinnedResultsCopyState === "error"
                     ? "Copy failed"
                     : `Copy ${pinnedSectionItems.length} pins`}
               </button>
@@ -1702,15 +1744,15 @@ export function MarketingQuickNav() {
                 type="button"
                 onClick={() => {
                   copyRecentTrailBundle(recentTrailSections)
-                    .then(() => setFilteredResultsCopyState("done"))
-                    .catch(() => setFilteredResultsCopyState("error"));
+                    .then(() => setRecentTrailCopyState("done"))
+                    .catch(() => setRecentTrailCopyState("error"));
                 }}
                 className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
                 title={`Copy recent trail bundle for ${recentTrailSections.length} sections`}
               >
-                {filteredResultsCopyState === "done"
+                {recentTrailCopyState === "done"
                   ? `Copied ${recentTrailSections.length} trail items`
-                  : filteredResultsCopyState === "error"
+                  : recentTrailCopyState === "error"
                     ? "Copy failed"
                     : `Copy ${recentTrailSections.length} trail items`}
               </button>
