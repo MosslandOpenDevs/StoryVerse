@@ -160,6 +160,18 @@ function savePinnedSections(sectionIds: string[]) {
   }
 }
 
+function clearStoredLastStop() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY);
+  } catch {
+    // Ignore storage access issues.
+  }
+}
+
 export function MarketingQuickNav() {
   const [activeId, setActiveId] = useState<string>(SECTIONS[0]?.id ?? "hero");
   const [resumeId, setResumeId] = useState<string | null>(null);
@@ -194,6 +206,8 @@ export function MarketingQuickNav() {
   const canJumpPrev = activeIndex > 0;
   const canJumpNext = activeIndex >= 0 && activeIndex < SECTIONS.length - 1;
   const progressPercent = SECTIONS.length > 1 && activeIndex >= 0 ? Math.round((activeIndex / (SECTIONS.length - 1)) * 100) : 100;
+  const previousSection = canJumpPrev ? SECTIONS[Math.max(0, activeIndex - 1)] ?? null : null;
+  const nextSection = canJumpNext ? SECTIONS[Math.min(SECTIONS.length - 1, activeIndex + 1)] ?? null : null;
   const resumeSection = useMemo(
     () => (resumeId ? SECTIONS.find((section) => section.id === resumeId) ?? null : null),
     [resumeId],
@@ -624,6 +638,55 @@ export function MarketingQuickNav() {
                   : `Copy ${activeSection.label}`}
             </button>
           </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/65">
+          <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/70">
+            Prev {previousSection?.label ?? "—"}
+          </span>
+          <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/70">
+            Next {nextSection?.label ?? "—"}
+          </span>
+          <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/70">
+            Last stop {resumeSection?.label ?? "—"}
+          </span>
+          {resumeSection ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  openSectionLink(resumeSection.id);
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title={`Open last stop ${resumeSection.label}`}
+              >
+                Open last stop #{resumeSection.id}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  copySectionLink(resumeSection.id)
+                    .then(() => setCopyState("done"))
+                    .catch(() => setCopyState("error"));
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title={`Copy last stop ${resumeSection.label}`}
+              >
+                Copy last stop #{resumeSection.id}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  clearStoredLastStop();
+                  setResumeId(null);
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title={`Forget saved last stop ${resumeSection.label}`}
+              >
+                Forget last stop
+              </button>
+            </>
+          ) : null}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
