@@ -463,7 +463,7 @@ export function MarketingQuickNav() {
         return;
       }
 
-      if (event.key === "[" || event.key.toLowerCase() === "j") {
+      if (event.key === "[" || event.key.toLowerCase() === "k") {
         event.preventDefault();
         const previousSection = SECTIONS[Math.max(0, activeIndex - 1)];
         if (!previousSection || !canJumpPrev || !jumpToSection(previousSection.id)) return;
@@ -471,7 +471,7 @@ export function MarketingQuickNav() {
         return;
       }
 
-      if (event.key === "]" || event.key.toLowerCase() === "k") {
+      if (event.key === "]" || event.key.toLowerCase() === "j") {
         event.preventDefault();
         const nextSection = SECTIONS[Math.min(SECTIONS.length - 1, activeIndex + 1)];
         if (!nextSection || !canJumpNext || !jumpToSection(nextSection.id)) return;
