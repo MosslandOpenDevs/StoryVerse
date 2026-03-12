@@ -629,6 +629,7 @@ export function MarketingQuickNav() {
   }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
 
   const recentTrailSections = recentTrail
+    .filter((sectionId) => sectionId !== activeSection.id)
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
     .filter((section): section is MarketingSection => Boolean(section));
   const pinnedSectionItems = pinnedSections
@@ -1205,86 +1206,196 @@ export function MarketingQuickNav() {
         ) : null}
 
         {pinnedSectionItems.length > 0 ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
-            <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Pinned lanes</span>
-            {pinnedSectionItems.map((section, index) => {
-              const isActive = section.id === activeSection.id;
+          <div className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Pinned lanes</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                1-4 keyboard recall
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {pinnedSectionItems.map((section, index) => {
+                const isActive = section.id === activeSection.id;
 
-              return (
-                <button
-                  key={`pinned-${section.id}`}
-                  type="button"
-                  onClick={() => {
-                    if (!jumpToSection(section.id)) return;
-                    setActiveId(section.id);
-                  }}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                    isActive
-                      ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
-                      : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
-                  )}
-                  title={`Jump to pinned section ${section.label}`}
-                >
-                  Pin {index + 1}
-                  <span className="text-cosmos-200/55">{section.label}</span>
-                </button>
-              );
-            })}
+                return (
+                  <div
+                    key={`pinned-${section.id}`}
+                    className={cn(
+                      "flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2",
+                      isActive
+                        ? "border-neon-cyan/40 bg-neon-cyan/10"
+                        : "border-cosmos-200/10 bg-cosmos-900/45",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!jumpToSection(section.id)) return;
+                        setActiveId(section.id);
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                        isActive
+                          ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
+                          : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                      )}
+                      title={`Jump to pinned section ${section.label}`}
+                    >
+                      Pin {index + 1}
+                      <span className="text-cosmos-200/55">{section.label}</span>
+                    </button>
+                    <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                      #{section.id}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openSectionLink(section.id);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                      title={`Open pinned section ${section.label}`}
+                    >
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        copySectionLink(section.id)
+                          .then(() => setCopyState("done"))
+                          .catch(() => setCopyState("error"));
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                      title={`Copy pinned section ${section.label}`}
+                    >
+                      Copy link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPinnedSections((current) => {
+                          const nextPinned = current.filter((sectionId) => sectionId !== section.id);
+                          savePinnedSections(nextPinned);
+                          return nextPinned;
+                        });
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                      title={`Remove pinned section ${section.label}`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
 
-            <button
-              type="button"
-              onClick={() => {
-                setPinnedSections([]);
-                savePinnedSections([]);
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
-              title="Clear pinned sections"
-            >
-              Clear pins
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPinnedSections([]);
+                  savePinnedSections([]);
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title="Clear pinned sections"
+              >
+                Clear pins
+              </button>
+            </div>
           </div>
         ) : null}
 
         {recentTrailSections.length > 0 ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
-            <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Recent trail</span>
-            {recentTrailSections.map((section, index) => {
-              const isActive = section.id === activeSection.id;
+          <div className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Recent trail</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                5-7 operator bounceback
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {recentTrailSections.map((section, index) => {
+                const isActive = section.id === activeSection.id;
 
-              return (
-                <button
-                  key={`trail-${section.id}`}
-                  type="button"
-                  onClick={() => {
-                    if (!jumpToSection(section.id)) return;
-                    setActiveId(section.id);
-                  }}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                    isActive
-                      ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
-                      : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
-                  )}
-                  title={`Jump back to ${section.label}`}
-                >
-                  Trail {index + 1}
-                  <span className="text-cosmos-200/55">{section.label}</span>
-                </button>
-              );
-            })}
+                return (
+                  <div
+                    key={`trail-${section.id}`}
+                    className={cn(
+                      "flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2",
+                      isActive
+                        ? "border-neon-cyan/40 bg-neon-cyan/10"
+                        : "border-cosmos-200/10 bg-cosmos-900/45",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!jumpToSection(section.id)) return;
+                        setActiveId(section.id);
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                        isActive
+                          ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
+                          : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                      )}
+                      title={`Jump back to ${section.label}`}
+                    >
+                      Trail {index + 1}
+                      <span className="text-cosmos-200/55">{section.label}</span>
+                    </button>
+                    <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                      #{section.id}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openSectionLink(section.id);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                      title={`Open recent section ${section.label}`}
+                    >
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        copySectionLink(section.id)
+                          .then(() => setCopyState("done"))
+                          .catch(() => setCopyState("error"));
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                      title={`Copy recent section ${section.label}`}
+                    >
+                      Copy link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecentTrail((current) => {
+                          const nextTrail = current.filter((sectionId) => sectionId !== section.id);
+                          saveRecentTrail(nextTrail);
+                          return nextTrail;
+                        });
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                      title={`Remove recent section ${section.label}`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
 
-            <button
-              type="button"
-              onClick={() => {
-                setRecentTrail([]);
-                saveRecentTrail([]);
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
-              title="Clear recent section trail"
-            >
-              Clear trail
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setRecentTrail([]);
+                  saveRecentTrail([]);
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title="Clear recent section trail"
+              >
+                Clear trail
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
