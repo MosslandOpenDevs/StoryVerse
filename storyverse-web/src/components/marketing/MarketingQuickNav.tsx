@@ -417,6 +417,7 @@ export function MarketingQuickNav() {
   const clearPinnedResultsCopyStateTimeoutRef = useRef<number | null>(null);
   const clearRecentTrailCopyStateTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const shortcutGuidePanelRef = useRef<HTMLDivElement | null>(null);
 
   const activeIndex = useMemo(() => SECTIONS.findIndex((section) => section.id === activeId), [activeId]);
   const activeSection = useMemo(
@@ -716,6 +717,21 @@ export function MarketingQuickNav() {
       }
     };
   }, [recentTrailCopyState]);
+
+  useEffect(() => {
+    if (!shortcutGuideOpen) return;
+
+    shortcutGuidePanelRef.current?.focus();
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!shortcutGuidePanelRef.current) return;
+      if (shortcutGuidePanelRef.current.contains(event.target as Node)) return;
+      setShortcutGuideOpen(false);
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [shortcutGuideOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1514,7 +1530,14 @@ export function MarketingQuickNav() {
         ) : null}
 
         {shortcutGuideOpen ? (
-          <div className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/70">
+          <div
+            ref={shortcutGuidePanelRef}
+            role="dialog"
+            aria-label="Landing shortcuts guide"
+            aria-modal="false"
+            tabIndex={-1}
+            className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/70"
+          >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 font-medium text-cosmos-100">
                 <CircleHelp className="h-3.5 w-3.5" /> Landing shortcuts guide
@@ -1546,6 +1569,7 @@ export function MarketingQuickNav() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">? toggle guide</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">click outside closes guide</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">1-4 jump sections</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">[ ] / J K previous-next</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Home / End first-last</span>
