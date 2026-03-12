@@ -711,7 +711,11 @@ export function MarketingQuickNav() {
               {activeHashLabel}
             </span>
 
-            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55 sm:hidden">
+              ? for shortcuts
+            </span>
+
+            <span className="hidden items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55 sm:inline-flex">
               1-4 / [ ] / J K / Home / End / / / C / O / R / F / ?
             </span>
 
