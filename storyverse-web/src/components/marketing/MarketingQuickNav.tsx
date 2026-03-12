@@ -152,6 +152,7 @@ async function copyShortcutGuide() {
     "Esc → Clear the filter or close the guide",
     "C → Copy the direct link for the current section",
     "O → Open the direct link for the current section in a new tab",
+    "B → Copy the reusable navigation bundle",
     "R → Resume the last saved section",
     "F → Pin or unpin the current section",
     "5-8 → Jump to pinned sections",
@@ -195,6 +196,40 @@ async function copyPinnedResultsBundle(sections: MarketingSection[]) {
   await navigator.clipboard.writeText(lines.join("\n"));
 }
 
+async function copyNavigationBundle({
+  activeSection,
+  resumeSection,
+  pinnedSections,
+  recentTrailSections,
+}: {
+  activeSection: MarketingSection | null;
+  resumeSection: MarketingSection | null;
+  pinnedSections: MarketingSection[];
+  recentTrailSections: MarketingSection[];
+}) {
+  const lines = [
+    "StoryVerse landing navigation bundle",
+    "",
+    `Current section: ${activeSection ? `${activeSection.label} (${buildAnchorUrl(activeSection.id)})` : "Top"}`,
+    `Last stop: ${resumeSection ? `${resumeSection.label} (${buildAnchorUrl(resumeSection.id)})` : "—"}`,
+    "",
+    "Pinned sections:",
+    ...(pinnedSections.length
+      ? pinnedSections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
+      : ["—"]),
+    "",
+    "Recent trail:",
+    ...(recentTrailSections.length
+      ? recentTrailSections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
+      : ["—"]),
+    "",
+    "All direct jumps:",
+    ...SECTIONS.map((section, index) => `${index + 1} → ${section.label} (${buildAnchorUrl(section.id)})`),
+  ];
+
+  await navigator.clipboard.writeText(lines.join("\n"));
+}
+
 async function copyRecentTrailBundle(sections: MarketingSection[]) {
   const lines = [
     "StoryVerse recent landing quick-nav trail",
@@ -204,6 +239,30 @@ async function copyRecentTrailBundle(sections: MarketingSection[]) {
     ...(sections.length
       ? sections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
       : ["No recent sections."]),
+  ];
+
+  await navigator.clipboard.writeText(lines.join("\n"));
+}
+
+async function copyRescueBundle({
+  query,
+  activeSection,
+  fallbackSections,
+}: {
+  query: string;
+  activeSection: MarketingSection | null;
+  fallbackSections: MarketingSection[];
+}) {
+  const lines = [
+    "StoryVerse rescue landing quick-nav bundle",
+    "",
+    `Missed filter: ${query || "—"}`,
+    `Current section: ${activeSection ? `${activeSection.label} (${buildAnchorUrl(activeSection.id)})` : "Top"}`,
+    "",
+    "Suggested recovery jumps:",
+    ...(fallbackSections.length
+      ? fallbackSections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
+      : ["No recovery jumps saved yet."]),
   ];
 
   await navigator.clipboard.writeText(lines.join("\n"));
@@ -324,6 +383,8 @@ export function MarketingQuickNav() {
   const [recentTrail, setRecentTrail] = useState<string[]>([]);
   const [pinnedSections, setPinnedSections] = useState<string[]>([]);
   const [copyState, setCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [navigationBundleCopyState, setNavigationBundleCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [rescueBundleCopyState, setRescueBundleCopyState] = useState<"idle" | "done" | "error">("idle");
   const [shortcutGuideOpen, setShortcutGuideOpen] = useState(false);
   const [shortcutGuideCopyState, setShortcutGuideCopyState] = useState<"idle" | "done" | "error">("idle");
   const [filteredResultsCopyState, setFilteredResultsCopyState] = useState<"idle" | "done" | "error">("idle");
@@ -331,6 +392,8 @@ export function MarketingQuickNav() {
   const [selectedFilteredIndex, setSelectedFilteredIndex] = useState(0);
   const [showAllFilteredResults, setShowAllFilteredResults] = useState(false);
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
+  const clearNavigationBundleCopyStateTimeoutRef = useRef<number | null>(null);
+  const clearRescueBundleCopyStateTimeoutRef = useRef<number | null>(null);
   const clearShortcutGuideCopyStateTimeoutRef = useRef<number | null>(null);
   const clearFilteredResultsCopyStateTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -519,6 +582,44 @@ export function MarketingQuickNav() {
       }
     };
   }, [copyState]);
+
+  useEffect(() => {
+    if (navigationBundleCopyState === "idle") return;
+
+    if (clearNavigationBundleCopyStateTimeoutRef.current !== null) {
+      window.clearTimeout(clearNavigationBundleCopyStateTimeoutRef.current);
+    }
+
+    clearNavigationBundleCopyStateTimeoutRef.current = window.setTimeout(
+      () => setNavigationBundleCopyState("idle"),
+      navigationBundleCopyState === "done" ? 1800 : 2200,
+    );
+
+    return () => {
+      if (clearNavigationBundleCopyStateTimeoutRef.current !== null) {
+        window.clearTimeout(clearNavigationBundleCopyStateTimeoutRef.current);
+      }
+    };
+  }, [navigationBundleCopyState]);
+
+  useEffect(() => {
+    if (rescueBundleCopyState === "idle") return;
+
+    if (clearRescueBundleCopyStateTimeoutRef.current !== null) {
+      window.clearTimeout(clearRescueBundleCopyStateTimeoutRef.current);
+    }
+
+    clearRescueBundleCopyStateTimeoutRef.current = window.setTimeout(
+      () => setRescueBundleCopyState("idle"),
+      rescueBundleCopyState === "done" ? 1800 : 2200,
+    );
+
+    return () => {
+      if (clearRescueBundleCopyStateTimeoutRef.current !== null) {
+        window.clearTimeout(clearRescueBundleCopyStateTimeoutRef.current);
+      }
+    };
+  }, [rescueBundleCopyState]);
 
   useEffect(() => {
     if (shortcutGuideCopyState === "idle") return;
@@ -717,6 +818,22 @@ export function MarketingQuickNav() {
         return;
       }
 
+      if (event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        const pinnedSectionItemsForBundle = pinnedSections
+          .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
+          .filter((section): section is MarketingSection => Boolean(section));
+        copyNavigationBundle({
+          activeSection,
+          resumeSection,
+          pinnedSections: pinnedSectionItemsForBundle,
+          recentTrailSections,
+        })
+          .then(() => setNavigationBundleCopyState("done"))
+          .catch(() => setNavigationBundleCopyState("error"));
+        return;
+      }
+
       if (event.key.toLowerCase() === "r" && resumeId) {
         event.preventDefault();
         if (!jumpToSection(resumeId)) return;
@@ -755,7 +872,7 @@ export function MarketingQuickNav() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections, pinnedSections, recentTrail, recentTrailSections, resumeId, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
+  }, [activeIndex, activeSection, canJumpNext, canJumpPrev, filteredSections, pinnedSections, recentTrail, recentTrailSections, resumeId, resumeSection, searchQuery, selectedFilteredSection, shortcutGuideOpen, togglePinnedSection]);
 
   const pinnedSectionItems = pinnedSections
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
@@ -892,7 +1009,7 @@ export function MarketingQuickNav() {
             </span>
 
             <span className="hidden items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55 sm:inline-flex">
-              1-4 / [ ] / J K / Home / End / / / C / O / R / F / ?
+              1-4 / [ ] / J K / Home / End / / / B / C / O / R / F / ?
             </span>
 
             <button
@@ -937,6 +1054,28 @@ export function MarketingQuickNav() {
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Open
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                copyNavigationBundle({
+                  activeSection,
+                  resumeSection,
+                  pinnedSections: pinnedSectionItems,
+                  recentTrailSections,
+                })
+                  .then(() => setNavigationBundleCopyState("done"))
+                  .catch(() => setNavigationBundleCopyState("error"));
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              title="Copy reusable navigation bundle"
+            >
+              {navigationBundleCopyState === "done"
+                ? "Bundle copied"
+                : navigationBundleCopyState === "error"
+                  ? "Copy failed"
+                  : "Copy navigation bundle"}
             </button>
 
             <button
@@ -1256,6 +1395,28 @@ export function MarketingQuickNav() {
                 })}
               </div>
             ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    copyRescueBundle({
+                      query: searchQuery.trim(),
+                      activeSection,
+                      fallbackSections,
+                    })
+                      .then(() => setRescueBundleCopyState("done"))
+                      .catch(() => setRescueBundleCopyState("error"));
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                  title={`Copy rescue bundle for ${fallbackSections.length} fallback sections`}
+                >
+                  {rescueBundleCopyState === "done"
+                    ? `Copied rescue bundle (${fallbackSections.length})`
+                    : rescueBundleCopyState === "error"
+                      ? "Copy failed"
+                      : `Copy rescue bundle (${fallbackSections.length})`}
+                </button>
+              </div>
           </div>
         ) : null}
 
@@ -1299,6 +1460,7 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">↑ / ↓ select</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Enter jump selected</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Esc clear or close</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">B copy navigation bundle</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">C copy current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">O open current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">R resume last stop</span>
