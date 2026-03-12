@@ -346,7 +346,9 @@ export function MarketingQuickNav() {
         tagName === "TEXTAREA" ||
         tagName === "SELECT";
 
-      if (event.key === "/" && !event.altKey && !event.shiftKey) {
+      const isSearchFocused = document.activeElement === searchInputRef.current;
+
+      if (event.key === "/" && !event.altKey && !event.shiftKey && (!isTypingTarget || isSearchFocused)) {
         event.preventDefault();
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
@@ -363,7 +365,6 @@ export function MarketingQuickNav() {
         return;
       }
 
-      const isSearchFocused = document.activeElement === searchInputRef.current;
       if (isSearchFocused && filteredSections.length > 0) {
         if (event.key === "ArrowDown") {
           event.preventDefault();
