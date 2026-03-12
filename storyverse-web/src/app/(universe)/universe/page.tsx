@@ -993,6 +993,13 @@ function UniverseContent() {
             uiLocale={state.uiLocale}
             hasActiveSearch={trimmedSearchQuery.length > 0}
             hasActiveMediumFilter={mediumFilter !== "All"}
+            quickRecoveryTerms={QUICK_FILTERS}
+            onApplyQuickRecoveryTerm={(term) => {
+              setSearchQuery(term);
+              setMediumFilter("All");
+              searchInputRef.current?.focus();
+              searchInputRef.current?.select();
+            }}
             onClearSearch={() => setSearchQuery("")}
             onClearMediumFilter={() => setMediumFilter("All")}
             onClearAllFilters={() => {
