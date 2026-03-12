@@ -20,6 +20,8 @@ const TARGET_PARAM = "target";
 const LEGACY_STORY_PARAM = "story";
 const QUICK_FILTERS = ["Sherlock", "galaxy", "dynasty", "rebellion"] as const;
 const QUICK_FILTER_SHORTCUTS = ["1", "2", "3", "4"] as const;
+const SEARCH_QUERY_STORAGE_KEY = "storyverse-universe-search-query";
+const MEDIUM_FILTER_STORAGE_KEY = "storyverse-universe-medium-filter";
 
 const COPY = {
   en: {
@@ -146,6 +148,64 @@ function parseMediumFilter(value: string | null): StoryMedium | "All" {
   return "All";
 }
 
+function loadStoredUniverseSearchQuery() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return window.localStorage.getItem(SEARCH_QUERY_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveStoredUniverseSearchQuery(value: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    if (value) {
+      window.localStorage.setItem(SEARCH_QUERY_STORAGE_KEY, value);
+      return;
+    }
+
+    window.localStorage.removeItem(SEARCH_QUERY_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures and keep the search UX non-blocking.
+  }
+}
+
+function loadStoredUniverseMediumFilter() {
+  if (typeof window === "undefined") {
+    return "All" as const;
+  }
+
+  try {
+    return parseMediumFilter(window.localStorage.getItem(MEDIUM_FILTER_STORAGE_KEY));
+  } catch {
+    return "All" as const;
+  }
+}
+
+function saveStoredUniverseMediumFilter(value: StoryMedium | "All") {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    if (value !== "All") {
+      window.localStorage.setItem(MEDIUM_FILTER_STORAGE_KEY, value);
+      return;
+    }
+
+    window.localStorage.removeItem(MEDIUM_FILTER_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures and keep the filter UX non-blocking.
+  }
+}
+
 function UniverseContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -186,21 +246,28 @@ function UniverseContent() {
   }, [loadCatalog]);
 
   useEffect(() => {
-    const nextSearchQuery = searchParams.get(SEARCH_QUERY_PARAM) ?? "";
-    const nextMediumFilter = parseMediumFilter(searchParams.get(MEDIUM_FILTER_PARAM));
+    const nextSearchQuery = searchParams.get(SEARCH_QUERY_PARAM);
+    const nextMediumFilterParam = searchParams.get(MEDIUM_FILTER_PARAM);
+    const resolvedSearchQuery = nextSearchQuery ?? loadStoredUniverseSearchQuery();
+    const resolvedMediumFilter = nextMediumFilterParam
+      ? parseMediumFilter(nextMediumFilterParam)
+      : loadStoredUniverseMediumFilter();
 
-    if (nextSearchQuery !== searchQuery) {
-      setSearchQuery(nextSearchQuery);
+    if (resolvedSearchQuery !== searchQuery) {
+      setSearchQuery(resolvedSearchQuery);
     }
 
-    if (nextMediumFilter !== mediumFilter) {
-      setMediumFilter(nextMediumFilter);
+    if (resolvedMediumFilter !== mediumFilter) {
+      setMediumFilter(resolvedMediumFilter);
     }
   }, [mediumFilter, searchParams, searchQuery]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     const trimmedQuery = searchQuery.trim();
+
+    saveStoredUniverseSearchQuery(trimmedQuery);
+    saveStoredUniverseMediumFilter(mediumFilter);
 
     if (trimmedQuery.length > 0) {
       params.set(SEARCH_QUERY_PARAM, trimmedQuery);
