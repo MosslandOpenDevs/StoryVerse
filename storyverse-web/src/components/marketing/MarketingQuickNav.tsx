@@ -1,13 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Copy, ExternalLink, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { ArrowLeft, ArrowRight, Copy, ExternalLink, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type MarketingSection = {
   id: string;
   label: string;
   hint: string;
+};
+
+type SectionMatchMeta = {
+  section: MarketingSection;
+  matchedFields: string[];
 };
 
 const LAST_ACTIVE_MARKETING_SECTION_STORAGE_KEY = "storyverse-last-marketing-section";
@@ -30,6 +35,25 @@ function getSectionByShortcutKey(shortcutKey: string) {
   }
 
   return SECTIONS[shortcutIndex] ?? null;
+}
+
+function getSectionMatchMeta(section: MarketingSection, normalizedSearchQuery: string): SectionMatchMeta | null {
+  if (!normalizedSearchQuery) {
+    return { section, matchedFields: [] };
+  }
+
+  const matchedFields: string[] = [];
+  if (section.label.toLowerCase().includes(normalizedSearchQuery)) {
+    matchedFields.push("label");
+  }
+  if (section.id.toLowerCase().includes(normalizedSearchQuery)) {
+    matchedFields.push("section id");
+  }
+  if (section.hint.toLowerCase().includes(normalizedSearchQuery)) {
+    matchedFields.push("hint");
+  }
+
+  return matchedFields.length > 0 ? { section, matchedFields } : null;
 }
 
 function buildAnchorUrl(anchorId: string) {
@@ -142,13 +166,29 @@ export function MarketingQuickNav() {
   const [recentTrail, setRecentTrail] = useState<string[]>([]);
   const [pinnedSections, setPinnedSections] = useState<string[]>([]);
   const [copyState, setCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilteredIndex, setSelectedFilteredIndex] = useState(0);
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeIndex = useMemo(() => SECTIONS.findIndex((section) => section.id === activeId), [activeId]);
   const activeSection = useMemo(
     () => SECTIONS.find((section) => section.id === activeId) ?? SECTIONS[0] ?? { id: "hero", label: "Hero", hint: "Top overview" },
     [activeId],
   );
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const filteredSectionMatches = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return SECTIONS.map((section) => ({ section, matchedFields: [] }));
+    }
+
+    return SECTIONS.map((section) => getSectionMatchMeta(section, normalizedSearchQuery)).filter(
+      (match): match is SectionMatchMeta => Boolean(match),
+    );
+  }, [normalizedSearchQuery]);
+  const filteredSections = filteredSectionMatches.map((match) => match.section);
+  const selectedFilteredSection = filteredSections[Math.min(selectedFilteredIndex, Math.max(filteredSections.length - 1, 0))] ?? null;
+  const selectedFilteredMatch = filteredSectionMatches[Math.min(selectedFilteredIndex, Math.max(filteredSectionMatches.length - 1, 0))] ?? null;
   const activeHashLabel = `#${activeSection.id}`;
   const activePositionLabel = activeIndex >= 0 ? `${activeIndex + 1}/${SECTIONS.length}` : `1/${SECTIONS.length}`;
   const canJumpPrev = activeIndex > 0;
@@ -159,6 +199,19 @@ export function MarketingQuickNav() {
     [resumeId],
   );
   const showResumeButton = Boolean(resumeSection) && resumeSection?.id !== activeSection.id;
+
+  useEffect(() => {
+    setSelectedFilteredIndex(0);
+  }, [normalizedSearchQuery]);
+
+  useEffect(() => {
+    if (!filteredSections.length) {
+      setSelectedFilteredIndex(0);
+      return;
+    }
+
+    setSelectedFilteredIndex((current) => Math.min(current, filteredSections.length - 1));
+  }, [filteredSections]);
 
   useEffect(() => {
     const sections = SECTIONS.map((section) => document.getElementById(section.id)).filter(
@@ -279,7 +332,46 @@ export function MarketingQuickNav() {
         tagName === "TEXTAREA" ||
         tagName === "SELECT";
 
+      if (event.key === "/" && !event.altKey && !event.shiftKey) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (event.key === "Escape" && !event.altKey && !event.metaKey && !event.ctrlKey) {
+        if (document.activeElement === searchInputRef.current || searchQuery) {
+          event.preventDefault();
+          setSearchQuery("");
+          setSelectedFilteredIndex(0);
+          searchInputRef.current?.blur();
+        }
+        return;
+      }
+
+      const isSearchFocused = document.activeElement === searchInputRef.current;
+      if (isSearchFocused && filteredSections.length > 0) {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          setSelectedFilteredIndex((current) => (current + 1) % filteredSections.length);
+          return;
+        }
+
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          setSelectedFilteredIndex((current) => (current - 1 + filteredSections.length) % filteredSections.length);
+          return;
+        }
+      }
+
       if (isTypingTarget || event.metaKey || event.ctrlKey) {
+        return;
+      }
+
+      if (isSearchFocused && event.key === "Enter" && selectedFilteredSection) {
+        event.preventDefault();
+        if (!jumpToSection(selectedFilteredSection.id)) return;
+        setActiveId(selectedFilteredSection.id);
         return;
       }
 
@@ -352,7 +444,7 @@ export function MarketingQuickNav() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, resumeId, togglePinnedSection]);
+  }, [activeIndex, activeSection.id, canJumpNext, canJumpPrev, filteredSections.length, resumeId, searchQuery, selectedFilteredSection, togglePinnedSection]);
 
   const recentTrailSections = recentTrail
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
@@ -372,166 +464,306 @@ export function MarketingQuickNav() {
           />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-cosmos-200/65">
-          <Sparkles className="h-4 w-4 text-neon-cyan" />
-          Landing quick nav
-        </div>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-cosmos-200/65">
+            <Sparkles className="h-4 w-4 text-neon-cyan" />
+            Landing quick nav
+          </div>
 
-        <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              if (!canJumpPrev) return;
-              const previousSection = SECTIONS[Math.max(0, activeIndex - 1)];
-              if (!previousSection || !jumpToSection(previousSection.id)) return;
-              setActiveId(previousSection.id);
-            }}
-            disabled={!canJumpPrev}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-              canJumpPrev
-                ? "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100"
-                : "cursor-not-allowed border-cosmos-200/10 bg-cosmos-900/40 text-cosmos-200/35",
-            )}
-            title="Jump to previous section"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Prev
-          </button>
-
-          {showResumeButton && resumeSection ? (
+          <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => {
-                if (!jumpToSection(resumeSection.id)) return;
-                setActiveId(resumeSection.id);
+                if (!canJumpPrev) return;
+                const previousSection = SECTIONS[Math.max(0, activeIndex - 1)];
+                if (!previousSection || !jumpToSection(previousSection.id)) return;
+                setActiveId(previousSection.id);
               }}
-              className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 text-xs font-medium text-cosmos-100 transition-all hover:border-neon-cyan/60 hover:bg-neon-cyan/14"
-              title={`Resume ${resumeSection.label}`}
+              disabled={!canJumpPrev}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                canJumpPrev
+                  ? "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100"
+                  : "cursor-not-allowed border-cosmos-200/10 bg-cosmos-900/40 text-cosmos-200/35",
+              )}
+              title="Jump to previous section"
             >
-              Resume {resumeSection.label}
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Prev
             </button>
-          ) : null}
 
-          {SECTIONS.map((section) => {
-            const isActive = section.id === activeSection?.id;
-
-            return (
+            {showResumeButton && resumeSection ? (
               <button
-                key={section.id}
                 type="button"
                 onClick={() => {
-                  if (!jumpToSection(section.id)) return;
-                  setActiveId(section.id);
+                  if (!jumpToSection(resumeSection.id)) return;
+                  setActiveId(resumeSection.id);
                 }}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                  isActive
-                    ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
-                    : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
-                )}
-                aria-pressed={isActive}
-                title={`${section.label} · ${section.hint} · press ${SECTIONS.findIndex((candidate) => candidate.id === section.id) + 1}`}
+                className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 text-xs font-medium text-cosmos-100 transition-all hover:border-neon-cyan/60 hover:bg-neon-cyan/14"
+                title={`Resume ${resumeSection.label}`}
               >
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-current/20 px-1 text-[10px] font-semibold leading-none text-cosmos-200/55">
-                    {SECTIONS.findIndex((candidate) => candidate.id === section.id) + 1}
-                  </span>
-                  <span>{section.label}</span>
-                </span>
-                <span className="hidden text-[10px] text-cosmos-200/45 sm:inline">{section.hint}</span>
+                Resume {resumeSection.label}
               </button>
-            );
-          })}
+            ) : null}
 
-          <button
-            type="button"
-            onClick={() => {
-              if (!canJumpNext) return;
-              const nextSection = SECTIONS[Math.min(SECTIONS.length - 1, activeIndex + 1)];
-              if (!nextSection || !jumpToSection(nextSection.id)) return;
-              setActiveId(nextSection.id);
-            }}
-            disabled={!canJumpNext}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-              canJumpNext
-                ? "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100"
-                : "cursor-not-allowed border-cosmos-200/10 bg-cosmos-900/40 text-cosmos-200/35",
-            )}
-            title="Jump to next section"
-          >
-            Next
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+            {SECTIONS.map((section) => {
+              const isActive = section.id === activeSection?.id;
+
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => {
+                    if (!jumpToSection(section.id)) return;
+                    setActiveId(section.id);
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                    isActive
+                      ? "border-neon-cyan/60 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
+                      : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                  )}
+                  aria-pressed={isActive}
+                  title={`${section.label} · ${section.hint} · press ${SECTIONS.findIndex((candidate) => candidate.id === section.id) + 1}`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-current/20 px-1 text-[10px] font-semibold leading-none text-cosmos-200/55">
+                      {SECTIONS.findIndex((candidate) => candidate.id === section.id) + 1}
+                    </span>
+                    <span>{section.label}</span>
+                  </span>
+                  <span className="hidden text-[10px] text-cosmos-200/45 sm:inline">{section.hint}</span>
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!canJumpNext) return;
+                const nextSection = SECTIONS[Math.min(SECTIONS.length - 1, activeIndex + 1)];
+                if (!nextSection || !jumpToSection(nextSection.id)) return;
+                setActiveId(nextSection.id);
+              }}
+              disabled={!canJumpNext}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                canJumpNext
+                  ? "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100"
+                  : "cursor-not-allowed border-cosmos-200/10 bg-cosmos-900/40 text-cosmos-200/35",
+              )}
+              title="Jump to next section"
+            >
+              Next
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span
+              className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70"
+              title={`Section ${activePositionLabel}`}
+            >
+              {activePositionLabel}
+            </span>
+
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
+              Progress {progressPercent}%
+            </span>
+
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
+              {activeHashLabel}
+            </span>
+
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+              1-4 / [ ] / J K / Home / End / / / C / O / R / F
+            </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                togglePinnedSection(activeSection.id);
+              }}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                isActiveSectionPinned
+                  ? "border-neon-cyan/50 bg-neon-cyan/12 text-cosmos-100"
+                  : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+              )}
+              title={`${isActiveSectionPinned ? "Unpin" : "Pin"} ${activeSection.label}`}
+            >
+              {isActiveSectionPinned ? "Pinned" : "Pin current"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                openSectionLink(activeSection.id);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              title={`Open ${activeSection.label} in a new tab`}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                copySectionLink(activeSection.id)
+                  .then(() => setCopyState("done"))
+                  .catch(() => setCopyState("error"));
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              title={`Copy direct link to ${activeSection.label}`}
+            >
+              <Copy className="h-3.5 w-3.5" />
+              {copyState === "done"
+                ? "Link copied"
+                : copyState === "error"
+                  ? "Copy failed"
+                  : `Copy ${activeSection.label}`}
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <span
-            className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70"
-            title={`Section ${activePositionLabel}`}
-          >
-            {activePositionLabel}
-          </span>
-
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cosmos-200/45" />
+            <input
+              ref={searchInputRef}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event: ReactKeyboardEvent<HTMLInputElement>) => {
+                if (event.key === "Enter" && selectedFilteredSection) {
+                  event.preventDefault();
+                  if (!jumpToSection(selectedFilteredSection.id)) return;
+                  setActiveId(selectedFilteredSection.id);
+                }
+              }}
+              placeholder="Filter sections (/ to focus, ↑/↓ choose, Enter to jump)"
+              aria-label="Filter marketing sections"
+              className="w-full rounded-full border border-cosmos-200/10 bg-cosmos-900/70 py-2 pl-9 pr-3 text-xs text-cosmos-100 outline-none transition-colors placeholder:text-cosmos-200/35 focus:border-neon-cyan/45"
+            />
+          </div>
           <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
-            Progress {progressPercent}%
+            Matches {filteredSections.length}/{SECTIONS.length}
           </span>
-
-          <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
-            {activeHashLabel}
-          </span>
-
-          <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
-            1-4 / [ ] / J K / Home / End / C / O / R / F
-          </span>
-
-          <button
-            type="button"
-            onClick={() => {
-              togglePinnedSection(activeSection.id);
-            }}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-              isActiveSectionPinned
-                ? "border-neon-cyan/50 bg-neon-cyan/12 text-cosmos-100"
-                : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
-            )}
-            title={`${isActiveSectionPinned ? "Unpin" : "Pin"} ${activeSection.label}`}
-          >
-            {isActiveSectionPinned ? "Pinned" : "Pin current"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              openSectionLink(activeSection.id);
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
-            title={`Open ${activeSection.label} in a new tab`}
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            Open
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              copySectionLink(activeSection.id)
-                .then(() => setCopyState("done"))
-                .catch(() => setCopyState("error"));
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
-            title={`Copy direct link to ${activeSection.label}`}
-          >
-            <Copy className="h-3.5 w-3.5" />
-            {copyState === "done"
-              ? "Link copied"
-              : copyState === "error"
-                ? "Copy failed"
-                : `Copy ${activeSection.label}`}
-          </button>
+          {normalizedSearchQuery ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                searchInputRef.current?.focus();
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+            >
+              Clear filter
+            </button>
+          ) : null}
         </div>
+
+        {selectedFilteredSection && normalizedSearchQuery ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
+            <span className="inline-flex items-center rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 text-xs font-medium text-cosmos-100">
+              Selected {selectedFilteredIndex + 1}/{filteredSections.length} · {selectedFilteredSection.label}
+              {selectedFilteredMatch?.matchedFields.length ? ` · via ${selectedFilteredMatch.matchedFields.join(", ")}` : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (!jumpToSection(selectedFilteredSection.id)) return;
+                setActiveId(selectedFilteredSection.id);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 text-xs font-medium text-cosmos-100 transition-colors hover:border-neon-cyan/60 hover:bg-neon-cyan/14"
+            >
+              Jump selected
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                openSectionLink(selectedFilteredSection.id);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+            >
+              Open #{selectedFilteredSection.id}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                copySectionLink(selectedFilteredSection.id)
+                  .then(() => setCopyState("done"))
+                  .catch(() => setCopyState("error"));
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+            >
+              Copy #{selectedFilteredSection.id}
+            </button>
+          </div>
+        ) : null}
+
+        {normalizedSearchQuery && filteredSectionMatches.length > 0 ? (
+          <div className="mt-3 grid gap-2 border-t border-cosmos-200/10 pt-3">
+            {filteredSectionMatches.map((match, index) => {
+              const { section, matchedFields } = match;
+              const isSelected = selectedFilteredSection?.id === section.id;
+              const isActive = activeSection.id === section.id;
+
+              return (
+                <div
+                  key={`filtered-${section.id}`}
+                  className={cn(
+                    "flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2",
+                    isSelected
+                      ? "border-neon-cyan/40 bg-neon-cyan/10"
+                      : "border-cosmos-200/10 bg-cosmos-900/45",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFilteredIndex(index);
+                      if (!jumpToSection(section.id)) return;
+                      setActiveId(section.id);
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                      isSelected || isActive
+                        ? "border-neon-cyan/45 bg-neon-cyan/10 text-cosmos-100"
+                        : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                    )}
+                  >
+                    #{index + 1} {section.label}
+                  </button>
+                  <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
+                    #{section.id}
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                    {section.hint}
+                  </span>
+                  {matchedFields.map((field) => (
+                    <span
+                      key={`${section.id}-${field}`}
+                      className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55"
+                    >
+                      match {field}
+                    </span>
+                  ))}
+                  {isActive ? (
+                    <span className="inline-flex items-center rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 text-xs font-medium text-cosmos-100">
+                      live section
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {normalizedSearchQuery && filteredSectionMatches.length === 0 ? (
+          <div className="mt-3 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/55">
+            No sections match that filter yet. Try hero, catalog, launch, or section ids like story-catalog.
+          </div>
+        ) : null}
 
         {pinnedSectionItems.length > 0 ? (
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
@@ -618,6 +850,5 @@ export function MarketingQuickNav() {
         ) : null}
       </div>
     </div>
-  </div>
   );
 }
