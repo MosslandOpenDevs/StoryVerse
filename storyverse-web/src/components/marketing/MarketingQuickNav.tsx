@@ -156,6 +156,7 @@ async function copyShortcutGuide() {
     "5-8 → Jump to pinned sections",
     "9 → Jump to the latest recent-trail section",
     "Shift+C (while filter is focused) → Copy the filtered result bundle",
+    "Shift+P → Copy the pinned section bundle",
     "",
     ...SECTIONS.map((section, index) => `${index + 1} → ${section.label} (${buildAnchorUrl(section.id)})`),
   ];
@@ -173,6 +174,20 @@ async function copyFilteredResultsBundle(query: string, sections: MarketingSecti
     ...(sections.length
       ? sections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
       : ["No matched sections."]),
+  ];
+
+  await navigator.clipboard.writeText(lines.join("\n"));
+}
+
+async function copyPinnedResultsBundle(sections: MarketingSection[]) {
+  const lines = [
+    "StoryVerse pinned landing quick-nav",
+    "",
+    `Pinned count: ${sections.length}`,
+    "",
+    ...(sections.length
+      ? sections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
+      : ["No pinned sections."]),
   ];
 
   await navigator.clipboard.writeText(lines.join("\n"));
@@ -546,6 +561,25 @@ export function MarketingQuickNav() {
             .catch(() => setFilteredResultsCopyState("error"));
           return;
         }
+      }
+
+      if (event.shiftKey && event.key.toLowerCase() === "p") {
+        if (!pinnedSections.length) {
+          return;
+        }
+
+        const pinnedSectionsForCopy = pinnedSections
+          .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
+          .filter((section): section is MarketingSection => Boolean(section));
+        if (!pinnedSectionsForCopy.length) {
+          return;
+        }
+
+        event.preventDefault();
+        copyPinnedResultsBundle(pinnedSectionsForCopy)
+          .then(() => setFilteredResultsCopyState("done"))
+          .catch(() => setFilteredResultsCopyState("error"));
+        return;
       }
 
       if (isTypingTarget || event.metaKey || event.ctrlKey) {
@@ -1205,6 +1239,7 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">F pin current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">5-8 pinned recall</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">9 recent bounceback</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Shift+P copy pinned bundle</span>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {SECTIONS.map((section, index) => (
@@ -1238,6 +1273,9 @@ export function MarketingQuickNav() {
               <span className="text-[11px] uppercase tracking-[0.22em] text-cosmos-200/45">Pinned lanes</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
                 5-8 keyboard recall
+              </span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                Shift+P copy bundle
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -1313,6 +1351,23 @@ export function MarketingQuickNav() {
                   </div>
                 );
               })}
+
+              <button
+                type="button"
+                onClick={() => {
+                  copyPinnedResultsBundle(pinnedSectionItems)
+                    .then(() => setFilteredResultsCopyState("done"))
+                    .catch(() => setFilteredResultsCopyState("error"));
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title={`Copy pinned section bundle for ${pinnedSectionItems.length} sections`}
+              >
+                {filteredResultsCopyState === "done"
+                  ? `Copied ${pinnedSectionItems.length} pins`
+                  : filteredResultsCopyState === "error"
+                    ? "Copy failed"
+                    : `Copy ${pinnedSectionItems.length} pins`}
+              </button>
 
               <button
                 type="button"
