@@ -634,6 +634,11 @@ export function MarketingQuickNav() {
   const pinnedSectionItems = pinnedSections
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
     .filter((section): section is MarketingSection => Boolean(section));
+  const fallbackSections = Array.from(new Map(
+    [activeSection, resumeSection, ...pinnedSectionItems, ...recentTrailSections]
+      .filter((section): section is MarketingSection => Boolean(section))
+      .map((section) => [section.id, section]),
+  ).values()).slice(0, 4);
   const isActiveSectionPinned = pinnedSections.includes(activeSection.id);
 
   return (
@@ -1083,8 +1088,48 @@ export function MarketingQuickNav() {
         ) : null}
 
         {normalizedSearchQuery && filteredSectionMatches.length === 0 ? (
-          <div className="mt-3 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/55">
-            No sections match that filter yet. Try hero, catalog, launch, or section ids like story-catalog.
+          <div className="mt-3 grid gap-3 border-t border-cosmos-200/10 pt-3 text-xs text-cosmos-200/55">
+            <div>
+              No sections match that filter yet. Try hero, catalog, launch, or section ids like story-catalog.
+              {fallbackSections.length ? " You can also jump back into your live, pinned, or recent sections below." : ""}
+            </div>
+            {fallbackSections.length ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {fallbackSections.map((section) => {
+                  const isLive = activeSection.id === section.id;
+                  const isPinned = pinnedSections.includes(section.id);
+                  const isResume = resumeSection?.id === section.id;
+                  const isRecent = recentTrailSections.some((recentSection) => recentSection.id === section.id);
+                  const badges = [
+                    isLive ? "live" : null,
+                    isPinned ? "pinned" : null,
+                    isResume ? "last stop" : null,
+                    isRecent ? "recent" : null,
+                  ].filter(Boolean).join(" · ");
+
+                  return (
+                    <button
+                      key={`rescue-${section.id}`}
+                      type="button"
+                      onClick={() => {
+                        if (!jumpToSection(section.id)) return;
+                        setActiveId(section.id);
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                        isLive
+                          ? "border-neon-cyan/45 bg-neon-cyan/10 text-cosmos-100"
+                          : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                      )}
+                      title={`Jump to ${section.label}${badges ? ` · ${badges}` : ""}`}
+                    >
+                      Rescue → {section.label}
+                      {badges ? <span className="text-cosmos-200/50">{badges}</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
