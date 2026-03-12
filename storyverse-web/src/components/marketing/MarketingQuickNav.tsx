@@ -149,6 +149,8 @@ async function copyShortcutGuide() {
     "/ → Focus the section filter",
     "↑ / ↓ → Move through filtered matches",
     "Enter → Jump to the selected filtered match",
+    "Cmd/Ctrl+Enter → Open the selected filtered match in a new tab",
+    "Alt+Enter → Copy the selected filtered match link",
     "Esc → Clear the filter or close the guide",
     "C → Copy the direct link for the current section",
     "O → Open the direct link for the current section in a new tab",
@@ -784,6 +786,26 @@ export function MarketingQuickNav() {
         if (event.key === "ArrowUp") {
           event.preventDefault();
           setSelectedFilteredIndex((current) => (current - 1 + filteredSections.length) % filteredSections.length);
+          return;
+        }
+
+        if (event.key === "Enter" && event.metaKey && selectedFilteredSection) {
+          event.preventDefault();
+          openSectionLink(selectedFilteredSection.id);
+          return;
+        }
+
+        if (event.key === "Enter" && event.ctrlKey && selectedFilteredSection) {
+          event.preventDefault();
+          openSectionLink(selectedFilteredSection.id);
+          return;
+        }
+
+        if (event.key === "Enter" && event.altKey && selectedFilteredSection) {
+          event.preventDefault();
+          copySectionLink(selectedFilteredSection.id)
+            .then(() => setCopyState("done"))
+            .catch(() => setCopyState("error"));
           return;
         }
 
