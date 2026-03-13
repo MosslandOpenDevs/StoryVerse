@@ -161,6 +161,7 @@ async function copyShortcutGuide() {
     "5-8 → Jump to pinned sections",
     "9 → Jump to the latest recent-trail section",
     "Shift+C (while filter is focused) → Copy the filtered result bundle",
+    "Shift+F (while filter is focused) → Pin or unpin all filtered matches",
     "Shift+P → Copy the pinned section bundle",
     "Shift+T → Copy the recent trail bundle",
     "",
@@ -778,6 +779,20 @@ export function MarketingQuickNav() {
       }
 
       if (isSearchFocused && filteredSections.length > 0) {
+        if (event.shiftKey && event.key.toLowerCase() === "f") {
+          event.preventDefault();
+          const everyFilteredSectionPinned = filteredSections.every((section) => pinnedSections.includes(section.id));
+          const nextPinnedSections = everyFilteredSectionPinned
+            ? pinnedSections.filter((sectionId) => !filteredSections.some((section) => section.id === sectionId))
+            : [
+                ...filteredSections.map((section) => section.id),
+                ...pinnedSections.filter((sectionId) => !filteredSections.some((section) => section.id === sectionId)),
+              ].slice(0, MAX_PINNED_MARKETING_SECTIONS);
+          savePinnedSections(nextPinnedSections);
+          setPinnedSections(nextPinnedSections);
+          return;
+        }
+
         if (event.key === "ArrowDown") {
           event.preventDefault();
           setSelectedFilteredIndex((current) => (current + 1) % filteredSections.length);
@@ -980,6 +995,7 @@ export function MarketingQuickNav() {
   const pinnedSectionItems = pinnedSections
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
     .filter((section): section is MarketingSection => Boolean(section));
+  const everyFilteredSectionPinned = filteredSections.length > 0 && filteredSections.every((section) => pinnedSections.includes(section.id));
   const fallbackSections = Array.from(new Map(
     [activeSection, resumeSection, ...pinnedSectionItems, ...recentTrailSections]
       .filter((section): section is MarketingSection => Boolean(section))
@@ -1339,6 +1355,7 @@ export function MarketingQuickNav() {
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Cmd/Ctrl+Enter open</span>
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Alt+Enter copy link</span>
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Shift+C copy matches</span>
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Shift+F pin matches</span>
           </div>
         ) : null}
 
@@ -1395,6 +1412,28 @@ export function MarketingQuickNav() {
               className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
             >
               Copy #{selectedFilteredSection.id}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const nextPinnedSections = everyFilteredSectionPinned
+                  ? pinnedSections.filter((sectionId) => !filteredSections.some((section) => section.id === sectionId))
+                  : [
+                      ...filteredSections.map((section) => section.id),
+                      ...pinnedSections.filter((sectionId) => !filteredSections.some((section) => section.id === sectionId)),
+                    ].slice(0, MAX_PINNED_MARKETING_SECTIONS);
+                savePinnedSections(nextPinnedSections);
+                setPinnedSections(nextPinnedSections);
+              }}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                everyFilteredSectionPinned
+                  ? "border-neon-cyan/45 bg-neon-cyan/10 text-cosmos-100"
+                  : "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100",
+              )}
+              title={`${everyFilteredSectionPinned ? "Unpin" : "Pin"} ${filteredSections.length} filtered matches`}
+            >
+              {everyFilteredSectionPinned ? `Unpin ${filteredSections.length} matches` : `Pin ${filteredSections.length} matches`}
             </button>
             <button
               type="button"
@@ -1653,6 +1692,7 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">F pin current</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">5-8 pinned recall</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">9 recent bounceback</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Shift+F pin filtered matches</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Shift+P copy pinned bundle</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Shift+T copy recent trail</span>
             </div>
