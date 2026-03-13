@@ -440,6 +440,38 @@ function UniverseContent() {
         return;
       }
 
+      const openFilteredViewShortcut =
+        event.key === "o" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey;
+      if (openFilteredViewShortcut) {
+        event.preventDefault();
+
+        const params = new URLSearchParams();
+        const trimmedQueryForLink = searchQuery.trim();
+        if (trimmedQueryForLink.length > 0) {
+          params.set(SEARCH_QUERY_PARAM, trimmedQueryForLink);
+        }
+        if (mediumFilter !== "All") {
+          params.set(MEDIUM_FILTER_PARAM, mediumFilter);
+        }
+        if (state.selectedSourceId) {
+          params.set(SOURCE_PARAM, state.selectedSourceId);
+        }
+        if (state.selectedTargetId) {
+          params.set(TARGET_PARAM, state.selectedTargetId);
+        }
+
+        const nextUrl = params.toString().length > 0
+          ? `${window.location.origin}${pathname}?${params.toString()}`
+          : `${window.location.origin}${pathname}`;
+
+        window.open(nextUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
       const mediumShortcutMap: Partial<Record<string, StoryMedium | "All">> = {
         a: "All",
         A: "All",
