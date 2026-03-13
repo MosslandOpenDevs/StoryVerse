@@ -996,6 +996,12 @@ export function MarketingQuickNav() {
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
     .filter((section): section is MarketingSection => Boolean(section));
   const everyFilteredSectionPinned = filteredSections.length > 0 && filteredSections.every((section) => pinnedSections.includes(section.id));
+  const filteredPinPreview = Array.from(new Set([
+    selectedFilteredSection?.id ?? null,
+    ...filteredSections.map((section) => section.id),
+    ...pinnedSections.filter((sectionId) => !filteredSections.some((section) => section.id === sectionId)),
+  ].filter((sectionId): sectionId is string => Boolean(sectionId)))).slice(0, MAX_PINNED_MARKETING_SECTIONS);
+  const willTrimFilteredPins = !everyFilteredSectionPinned && filteredSections.length > MAX_PINNED_MARKETING_SECTIONS;
   const fallbackSections = Array.from(new Map(
     [activeSection, resumeSection, ...pinnedSectionItems, ...recentTrailSections]
       .filter((section): section is MarketingSection => Boolean(section))
@@ -1451,6 +1457,13 @@ export function MarketingQuickNav() {
                   ? "Copy failed"
                   : `Copy ${filteredSections.length} matches`}
             </button>
+            {!everyFilteredSectionPinned ? (
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                Pin preview {filteredPinPreview.length}/{MAX_PINNED_MARKETING_SECTIONS}
+                {selectedFilteredSection ? ` · keeps ${selectedFilteredSection.label}` : ""}
+                {willTrimFilteredPins ? " · first 4 only" : ""}
+              </span>
+            ) : null}
           </div>
         ) : null}
 
@@ -1612,6 +1625,17 @@ export function MarketingQuickNav() {
               </div>
             ) : null}
               <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-neon-cyan/35 bg-neon-cyan/10 px-3 py-1.5 text-xs font-medium text-cosmos-100 transition-colors hover:border-neon-cyan/60 hover:bg-neon-cyan/14"
+                  title="Clear the empty filter and keep navigating"
+                >
+                  Clear filter
+                </button>
                 <button
                   type="button"
                   onClick={() => {
