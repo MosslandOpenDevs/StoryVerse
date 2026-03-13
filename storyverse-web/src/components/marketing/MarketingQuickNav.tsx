@@ -138,6 +138,29 @@ async function copySectionLink(anchorId: string) {
   await navigator.clipboard.writeText(buildAnchorUrl(anchorId));
 }
 
+async function copyFilteredViewLink(query: string, anchorId?: string | null) {
+  if (typeof window === "undefined") {
+    const normalizedQuery = query.trim();
+    const search = normalizedQuery ? `?${MARKETING_FILTER_QUERY_PARAM}=${encodeURIComponent(normalizedQuery)}` : "";
+    const hash = anchorId ? `#${anchorId}` : "";
+    await Promise.resolve();
+    return `${search}${hash}` || "#";
+  }
+
+  const url = new URL(window.location.href);
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery) {
+    url.searchParams.set(MARKETING_FILTER_QUERY_PARAM, normalizedQuery);
+  } else {
+    url.searchParams.delete(MARKETING_FILTER_QUERY_PARAM);
+  }
+
+  url.hash = anchorId ?? "";
+  await navigator.clipboard.writeText(url.toString());
+  return url.toString();
+}
+
 async function copyShortcutGuide() {
   const lines = [
     "StoryVerse landing quick-nav",
@@ -161,6 +184,7 @@ async function copyShortcutGuide() {
     "F → Pin or unpin the current section",
     "5-8 → Jump to pinned sections",
     "9 → Jump to the latest recent-trail section",
+    "Copy filtered view → Copy the current nav-filtered URL with the selected or active section",
     "Shift+C (while filter is focused) → Copy the filtered result bundle",
     "Selected filter actions → Copy a previous/current/next route context bundle",
     "Shift+F (while filter is focused) → Pin or unpin all filtered matches",
@@ -470,6 +494,7 @@ export function MarketingQuickNav() {
   const [shortcutGuideOpen, setShortcutGuideOpen] = useState(false);
   const [shortcutGuideCopyState, setShortcutGuideCopyState] = useState<"idle" | "done" | "error">("idle");
   const [filteredResultsCopyState, setFilteredResultsCopyState] = useState<"idle" | "done" | "error">("idle");
+  const [filteredViewLinkCopyState, setFilteredViewLinkCopyState] = useState<"idle" | "done" | "error">("idle");
   const [pinnedResultsCopyState, setPinnedResultsCopyState] = useState<"idle" | "done" | "error">("idle");
   const [recentTrailCopyState, setRecentTrailCopyState] = useState<"idle" | "done" | "error">("idle");
   const [searchQuery, setSearchQuery] = useState("");
@@ -481,6 +506,7 @@ export function MarketingQuickNav() {
   const clearRescueBundleCopyStateTimeoutRef = useRef<number | null>(null);
   const clearShortcutGuideCopyStateTimeoutRef = useRef<number | null>(null);
   const clearFilteredResultsCopyStateTimeoutRef = useRef<number | null>(null);
+  const clearFilteredViewLinkCopyStateTimeoutRef = useRef<number | null>(null);
   const clearPinnedResultsCopyStateTimeoutRef = useRef<number | null>(null);
   const clearRecentTrailCopyStateTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -750,6 +776,25 @@ export function MarketingQuickNav() {
       }
     };
   }, [filteredResultsCopyState]);
+
+  useEffect(() => {
+    if (filteredViewLinkCopyState === "idle") return;
+
+    if (clearFilteredViewLinkCopyStateTimeoutRef.current !== null) {
+      window.clearTimeout(clearFilteredViewLinkCopyStateTimeoutRef.current);
+    }
+
+    clearFilteredViewLinkCopyStateTimeoutRef.current = window.setTimeout(
+      () => setFilteredViewLinkCopyState("idle"),
+      filteredViewLinkCopyState === "done" ? 1600 : 2200,
+    );
+
+    return () => {
+      if (clearFilteredViewLinkCopyStateTimeoutRef.current !== null) {
+        window.clearTimeout(clearFilteredViewLinkCopyStateTimeoutRef.current);
+      }
+    };
+  }, [filteredViewLinkCopyState]);
 
   useEffect(() => {
     if (pinnedResultsCopyState === "idle") return;
@@ -1420,16 +1465,34 @@ export function MarketingQuickNav() {
             Matches {filteredSections.length}/{SECTIONS.length}
           </span>
           {normalizedSearchQuery ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery("");
-                searchInputRef.current?.focus();
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
-            >
-              Clear filter
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  copyFilteredViewLink(searchQuery.trim(), selectedFilteredSection?.id ?? activeSection.id)
+                    .then(() => setFilteredViewLinkCopyState("done"))
+                    .catch(() => setFilteredViewLinkCopyState("error"));
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                title="Copy the current filtered landing view"
+              >
+                {filteredViewLinkCopyState === "done"
+                  ? "View link copied"
+                  : filteredViewLinkCopyState === "error"
+                    ? "Copy failed"
+                    : "Copy filtered view"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+              >
+                Clear filter
+              </button>
+            </>
           ) : null}
         </div>
 
@@ -1839,6 +1902,7 @@ export function MarketingQuickNav() {
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">[ ] / J K previous-next</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Home / End first-last</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">/ filter (restores after refresh)</span>
+              <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Copy filtered view shareable URL</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">↑ / ↓ select</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Enter jump selected</span>
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 font-medium">Esc clear or close</span>
