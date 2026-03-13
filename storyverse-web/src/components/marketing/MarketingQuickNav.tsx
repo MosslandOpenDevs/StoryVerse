@@ -409,6 +409,7 @@ export function MarketingQuickNav() {
   const [pinnedResultsCopyState, setPinnedResultsCopyState] = useState<"idle" | "done" | "error">("idle");
   const [recentTrailCopyState, setRecentTrailCopyState] = useState<"idle" | "done" | "error">("idle");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchInputFocused, setIsSearchInputFocused] = useState(false);
   const [selectedFilteredIndex, setSelectedFilteredIndex] = useState(0);
   const [showAllFilteredResults, setShowAllFilteredResults] = useState(false);
   const clearCopyStateTimeoutRef = useRef<number | null>(null);
@@ -1284,6 +1285,8 @@ export function MarketingQuickNav() {
             <input
               ref={searchInputRef}
               value={searchQuery}
+              onFocus={() => setIsSearchInputFocused(true)}
+              onBlur={() => setIsSearchInputFocused(false)}
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={(event: ReactKeyboardEvent<HTMLInputElement>) => {
                 if (event.key !== "Enter" || !selectedFilteredSection) {
@@ -1328,6 +1331,16 @@ export function MarketingQuickNav() {
             </button>
           ) : null}
         </div>
+
+        {(isSearchInputFocused || normalizedSearchQuery) ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-cosmos-200/50">
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">↑/↓ choose</span>
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Enter jump</span>
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Cmd/Ctrl+Enter open</span>
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Alt+Enter copy link</span>
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Shift+C copy matches</span>
+          </div>
+        ) : null}
 
         {selectedFilteredSection && normalizedSearchQuery ? (
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cosmos-200/10 pt-3">
