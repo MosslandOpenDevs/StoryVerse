@@ -111,37 +111,40 @@ export function SelectedPairBar({
         return;
       }
 
-      if (event.key === "Enter" && isPairReady) {
+      const hasModifier = event.metaKey || event.ctrlKey || event.altKey;
+      const normalizedKey = event.key.toLowerCase();
+
+      if (event.key === "Enter" && isPairReady && !hasModifier) {
         event.preventDefault();
         onGenerate();
         return;
       }
 
-      if ((event.key === "c" || event.key === "C") && isPairReady) {
+      if (normalizedKey === "c" && isPairReady && !hasModifier) {
         event.preventDefault();
         onCopyLink();
         return;
       }
 
-      if ((event.key === "o" || event.key === "O") && isPairReady) {
+      if (normalizedKey === "o" && isPairReady && !hasModifier) {
         event.preventDefault();
         onOpenLink();
         return;
       }
 
-      if ((event.key === "p" || event.key === "P") && isPairReady) {
+      if (normalizedKey === "p" && isPairReady && !hasModifier) {
         event.preventDefault();
         onCopyPrompt();
         return;
       }
 
-      if ((event.key === "s" || event.key === "S") && isPairReady) {
+      if (normalizedKey === "s" && isPairReady && !hasModifier) {
         event.preventDefault();
         onSwap();
         return;
       }
 
-      if ((event.key === "Escape" || event.key === "Backspace") && (source || target)) {
+      if ((event.key === "Escape" || event.key === "Backspace") && (source || target) && !hasModifier) {
         event.preventDefault();
         onClear();
       }
