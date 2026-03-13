@@ -54,6 +54,7 @@ const RECENT_MARKETING_SECTION_TRAIL_STORAGE_KEY = "storyverse-recent-marketing-
 const PINNED_MARKETING_SECTION_STORAGE_KEY = "storyverse-pinned-marketing-sections";
 const MARKETING_SHORTCUT_GUIDE_STORAGE_KEY = "storyverse-marketing-shortcut-guide";
 const MARKETING_FILTER_QUERY_STORAGE_KEY = "storyverse-marketing-filter-query";
+const MARKETING_FILTER_QUERY_PARAM = "nav";
 const MAX_RECENT_MARKETING_SECTION_TRAIL = 3;
 const MAX_PINNED_MARKETING_SECTIONS = 4;
 
@@ -367,6 +368,36 @@ function clearStoredNavigationState() {
   }
 }
 
+function loadFilterQueryFromUrl() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return new URL(window.location.href).searchParams.get(MARKETING_FILTER_QUERY_PARAM)?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveFilterQueryToUrl(value: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set(MARKETING_FILTER_QUERY_PARAM, value);
+    } else {
+      url.searchParams.delete(MARKETING_FILTER_QUERY_PARAM);
+    }
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  } catch {
+    // Ignore URL access issues.
+  }
+}
+
 function loadStoredFilterQuery() {
   if (typeof window === "undefined") {
     return "";
@@ -510,9 +541,11 @@ export function MarketingQuickNav() {
       // Ignore storage access issues.
     }
 
+    const urlFilterQuery = loadFilterQueryFromUrl();
     const storedFilterQuery = loadStoredFilterQuery().trim();
-    if (storedFilterQuery) {
-      setSearchQuery((current) => current || storedFilterQuery);
+    const initialFilterQuery = urlFilterQuery || storedFilterQuery;
+    if (initialFilterQuery) {
+      setSearchQuery((current) => current || initialFilterQuery);
     }
 
     const hashId = window.location.hash.replace(/^#/, "");
@@ -579,7 +612,9 @@ export function MarketingQuickNav() {
   }, [shortcutGuideOpen]);
 
   useEffect(() => {
-    saveStoredFilterQuery(searchQuery.trim());
+    const normalizedFilterQuery = searchQuery.trim();
+    saveStoredFilterQuery(normalizedFilterQuery);
+    saveFilterQueryToUrl(normalizedFilterQuery);
   }, [searchQuery]);
 
   const togglePinnedSection = useCallback((sectionId: string) => {
