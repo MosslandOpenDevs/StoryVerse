@@ -1286,11 +1286,26 @@ export function MarketingQuickNav() {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={(event: ReactKeyboardEvent<HTMLInputElement>) => {
-                if (event.key === "Enter" && selectedFilteredSection) {
-                  event.preventDefault();
-                  if (!jumpToSection(selectedFilteredSection.id)) return;
-                  setActiveId(selectedFilteredSection.id);
+                if (event.key !== "Enter" || !selectedFilteredSection) {
+                  return;
                 }
+
+                event.preventDefault();
+
+                if (event.metaKey || event.ctrlKey) {
+                  openSectionLink(selectedFilteredSection.id);
+                  return;
+                }
+
+                if (event.altKey) {
+                  copySectionLink(selectedFilteredSection.id)
+                    .then(() => setCopyState("done"))
+                    .catch(() => setCopyState("error"));
+                  return;
+                }
+
+                if (!jumpToSection(selectedFilteredSection.id)) return;
+                setActiveId(selectedFilteredSection.id);
               }}
               placeholder="Filter sections (/ to focus, ↑/↓ choose, Enter to jump)"
               aria-label="Filter marketing sections"
