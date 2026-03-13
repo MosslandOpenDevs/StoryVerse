@@ -70,6 +70,8 @@ const COPY = {
     recentPairsResume: "Resume",
     recentPairsActive: "Active",
     recentPairsRemove: "Remove pair",
+    copyRecentPairsBundle: "Copy recents",
+    recentPairsBundleCopied: "Recents copied",
     recentPairsClearAll: "Clear all",
     loadingUniverse: "Loading universe...",
     mediumLabels: {
@@ -127,6 +129,8 @@ const COPY = {
     recentPairsResume: "이어보기",
     recentPairsActive: "Active",
     recentPairsRemove: "페어 제거",
+    copyRecentPairsBundle: "최근 페어 묶음 복사",
+    recentPairsBundleCopied: "최근 페어 복사됨",
     recentPairsClearAll: "전체 지우기",
     loadingUniverse: "유니버스 로딩 중...",
     mediumLabels: {
@@ -595,6 +599,24 @@ function UniverseContent() {
     }
   }, [buildPairLink]);
 
+  const handleCopyRecentPairsBundle = useCallback(async () => {
+    if (validRecentPairs.length === 0) {
+      return;
+    }
+
+    const lines = [
+      state.uiLocale === "ko" ? "StoryVerse 최근 페어" : "StoryVerse recent pairs",
+      ...validRecentPairs.map((pair, index) => `${index + 1}. ${pair.sourceTitle} → ${pair.targetTitle}\n${buildPairLink(pair.sourceId, pair.targetId)}`),
+    ];
+
+    try {
+      await navigator.clipboard.writeText(lines.join("\n\n"));
+      setCopyFeedback("success");
+    } catch {
+      setCopyFeedback("error");
+    }
+  }, [buildPairLink, state.uiLocale, validRecentPairs]);
+
   const handleCopyFilteredView = useCallback(async () => {
     const params = new URLSearchParams();
     const trimmedQueryForLink = searchQuery.trim();
@@ -1040,13 +1062,24 @@ function UniverseContent() {
                   <span className="text-cyan-100/60">{copy.recentPairsEmpty}</span>
                 )}
                 {validRecentPairs.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => state.clearRecentPairs()}
-                    className="rounded-full border border-cyan-200/15 px-2.5 py-1 text-[11px] font-medium text-cyan-100/80 transition hover:bg-cyan-200/10"
-                  >
-                    {copy.recentPairsClearAll}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleCopyRecentPairsBundle();
+                      }}
+                      className="rounded-full border border-cyan-200/15 px-2.5 py-1 text-[11px] font-medium text-cyan-100/80 transition hover:bg-cyan-200/10"
+                    >
+                      {copyFeedback === "success" ? copy.recentPairsBundleCopied : copy.copyRecentPairsBundle}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => state.clearRecentPairs()}
+                      className="rounded-full border border-cyan-200/15 px-2.5 py-1 text-[11px] font-medium text-cyan-100/80 transition hover:bg-cyan-200/10"
+                    >
+                      {copy.recentPairsClearAll}
+                    </button>
+                  </>
                 ) : null}
               </div>
             </div>
