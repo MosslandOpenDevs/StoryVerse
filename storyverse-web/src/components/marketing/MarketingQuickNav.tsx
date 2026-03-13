@@ -185,6 +185,7 @@ async function copyShortcutGuide() {
     "5-8 → Jump to pinned sections",
     "9 → Jump to the latest recent-trail section",
     "Copy filtered view → Copy the current nav-filtered URL with the selected or active section",
+    "Shift+L (while filter is focused) → Copy the current filtered landing view link",
     "Shift+C (while filter is focused) → Copy the filtered result bundle",
     "Selected filter actions → Copy a previous/current/next route context bundle",
     "Shift+F (while filter is focused) → Pin or unpin all filtered matches",
@@ -944,6 +945,14 @@ export function MarketingQuickNav() {
             .catch(() => setFilteredResultsCopyState("error"));
           return;
         }
+
+        if (event.shiftKey && event.key.toLowerCase() === "l") {
+          event.preventDefault();
+          copyFilteredViewLink(searchQuery.trim(), selectedFilteredSection?.id ?? activeSection.id)
+            .then(() => setFilteredViewLinkCopyState("done"))
+            .catch(() => setFilteredViewLinkCopyState("error"));
+          return;
+        }
       }
 
       if (event.shiftKey && event.key.toLowerCase() === "p") {
@@ -1502,6 +1511,7 @@ export function MarketingQuickNav() {
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Enter jump</span>
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Cmd/Ctrl+Enter open</span>
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Alt+Enter copy link</span>
+            <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Shift+L copy filtered view</span>
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Shift+C copy matches</span>
             <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/60 px-2.5 py-1">Shift+F pin matches</span>
           </div>
