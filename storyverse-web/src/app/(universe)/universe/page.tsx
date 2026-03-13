@@ -631,10 +631,18 @@ function UniverseContent() {
       params.set(MEDIUM_FILTER_PARAM, mediumFilter);
     }
 
+    if (state.selectedSourceId) {
+      params.set(SOURCE_PARAM, state.selectedSourceId);
+    }
+
+    if (state.selectedTargetId) {
+      params.set(TARGET_PARAM, state.selectedTargetId);
+    }
+
     return params.toString().length > 0
       ? `${window.location.origin}${pathname}?${params.toString()}`
       : `${window.location.origin}${pathname}`;
-  }, [mediumFilter, pathname, searchQuery]);
+  }, [mediumFilter, pathname, searchQuery, state.selectedSourceId, state.selectedTargetId]);
 
   const handleCopyFilteredView = useCallback(async () => {
     const nextUrl = buildFilteredViewUrl();
