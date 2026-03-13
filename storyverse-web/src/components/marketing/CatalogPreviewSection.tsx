@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import { Badge } from "@/components/ui/badge";
 import type { StoryMedium } from "@/lib/agents/navigatorAgent";
@@ -30,11 +31,37 @@ interface CatalogPreviewSectionProps {
 }
 
 type CatalogMediumFilter = "All" | StoryMedium;
+type CatalogMediumQueryValue = "movie" | "history" | "novel";
 
 const FILTERS: CatalogMediumFilter[] = ["All", "Movie", "History", "Novel"];
+const QUERY_TO_FILTER_MAP: Record<CatalogMediumQueryValue, StoryMedium> = {
+  movie: "Movie",
+  history: "History",
+  novel: "Novel",
+};
+
+function getFilterFromMediumQuery(queryValue: string | null): CatalogMediumFilter {
+  if (!queryValue) {
+    return "All";
+  }
+
+  const normalizedValue = queryValue.toLowerCase() as CatalogMediumQueryValue;
+  return QUERY_TO_FILTER_MAP[normalizedValue] ?? "All";
+}
+
+function getMediumQueryFromFilter(filter: CatalogMediumFilter): CatalogMediumQueryValue | null {
+  if (filter === "All") {
+    return null;
+  }
+
+  return filter.toLowerCase() as CatalogMediumQueryValue;
+}
 
 export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
-  const [activeFilter, setActiveFilter] = useState<CatalogMediumFilter>("All");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeFilter = getFilterFromMediumQuery(searchParams.get("medium"));
   const hasStories = catalog.length > 0;
 
   const filteredCatalog = useMemo(
@@ -53,6 +80,22 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
   );
 
   const hasFilteredStories = filteredCatalog.length > 0;
+
+  const handleFilterChange = (nextFilter: CatalogMediumFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const nextMediumQuery = getMediumQueryFromFilter(nextFilter);
+
+    if (nextMediumQuery) {
+      params.set("medium", nextMediumQuery);
+    } else {
+      params.delete("medium");
+    }
+
+    const nextQueryString = params.toString();
+    router.replace(nextQueryString ? `${pathname}?${nextQueryString}` : pathname, {
+      scroll: false,
+    });
+  };
 
   return (
     <section id="story-catalog" tabIndex={-1} className="relative scroll-mt-24 px-6 py-24">
@@ -78,7 +121,7 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
                 <button
                   key={filter}
                   type="button"
-                  onClick={() => setActiveFilter(filter)}
+                  onClick={() => handleFilterChange(filter)}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
                     isActive
