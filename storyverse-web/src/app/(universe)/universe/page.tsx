@@ -36,10 +36,11 @@ const COPY = {
     searchLabel: "Search stories",
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
-    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, L to copy the filtered view, Shift+L to copy the selected pair when ready, and Esc to clear filters.",
+    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, L to copy the filtered view, O to open the filtered view in a new tab, Shift+L to copy the selected pair when ready, and Esc to clear filters.",
     quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
     copyFilteredView: "Copy filtered view",
+    openFilteredView: "Open filtered view",
     copiedFilteredView: "View link copied",
     copyFilteredViewFailed: "Copy failed",
     activeFilters: "Active filters",
@@ -95,10 +96,11 @@ const COPY = {
     searchLabel: "스토리 검색",
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
-    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, L로 필터 화면 링크를 복사하고, Shift+L로 준비된 선택 페어 링크를 복사하고, Esc로 필터를 지울 수 있어요.",
+    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, L로 필터 화면 링크를 복사하고, O로 필터 화면을 새 탭에서 열고, Shift+L로 준비된 선택 페어 링크를 복사하고, Esc로 필터를 지울 수 있어요.",
     quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
     copyFilteredView: "필터 화면 링크 복사",
+    openFilteredView: "필터 화면 새 탭 열기",
     copiedFilteredView: "화면 링크 복사됨",
     copyFilteredViewFailed: "복사 실패",
     activeFilters: "활성 필터",
@@ -617,7 +619,7 @@ function UniverseContent() {
     }
   }, [buildPairLink, state.uiLocale, validRecentPairs]);
 
-  const handleCopyFilteredView = useCallback(async () => {
+  const buildFilteredViewUrl = useCallback(() => {
     const params = new URLSearchParams();
     const trimmedQueryForLink = searchQuery.trim();
 
@@ -629,9 +631,13 @@ function UniverseContent() {
       params.set(MEDIUM_FILTER_PARAM, mediumFilter);
     }
 
-    const nextUrl = params.toString().length > 0
+    return params.toString().length > 0
       ? `${window.location.origin}${pathname}?${params.toString()}`
       : `${window.location.origin}${pathname}`;
+  }, [mediumFilter, pathname, searchQuery]);
+
+  const handleCopyFilteredView = useCallback(async () => {
+    const nextUrl = buildFilteredViewUrl();
 
     try {
       await navigator.clipboard.writeText(nextUrl);
@@ -639,7 +645,12 @@ function UniverseContent() {
     } catch {
       setFilterLinkCopyFeedback("error");
     }
-  }, [mediumFilter, pathname, searchQuery]);
+  }, [buildFilteredViewUrl]);
+
+  const handleOpenFilteredView = useCallback(() => {
+    const nextUrl = buildFilteredViewUrl();
+    window.open(nextUrl, "_blank", "noopener,noreferrer");
+  }, [buildFilteredViewUrl]);
 
   const handleCopyPrompt = useCallback(async () => {
     if (!state.selectedSourceId || !state.selectedTargetId) {
@@ -857,6 +868,18 @@ function UniverseContent() {
                       ? copy.copyFilteredViewFailed
                       : copy.copyFilteredView}
                 </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenFilteredView();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-cosmos-600 px-3 py-1.5 text-[11px] font-medium text-cosmos-200/80 transition-colors hover:border-cosmos-300 hover:text-cosmos-100"
+                aria-label={copy.openFilteredView}
+                title={copy.openFilteredView}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>{copy.openFilteredView}</span>
               </button>
               <button
                 type="button"
