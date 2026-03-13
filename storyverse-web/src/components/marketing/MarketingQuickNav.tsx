@@ -162,6 +162,7 @@ async function copyShortcutGuide() {
     "5-8 → Jump to pinned sections",
     "9 → Jump to the latest recent-trail section",
     "Shift+C (while filter is focused) → Copy the filtered result bundle",
+    "Selected filter actions → Copy a previous/current/next route context bundle",
     "Shift+F (while filter is focused) → Pin or unpin all filtered matches",
     "Shift+P → Copy the pinned section bundle",
     "Shift+T → Copy the recent trail bundle",
@@ -182,6 +183,37 @@ async function copyFilteredResultsBundle(query: string, sections: MarketingSecti
     ...(sections.length
       ? sections.map((section, index) => `${index + 1}. ${section.label} (${buildAnchorUrl(section.id)})`)
       : ["No matched sections."]),
+  ];
+
+  await navigator.clipboard.writeText(lines.join("\n"));
+}
+
+async function copyRouteContextBundle({
+  query,
+  selectedSection,
+  contextSections,
+}: {
+  query: string;
+  selectedSection: MarketingSection;
+  contextSections: MarketingSection[];
+}) {
+  const lines = [
+    "StoryVerse filtered landing route context",
+    "",
+    `Filter query: ${query || "—"}`,
+    `Selected section: ${selectedSection.label} (${buildAnchorUrl(selectedSection.id)})`,
+    `Context count: ${contextSections.length}`,
+    "",
+    ...contextSections.map((section, index) => {
+      const position = section.id === selectedSection.id
+        ? "selected"
+        : section.id === contextSections[0]?.id
+          ? "previous"
+          : section.id === contextSections[contextSections.length - 1]?.id
+            ? "next"
+            : "nearby";
+      return `${index + 1}. ${section.label} [${position}] (${buildAnchorUrl(section.id)})`;
+    }),
   ];
 
   await navigator.clipboard.writeText(lines.join("\n"));
@@ -1030,6 +1062,18 @@ export function MarketingQuickNav() {
   const pinnedSectionItems = pinnedSections
     .map((sectionId) => SECTIONS.find((section) => section.id === sectionId) ?? null)
     .filter((section): section is MarketingSection => Boolean(section));
+  const selectedFilteredRouteContextSections = selectedFilteredSection
+    ? filteredSections.slice(
+        Math.max(0, selectedFilteredIndex - 1),
+        Math.min(filteredSections.length, selectedFilteredIndex + 2),
+      )
+    : [];
+  const selectedFilteredPrevSection = selectedFilteredSection && selectedFilteredIndex > 0
+    ? filteredSections[selectedFilteredIndex - 1] ?? null
+    : null;
+  const selectedFilteredNextSection = selectedFilteredSection && selectedFilteredIndex < filteredSections.length - 1
+    ? filteredSections[selectedFilteredIndex + 1] ?? null
+    : null;
   const everyFilteredSectionPinned = filteredSections.length > 0 && filteredSections.every((section) => pinnedSections.includes(section.id));
   const filteredPinPreview = Array.from(new Set([
     selectedFilteredSection?.id ?? null,
@@ -1492,6 +1536,61 @@ export function MarketingQuickNav() {
                   ? "Copy failed"
                   : `Copy ${filteredSections.length} matches`}
             </button>
+            {selectedFilteredRouteContextSections.length > 1 ? (
+              <>
+                <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
+                  Route context
+                  {selectedFilteredPrevSection ? ` · prev ${selectedFilteredPrevSection.label}` : ""}
+                  {selectedFilteredNextSection ? ` · next ${selectedFilteredNextSection.label}` : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    copyRouteContextBundle({
+                      query: searchQuery.trim(),
+                      selectedSection: selectedFilteredSection,
+                      contextSections: selectedFilteredRouteContextSections,
+                    })
+                      .then(() => setFilteredResultsCopyState("done"))
+                      .catch(() => setFilteredResultsCopyState("error"));
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                  title={`Copy route context for ${selectedFilteredSection.label}`}
+                >
+                  {filteredResultsCopyState === "done"
+                    ? "Route copied"
+                    : filteredResultsCopyState === "error"
+                      ? "Route copy failed"
+                      : "Copy route context"}
+                </button>
+                {selectedFilteredPrevSection ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!jumpToSection(selectedFilteredPrevSection.id)) return;
+                      setActiveId(selectedFilteredPrevSection.id);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                    title={`Jump to the section before ${selectedFilteredSection.label}`}
+                  >
+                    Prev in route → {selectedFilteredPrevSection.label}
+                  </button>
+                ) : null}
+                {selectedFilteredNextSection ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!jumpToSection(selectedFilteredNextSection.id)) return;
+                      setActiveId(selectedFilteredNextSection.id);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/75 transition-colors hover:border-neon-cyan/35 hover:text-cosmos-100"
+                    title={`Jump to the section after ${selectedFilteredSection.label}`}
+                  >
+                    Next in route → {selectedFilteredNextSection.label}
+                  </button>
+                ) : null}
+              </>
+            ) : null}
             {!everyFilteredSectionPinned ? (
               <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/55">
                 Pin preview {filteredPinPreview.length}/{MAX_PINNED_MARKETING_SECTIONS}
