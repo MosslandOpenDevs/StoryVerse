@@ -59,6 +59,15 @@ export function QueryInput({
         ? "입력 지우기"
         : "Clear query";
 
+  const submitButtonLabel =
+    isPending
+      ? uiLocale === "ko"
+        ? "실행 중"
+        : "Submitting query"
+      : uiLocale === "ko"
+        ? "쿼리 실행"
+        : "Submit query";
+
   useEffect(() => {
     const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -376,7 +385,13 @@ export function QueryInput({
         >
           <X className="h-4 w-4" />
         </Button>
-        <Button type="submit" size="icon" disabled={isSubmitDisabled}>
+        <Button
+          type="submit"
+          size="icon"
+          disabled={isSubmitDisabled}
+          aria-label={submitButtonLabel}
+          title={submitButtonLabel}
+        >
           {isPending ? (
             <span
               className="inline-block h-4 w-4 rounded-full border-2 border-cosmos-100/40 border-t-cosmos-100/90 animate-spin"
