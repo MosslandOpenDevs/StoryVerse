@@ -540,6 +540,14 @@ function UniverseContent() {
     } satisfies Record<StoryMedium | "All", number>;
   }, [catalog, matchesSearch, searchQuery]);
 
+  const mediumSuggestions = useMemo(
+    () =>
+      MEDIUM_FILTERS.filter((medium): medium is StoryMedium => medium !== "All")
+        .filter((medium) => medium !== mediumFilter && mediumAvailability[medium] > 0)
+        .map((medium) => ({ medium, count: mediumAvailability[medium] })),
+    [mediumAvailability, mediumFilter],
+  );
+
   const copy = COPY[state.uiLocale] ?? COPY.en;
   const visibleStoryIds = useMemo(() => new Set(filteredCatalog.map((story) => story.id)), [filteredCatalog]);
   const validRecentPairs = useMemo(
@@ -1156,6 +1164,7 @@ function UniverseContent() {
             uiLocale={state.uiLocale}
             hasActiveSearch={trimmedSearchQuery.length > 0}
             hasActiveMediumFilter={mediumFilter !== "All"}
+            mediumSuggestions={trimmedSearchQuery.length > 0 && mediumFilter !== "All" && filteredCatalog.length === 0 ? mediumSuggestions : []}
             quickRecoveryTerms={QUICK_FILTERS}
             onApplyQuickRecoveryTerm={(term) => {
               setSearchQuery(term);
@@ -1163,6 +1172,7 @@ function UniverseContent() {
               searchInputRef.current?.focus();
               searchInputRef.current?.select();
             }}
+            onApplyMediumSuggestion={(medium) => setMediumFilter(medium as StoryMedium)}
             onClearSearch={() => setSearchQuery("")}
             onClearMediumFilter={() => setMediumFilter("All")}
             onClearAllFilters={() => {

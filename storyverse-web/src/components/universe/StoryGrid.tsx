@@ -12,8 +12,10 @@ interface StoryGridProps {
   uiLocale: "en" | "ko";
   hasActiveSearch: boolean;
   hasActiveMediumFilter: boolean;
+  mediumSuggestions: Array<{ medium: string; count: number }>;
   quickRecoveryTerms: readonly string[];
   onApplyQuickRecoveryTerm: (term: string) => void;
+  onApplyMediumSuggestion: (medium: string) => void;
   onClearSearch: () => void;
   onClearMediumFilter: () => void;
   onClearAllFilters: () => void;
@@ -25,6 +27,7 @@ const COPY = {
     selectTarget: "Now click a story to select as Target",
     pairReady: "Pair selected — generate a bridge or pick new stories",
     empty: "No stories match your search or filters. Try clearing filters or changing the search term.",
+    mediumRecovery: "Switch medium",
     quickRecovery: "Try a quick recovery pick",
     results: "results",
     showingAll: "Showing full catalog",
@@ -38,6 +41,7 @@ const COPY = {
     selectTarget: "이제 다른 스토리를 눌러 도착 노드로 선택하세요",
     pairReady: "페어 선택 완료 — 브리지를 생성하거나 새 스토리를 고르세요",
     empty: "검색어나 필터와 일치하는 스토리가 없어요. 필터를 지우거나 검색어를 바꿔보세요.",
+    mediumRecovery: "다른 매체에서 보기",
     quickRecovery: "빠른 복구 추천",
     results: "개 결과",
     showingAll: "전체 카탈로그 표시 중",
@@ -57,8 +61,10 @@ export function StoryGrid({
   uiLocale,
   hasActiveSearch,
   hasActiveMediumFilter,
+  mediumSuggestions,
   quickRecoveryTerms,
   onApplyQuickRecoveryTerm,
+  onApplyMediumSuggestion,
   onClearSearch,
   onClearMediumFilter,
   onClearAllFilters,
@@ -105,6 +111,23 @@ export function StoryGrid({
             </button>
           ) : null}
         </div>
+        {mediumSuggestions.length > 0 ? (
+          <div className="mt-3">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-cosmos-300/60">{copy.mediumRecovery}</p>
+            <div className="flex flex-wrap gap-2">
+              {mediumSuggestions.map(({ medium, count }) => (
+                <button
+                  key={medium}
+                  type="button"
+                  onClick={() => onApplyMediumSuggestion(medium)}
+                  className="rounded-full border border-violet-300/25 bg-violet-300/10 px-3 py-1 text-[11px] font-medium text-violet-100 transition hover:border-violet-200/50 hover:bg-violet-300/15"
+                >
+                  {medium} ({count})
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         {quickRecoveryTerms.length > 0 ? (
           <div className="mt-3">
             <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-cosmos-300/60">{copy.quickRecovery}</p>
