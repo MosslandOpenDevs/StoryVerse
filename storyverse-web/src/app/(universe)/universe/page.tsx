@@ -1133,7 +1133,7 @@ function UniverseContent() {
                       <a
                         href={buildPairLink(pair.sourceId, pair.targetId)}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="border-l border-cyan-200/10 px-2 py-1 text-cyan-100/75 transition hover:bg-cyan-200/10 hover:text-cyan-50"
                         aria-label={`${copy.openPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
                         title={`${copy.openPairLink} ${pair.sourceTitle} → ${pair.targetTitle}`}
