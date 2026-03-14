@@ -4,6 +4,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -44,6 +45,7 @@ export function QueryInput({
   const remainingChars = Math.max(0, MAX_QUERY_LENGTH - query.length);
   const isLimitReached = remainingChars === 0;
   const isNearLimit = remainingChars > 0 && remainingChars < 20;
+  const charCounterId = useId();
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyDraft, setHistoryDraft] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -337,6 +339,8 @@ export function QueryInput({
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
           aria-label="Universe command query"
+          aria-describedby={charCounterId}
+          maxLength={MAX_QUERY_LENGTH}
           className="flex-1"
         />
         <Button
@@ -372,6 +376,7 @@ export function QueryInput({
       </form>
 
       <p
+        id={charCounterId}
         className={`text-[10px] ${isLimitReached ? "text-rose-300/90" : isNearLimit ? "text-amber-300/80" : "text-cosmos-200/50"}`}
         aria-live="polite"
       >
