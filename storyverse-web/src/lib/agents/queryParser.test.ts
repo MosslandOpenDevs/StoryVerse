@@ -96,6 +96,20 @@ test("extracts versus-button emoji pair intent", () => {
   assert.equal(resolution.needsClarification, false);
 });
 
+test("extracts sports-style v pair intent", () => {
+  const resolution = resolveQueryNodes("Dune v Roman Empire");
+  assert.deepEqual(pairIds("Dune v Roman Empire"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
+test("extracts full-width sports-style v pair intent", () => {
+  const resolution = resolveQueryNodes("듄 Ｖ 로마 제국");
+  assert.deepEqual(pairIds("듄 Ｖ 로마 제국"), ["dune", "roman-empire"]);
+  assert.equal(resolution.strategy, "explicit_pair");
+  assert.equal(resolution.needsClarification, false);
+});
+
 test("extracts plus-style crossover pair intent", () => {
   const resolution = resolveQueryNodes("Dune + Roman Empire");
   assert.deepEqual(pairIds("Dune + Roman Empire"), ["dune", "roman-empire"]);
