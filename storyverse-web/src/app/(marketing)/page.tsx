@@ -15,7 +15,7 @@ export default async function MarketingPage() {
   return (
     <>
       <Header />
-      <main className="pt-14">
+      <main id="main-content" className="pt-14">
         <MarketingQuickNav />
         <HeroSection />
         <HowItWorksSection />
