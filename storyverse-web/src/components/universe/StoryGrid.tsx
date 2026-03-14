@@ -76,7 +76,34 @@ export function StoryGrid({
       : selectedTargetId === ""
         ? copy.selectTarget
         : copy.pairReady;
+  const mediumSuggestionByKey = mediumSuggestions.reduce(
+    (acc, { medium, count }) => {
+      const key = medium.trim().toLowerCase();
+      if (!key) {
+        return acc;
+      }
+
+      const current = acc[key];
+      if (!current) {
+        acc[key] = { medium, count };
+        return acc;
+      }
+
+      current.count += count;
+      return acc;
+    },
+    {} as Record<string, { medium: string; count: number }>
+  );
+
   const hasActiveFilters = hasActiveSearch || hasActiveMediumFilter;
+  const uniqueMediumSuggestions = Object.values(mediumSuggestionByKey);
+  const uniqueQuickRecoveryTerms = [
+    ...new Set(
+      quickRecoveryTerms
+        .map((term) => term.trim())
+        .filter((term) => term.length > 0)
+    ),
+  ];
 
   if (catalog.length === 0) {
     return (
@@ -111,11 +138,11 @@ export function StoryGrid({
             </button>
           ) : null}
         </div>
-        {mediumSuggestions.length > 0 ? (
+        {uniqueMediumSuggestions.length > 0 ? (
           <div className="mt-3">
             <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-cosmos-300/60">{copy.mediumRecovery}</p>
             <div className="flex flex-wrap gap-2">
-              {mediumSuggestions.map(({ medium, count }) => (
+              {uniqueMediumSuggestions.map(({ medium, count }) => (
                 <button
                   key={medium}
                   type="button"
@@ -128,11 +155,11 @@ export function StoryGrid({
             </div>
           </div>
         ) : null}
-        {quickRecoveryTerms.length > 0 ? (
+        {uniqueQuickRecoveryTerms.length > 0 ? (
           <div className="mt-3">
             <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-cosmos-300/60">{copy.quickRecovery}</p>
             <div className="flex flex-wrap gap-2">
-              {quickRecoveryTerms.map((term) => (
+              {uniqueQuickRecoveryTerms.map((term) => (
                 <button
                   key={term}
                   type="button"
