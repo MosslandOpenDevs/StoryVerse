@@ -39,6 +39,7 @@ const COPY = {
     searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, L to copy the filtered view, O to open the filtered view in a new tab, Shift+L to copy the selected pair when ready, and Esc to clear filters.",
     quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
+    clearSearchInput: "Clear search input",
     copyFilteredView: "Copy filtered view",
     openFilteredView: "Open filtered view",
     copiedFilteredView: "View link copied",
@@ -99,6 +100,7 @@ const COPY = {
     searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, L로 필터 화면 링크를 복사하고, O로 필터 화면을 새 탭에서 열고, Shift+L로 준비된 선택 페어 링크를 복사하고, Esc로 필터를 지울 수 있어요.",
     quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
+    clearSearchInput: "검색어 지우기",
     copyFilteredView: "필터 화면 링크 복사",
     openFilteredView: "필터 화면 새 탭 열기",
     copiedFilteredView: "화면 링크 복사됨",
@@ -821,15 +823,36 @@ function UniverseContent() {
           <div className="mb-3 flex flex-col gap-2 rounded-lg border border-cosmos-300/15 bg-cosmos-900/20 p-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-1 flex-col gap-2">
               <label className="text-xs text-cosmos-200/80">
-                <span className="mb-1 block text-cosmos-100/85">{copy.searchLabel}</span>
-                <input
-                  ref={searchInputRef}
-                  type="search"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={copy.searchPlaceholder}
-                  className="w-full rounded-md border border-cosmos-300/20 bg-cosmos-950/60 px-2.5 py-1.5 text-sm text-cosmos-100 placeholder:text-cosmos-400/50 focus:border-cyan-300/50 focus:outline-none"
-                />
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="text-cosmos-100/85">{copy.searchLabel}</span>
+                  <span className="text-[11px] text-cosmos-300/70">
+                    {filteredCatalog.length} / {catalog.length} {copy.mediumCountLabel}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 rounded-md border border-cosmos-300/20 bg-cosmos-950/60 pr-2 focus-within:border-cyan-300/50">
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={copy.searchPlaceholder}
+                    className="w-full bg-transparent px-2.5 py-1.5 text-sm text-cosmos-100 placeholder:text-cosmos-400/50 focus:outline-none"
+                  />
+                  {searchQuery.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery("");
+                        searchInputRef.current?.focus();
+                      }}
+                      className="rounded-full border border-cosmos-300/20 px-2 py-1 text-[11px] font-medium text-cosmos-200/80 transition hover:border-cosmos-200/40 hover:text-cosmos-100"
+                      aria-label={copy.clearSearchInput}
+                      title={copy.clearSearchInput}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </div>
               </label>
               <p className="text-[11px] text-cosmos-300/70">
                 {copy.searchHelp}
