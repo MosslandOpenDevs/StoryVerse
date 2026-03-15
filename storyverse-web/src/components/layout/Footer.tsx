@@ -1,6 +1,8 @@
 import { Orbit } from "lucide-react";
 
 export function Footer() {
+  const now = new Date();
+
   return (
     <footer className="border-t border-cosmos-200/10 bg-cosmos-950/60 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-6">
@@ -10,9 +12,14 @@ export function Footer() {
             StoryVerse
           </span>
         </div>
-        <p className="text-xs text-cosmos-200/40">
-          Agentic GraphRAG storytelling engine
-        </p>
+        <div className="text-right">
+          <p className="text-xs text-cosmos-200/40">
+            Agentic GraphRAG storytelling engine
+          </p>
+          <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
+            © {now.getFullYear()} · UI status: production-ready
+          </p>
+        </div>
       </div>
     </footer>
   );
