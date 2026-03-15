@@ -79,6 +79,18 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
     [catalog],
   );
 
+  const filterStatusText = useMemo(() => {
+    if (!hasStories) {
+      return "Story catalog is loading. stories are being prepared.";
+    }
+
+    if (activeFilter === "All") {
+      return `${catalog.length} stories available.`;
+    }
+
+    return `${filteredCatalog.length} ${activeFilter.toLowerCase()} stories available.`;
+  }, [activeFilter, catalog.length, filteredCatalog.length, hasStories]);
+
   const hasFilteredStories = filteredCatalog.length > 0;
 
   const handleFilterChange = (nextFilter: CatalogMediumFilter) => {
@@ -103,12 +115,11 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
         <h2 className="text-center font-display text-2xl tracking-wide text-cosmos-100 sm:text-3xl">
           Story Catalog
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-center text-sm text-muted">
-          {hasStories
-            ? activeFilter === "All"
-              ? `${catalog.length} stories waiting to be connected`
-              : `${filteredCatalog.length} ${activeFilter.toLowerCase()} ${filteredCatalog.length === 1 ? "story" : "stories"} ready to explore`
-            : "Catalog is being prepared. Refresh once generation completes."}
+        <p className="mx-auto mt-3 max-w-xl text-center text-sm text-muted" aria-live="polite">
+          {filterStatusText}
+        </p>
+        <p id="catalog-filter-status" className="sr-only" aria-live="polite">
+          {filterStatusText}
         </p>
 
         {hasStories ? (
