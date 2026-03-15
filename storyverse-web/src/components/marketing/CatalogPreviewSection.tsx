@@ -81,14 +81,14 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
 
   const filterStatusText = useMemo(() => {
     if (!hasStories) {
-      return "Story catalog is loading. stories are being prepared.";
+      return "Story catalog is loading. Stories are being prepared.";
     }
 
     if (activeFilter === "All") {
-      return `${catalog.length} stories available.`;
+      return `${catalog.length} story${catalog.length === 1 ? '' : 's'} available.`;
     }
 
-    return `${filteredCatalog.length} ${activeFilter.toLowerCase()} stories available.`;
+    return `${filteredCatalog.length} ${activeFilter.toLowerCase()} story${filteredCatalog.length === 1 ? '' : 's'} available.`;
   }, [activeFilter, catalog.length, filteredCatalog.length, hasStories]);
 
   const hasFilteredStories = filteredCatalog.length > 0;
@@ -127,20 +127,25 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
             {FILTERS.map((filter) => {
               const isActive = filter === activeFilter;
               const count = countsByMedium[filter];
+              const isUnavailable = !isActive && count === 0;
 
               return (
                 <button
                   key={filter}
                   type="button"
                   onClick={() => handleFilterChange(filter)}
+                  disabled={isUnavailable}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
                     isActive
                       ? "border-neon-cyan/55 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
                       : "border-cosmos-200/10 bg-cosmos-900/60 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
+                    isUnavailable ? "cursor-not-allowed opacity-50" : "",
                   )}
                   aria-pressed={isActive}
-                  title={`Show ${filter === "All" ? "all" : filter.toLowerCase()} stories`}
+                  aria-label={`Show ${filter === "All" ? "all" : filter.toLowerCase()} stories (${count} item${count === 1 ? "" : "s"})`}
+                  aria-disabled={isUnavailable}
+                  title={isUnavailable ? `No ${filter === "All" ? "all" : filter.toLowerCase()} stories available yet` : `Show ${filter === "All" ? "all" : filter.toLowerCase()} stories`}
                 >
                   <span>{filter}</span>
                   <span className="inline-flex min-w-6 items-center justify-center rounded-full border border-current/20 px-1.5 text-[10px] leading-none text-cosmos-200/60">
