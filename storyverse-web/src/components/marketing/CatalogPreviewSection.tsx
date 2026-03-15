@@ -154,6 +154,16 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
                 </button>
               );
             })}
+            {activeFilter !== "All" ? (
+              <button
+                type="button"
+                onClick={() => handleFilterChange("All")}
+                className="inline-flex items-center rounded-full border border-cosmos-200/20 px-3 py-1.5 text-xs font-medium text-cosmos-200/80 transition-all hover:border-cosmos-200/45 hover:text-cosmos-100"
+                aria-label="Clear story catalog lane filter"
+              >
+                Clear lane filter
+              </button>
+            ) : null}
           </div>
         ) : null}
 
