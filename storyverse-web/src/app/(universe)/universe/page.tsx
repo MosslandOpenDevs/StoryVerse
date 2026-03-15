@@ -766,7 +766,7 @@ function UniverseContent() {
   }, [filterLinkCopyFeedback]);
 
   return (
-    <main id="main-content" className="min-h-dvh bg-cosmos-950 pt-14 text-cosmos-100" aria-label="Main content">
+    <main id="main-content" tabIndex={-1} className="min-h-dvh bg-cosmos-950 pt-14 text-cosmos-100" aria-label="Main content">
       {/* Background effects */}
       <div className="pointer-events-none fixed inset-0 bg-space-grid bg-[size:42px_42px] opacity-10" />
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(34,211,238,0.08),transparent_50%)]" />

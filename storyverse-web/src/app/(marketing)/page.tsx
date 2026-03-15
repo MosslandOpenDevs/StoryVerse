@@ -15,7 +15,7 @@ export default async function MarketingPage() {
   return (
     <>
       <Header />
-      <main id="main-content" aria-label="Main content" className="pt-14">
+      <main id="main-content" tabIndex={-1} aria-label="Main content" className="pt-14">
         <MarketingQuickNav />
         <HeroSection />
         <HowItWorksSection />
