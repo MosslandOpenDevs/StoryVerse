@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Orbit, Home } from "lucide-react";
+import { Orbit, Home, Globe } from "lucide-react";
 
 export function Header() {
   return (
@@ -13,14 +13,24 @@ export function Header() {
           <Orbit className="h-5 w-5 text-neon-cyan" aria-hidden="true" />
           StoryVerse
         </Link>
-        <Link
-          href="/"
-          aria-label="Go to homepage"
-          className="inline-flex items-center gap-1.5 text-sm text-cosmos-200/80 transition-colors hover:text-cosmos-100"
-        >
-          <Home className="h-4 w-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Home</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            aria-label="Go to marketing home"
+            className="inline-flex items-center gap-1.5 text-sm text-cosmos-200/80 transition-colors hover:text-cosmos-100"
+          >
+            <Home className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+          <Link
+            href="/universe"
+            aria-label="Open story universe lab"
+            className="inline-flex items-center gap-1.5 text-sm text-cosmos-200/80 transition-colors hover:text-cosmos-100"
+          >
+            <Globe className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Universe</span>
+          </Link>
+        </div>
       </nav>
     </header>
   );
