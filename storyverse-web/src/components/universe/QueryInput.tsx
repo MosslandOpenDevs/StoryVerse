@@ -441,6 +441,7 @@ export function QueryInput({
             onClick={() => onRunQuery(prompt)}
             disabled={isPending}
             title={prompt}
+            aria-label={uiLocale === "ko" ? `시작 쿼리로 사용: ${prompt}` : `Use as starter query: ${prompt}`}
           >
             <span className="block max-w-[min(70vw,28rem)] truncate">{prompt}</span>
           </button>
