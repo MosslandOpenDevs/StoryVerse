@@ -28,6 +28,7 @@ export function Footer() {
   const now = new Date();
   const [health, setHealth] = useState<ServiceHealth | null>(null);
   const [isHealthLoading, setIsHealthLoading] = useState(true);
+  const [healthCheckedAt, setHealthCheckedAt] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +39,7 @@ export function Footer() {
         const data = (await res.json()) as ServiceHealth;
         if (cancelled) return;
         setHealth(data);
+        setHealthCheckedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       } catch {
         if (!cancelled) {
           setHealth({
@@ -47,6 +49,7 @@ export function Footer() {
             nodeEnv: 'unknown',
             timestamp: '',
           });
+          setHealthCheckedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         }
       } finally {
         if (!cancelled) {
@@ -92,7 +95,12 @@ export function Footer() {
             © {now.getFullYear()} · API status: {statusText}
           </p>
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
-            {health ? `${health.service}@${health.version} · ${health.nodeEnv} · ${formatStatusTime(health.timestamp)}` : 'Waiting for health snapshot'}
+            {health
+              ? `${health.service}@${health.version} · ${health.nodeEnv} · ${formatStatusTime(health.timestamp)}`
+              : 'Waiting for health snapshot'}
+          </p>
+          <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
+            checked at {healthCheckedAt || '—'}
           </p>
         </div>
       </div>
