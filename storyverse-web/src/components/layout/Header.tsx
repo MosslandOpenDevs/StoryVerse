@@ -16,8 +16,13 @@ export function Header() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-cosmos-200/10 bg-cosmos-950/80 backdrop-blur-lg">
-      <nav className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6" aria-label="Primary">
-        <Link
+      <a
+        href="#main-content"
+        className="sr-only absolute left-4 top-4 z-50 rounded border border-cosmos-300/60 bg-cosmos-900/90 px-3 py-1.5 text-xs uppercase tracking-[0.15em] text-cosmos-100 transition-all focus-visible:not-sr-only focus-visible:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cosmos-200/90"
+      >
+        Skip to main content
+      </a>
+      <nav className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6" aria-label="Primary">        <Link
           href="/"
           aria-label="Visit StoryVerse home"
           className="inline-flex items-center gap-2 font-display text-sm tracking-[0.2em] text-cosmos-100 uppercase transition-colors hover:text-neon-cyan"
