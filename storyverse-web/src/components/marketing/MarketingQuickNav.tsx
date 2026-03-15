@@ -1191,6 +1191,7 @@ export function MarketingQuickNav() {
                   ? "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100"
                   : "cursor-not-allowed border-cosmos-200/10 bg-cosmos-900/40 text-cosmos-200/35",
               )}
+              aria-label="Jump to previous section"
               title="Jump to previous section"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -1257,6 +1258,7 @@ export function MarketingQuickNav() {
                   ? "border-cosmos-200/10 bg-cosmos-900/70 text-cosmos-200/75 hover:border-neon-cyan/35 hover:text-cosmos-100"
                   : "cursor-not-allowed border-cosmos-200/10 bg-cosmos-900/40 text-cosmos-200/35",
               )}
+              aria-label="Jump to next section"
               title="Jump to next section"
             >
               Next
@@ -1465,7 +1467,7 @@ export function MarketingQuickNav() {
                 if (!jumpToSection(selectedFilteredSection.id)) return;
                 setActiveId(selectedFilteredSection.id);
               }}
-              placeholder="Filter sections (/ to focus, ↑/↓ choose, Enter to jump)"
+              placeholder="Filter sections (/ to focus, ↑/↓ choose, Enter to jump, Esc to clear)"
               aria-label="Filter marketing sections"
               className="w-full rounded-full border border-cosmos-200/10 bg-cosmos-900/70 py-2 pl-9 pr-3 text-xs text-cosmos-100 outline-none transition-colors placeholder:text-cosmos-200/35 focus:border-neon-cyan/45"
             />
