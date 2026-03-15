@@ -11,7 +11,7 @@ export function Header() {
       return pathname === "/";
     }
 
-    return pathname === href;
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
