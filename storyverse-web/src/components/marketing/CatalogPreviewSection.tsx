@@ -143,7 +143,14 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
 
         {hasStories && !hasFilteredStories ? (
           <div className="mt-10 rounded-3xl border border-cosmos-200/10 bg-panel/40 px-6 py-8 text-center text-sm text-muted backdrop-blur-xl">
-            No {activeFilter.toLowerCase()} stories are available yet. Try another lane.
+            <p>No {activeFilter.toLowerCase()} stories are available yet. Try another lane.</p>
+            <button
+              type="button"
+              onClick={() => handleFilterChange("All")}
+              className="mt-4 inline-flex items-center rounded-full border border-cosmos-200/20 px-4 py-2 text-xs font-medium text-cosmos-100 transition-colors hover:border-cosmos-200/45 hover:bg-cosmos-800/30"
+            >
+              Clear lane filter
+            </button>
           </div>
         ) : null}
 
