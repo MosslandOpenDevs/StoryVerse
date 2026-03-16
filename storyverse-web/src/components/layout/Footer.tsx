@@ -28,11 +28,12 @@ export function Footer() {
   const now = new Date();
   const [health, setHealth] = useState<ServiceHealth | null>(null);
   const [isHealthLoading, setIsHealthLoading] = useState(true);
-  const [healthCheckedAt, setHealthCheckedAt] = useState<string>("");
   const [manualRefreshLabel, setManualRefreshLabel] = useState<string>("Refresh");
+  const [healthCheckedAt, setHealthCheckedAt] = useState<string>("");
 
   const load = useCallback(async () => {
     setIsHealthLoading(true);
+    setManualRefreshLabel("Refreshing");
 
     try {
       const res = await fetch("/api/health", { cache: "no-store" });
@@ -52,7 +53,7 @@ export function Footer() {
       setIsHealthLoading(false);
       setManualRefreshLabel("Refresh");
     }
-  }, []);
+  }, [setManualRefreshLabel]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,12 +121,16 @@ export function Footer() {
           </p>
           <button
             type="button"
-            className="mt-1 inline-flex items-center rounded border border-cosmos-200/40 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cosmos-200/60 transition-colors hover:border-neon-cyan/70 hover:text-neon-cyan"
+            className="mt-1 inline-flex items-center rounded border border-cosmos-200/40 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cosmos-200/60 transition-colors hover:border-neon-cyan/70 hover:text-neon-cyan disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => {
-              setManualRefreshLabel("Refreshing");
+              if (isHealthLoading) {
+                return;
+              }
               void load();
             }}
+            disabled={isHealthLoading}
             aria-label="Refresh health check"
+            aria-busy={isHealthLoading}
           >
             {manualRefreshLabel}
           </button>
