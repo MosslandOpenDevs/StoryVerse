@@ -36,7 +36,7 @@ const COPY = {
     searchLabel: "Search stories",
     searchPlaceholder: "Try: Sherlock, galaxy, Jedi, or novel",
     searchHelp: "Search matches titles, summaries, mediums, and aliases.",
-    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, L to copy the filtered view, O to open the filtered view in a new tab, Shift+L to copy the selected pair when ready, and Esc to clear filters.",
+    searchShortcutHelp: "Press / to focus search, 1-4 for quick picks, A/M/H/N for medium filters, L to copy the filtered view, O to open the filtered view in a new tab, Shift+L to copy the selected pair when ready, and Esc to clear selection or filters.",
     quickFiltersLabel: "Quick picks",
     clearFilters: "Clear filters",
     clearSearchInput: "Clear search input",
@@ -97,7 +97,7 @@ const COPY = {
     searchLabel: "스토리 검색",
     searchPlaceholder: "예: Sherlock, galaxy, Jedi, novel",
     searchHelp: "제목, 요약, 매체, 별칭 기준으로 검색해요.",
-    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, L로 필터 화면 링크를 복사하고, O로 필터 화면을 새 탭에서 열고, Shift+L로 준비된 선택 페어 링크를 복사하고, Esc로 필터를 지울 수 있어요.",
+    searchShortcutHelp: "/ 키로 검색에 바로 이동하고 1-4로 빠른 탐색, A/M/H/N으로 매체 필터를 바꾸고, L로 필터 화면 링크를 복사하고, O로 필터 화면을 새 탭에서 열고, Shift+L로 준비된 선택 페어 링크를 복사하고, Esc로 선택을 비우거나 필터를 지울 수 있어요.",
     quickFiltersLabel: "빠른 탐색",
     clearFilters: "필터 지우기",
     clearSearchInput: "검색어 지우기",
@@ -347,7 +347,25 @@ function UniverseContent() {
       if (isEditable) {
         if (event.key === "Escape") {
           const input = searchInputRef.current;
-          if (document.activeElement === input && input && input.value.length === 0 && mediumFilter === "All") {
+          if (document.activeElement !== input || !input) {
+            return;
+          }
+
+          if (input.value.length > 0) {
+            event.preventDefault();
+            setSearchQuery("");
+            input.focus();
+            return;
+          }
+
+          if (mediumFilter !== "All") {
+            event.preventDefault();
+            setMediumFilter("All");
+            return;
+          }
+
+          if (input.value.length === 0) {
+            event.preventDefault();
             input.blur();
           }
         }
@@ -356,6 +374,8 @@ function UniverseContent() {
 
       if (event.key === "Escape") {
         if (state.selectedSourceId || state.selectedTargetId) {
+          event.preventDefault();
+          state.clearSelection();
           return;
         }
 
@@ -495,7 +515,16 @@ function UniverseContent() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [hasActiveFilters, mediumFilter, pathname, searchQuery, state.selectedSourceId, state.selectedTargetId]);
+  }, [
+    hasActiveFilters,
+    mediumFilter,
+    pathname,
+    searchQuery,
+    state,
+    state.clearSelection,
+    state.selectedSourceId,
+    state.selectedTargetId
+  ]);
 
   const matchesSearch = useCallback((story: StoryCatalogItem, normalizedQuery: string) => {
     if (normalizedQuery.length === 0) {
