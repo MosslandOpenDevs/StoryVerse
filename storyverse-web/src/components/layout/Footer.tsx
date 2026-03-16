@@ -78,6 +78,13 @@ export function Footer() {
     return 'degraded';
   }, [health, isHealthLoading]);
 
+  const statusAriaLabel =
+    statusText === 'live'
+      ? 'Service healthy'
+      : statusText === 'checking'
+        ? 'Service health check in progress'
+        : 'Service health degraded';
+
   return (
     <footer className="border-t border-cosmos-200/10 bg-cosmos-950/60 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-6">
@@ -91,8 +98,13 @@ export function Footer() {
           <p className="text-xs text-cosmos-200/40">
             Agentic GraphRAG storytelling engine
           </p>
-          <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
-            © {now.getFullYear()} · API status: {statusText}
+          <p
+            className="text-[10px] uppercase tracking-wider text-cosmos-200/50"
+            role="status"
+            aria-live="polite"
+            aria-label={statusAriaLabel}
+          >
+            © {now.getFullYear()} · API status: <span aria-hidden="true">{statusText}</span>
           </p>
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
             {health
@@ -100,7 +112,7 @@ export function Footer() {
               : 'Waiting for health snapshot'}
           </p>
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
-            checked at {healthCheckedAt || '—'}
+            checked at <time dateTime={healthCheckedAt || undefined}>{healthCheckedAt || '—'}</time>
           </p>
         </div>
       </div>
