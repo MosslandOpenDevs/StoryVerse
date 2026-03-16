@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Orbit } from "lucide-react";
 
 type ServiceHealth = {
@@ -21,7 +21,7 @@ function formatStatusTime(value: string | null) {
     return "—";
   }
 
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 export function Footer() {
@@ -29,70 +29,74 @@ export function Footer() {
   const [health, setHealth] = useState<ServiceHealth | null>(null);
   const [isHealthLoading, setIsHealthLoading] = useState(true);
   const [healthCheckedAt, setHealthCheckedAt] = useState<string>("");
+  const [manualRefreshLabel, setManualRefreshLabel] = useState<string>("Refresh");
+
+  const load = useCallback(async () => {
+    setIsHealthLoading(true);
+
+    try {
+      const res = await fetch("/api/health", { cache: "no-store" });
+      const data = (await res.json()) as ServiceHealth;
+      setHealth(data);
+      setHealthCheckedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    } catch {
+      setHealth({
+        ok: false,
+        service: "storyverse-web",
+        version: "unknown",
+        nodeEnv: "unknown",
+        timestamp: "",
+      });
+      setHealthCheckedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    } finally {
+      setIsHealthLoading(false);
+      setManualRefreshLabel("Refresh");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
-      try {
-        const res = await fetch('/api/health', { cache: 'no-store' });
-        const data = (await res.json()) as ServiceHealth;
-        if (cancelled) return;
-        setHealth(data);
-        setHealthCheckedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-      } catch {
-        if (!cancelled) {
-          setHealth({
-            ok: false,
-            service: 'storyverse-web',
-            version: 'unknown',
-            nodeEnv: 'unknown',
-            timestamp: '',
-          });
-          setHealthCheckedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        }
-      } finally {
-        if (!cancelled) {
-          setIsHealthLoading(false);
-        }
+    const run = async () => {
+      if (cancelled) {
+        return;
       }
+      await load();
     };
 
-    load();
-    const interval = window.setInterval(load, 15000);
+    void run();
+    const interval = window.setInterval(run, 15000);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [load]);
 
   const statusText = useMemo(() => {
     if (isHealthLoading && !health) {
-      return 'checking';
+      return "checking";
     }
 
     if (health && health.ok) {
-      return 'live';
+      return "live";
     }
 
-    return 'degraded';
+    return "degraded";
   }, [health, isHealthLoading]);
 
   const statusAriaLabel =
-    statusText === 'live'
-      ? 'Service healthy'
-      : statusText === 'checking'
-        ? 'Service health check in progress'
-        : 'Service health degraded';
+    statusText === "live"
+      ? "Service healthy"
+      : statusText === "checking"
+        ? "Service health check in progress"
+        : "Service health degraded";
 
   return (
     <footer className="border-t border-cosmos-200/10 bg-cosmos-950/60 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-6">
         <div className="inline-flex items-center gap-2 text-xs text-cosmos-200/60">
           <Orbit className="h-3.5 w-3.5 text-neon-cyan/60" />
-          <span className="font-display tracking-wider uppercase">
-            StoryVerse
-          </span>
+          <span className="font-display tracking-wider uppercase">StoryVerse</span>
         </div>
         <div className="text-right">
           <p className="text-xs text-cosmos-200/40">
@@ -109,11 +113,22 @@ export function Footer() {
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
             {health
               ? `${health.service}@${health.version} · ${health.nodeEnv} · ${formatStatusTime(health.timestamp)}`
-              : 'Waiting for health snapshot'}
+              : "Waiting for health snapshot"}
           </p>
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
-            checked at <time dateTime={healthCheckedAt || undefined}>{healthCheckedAt || '—'}</time>
+            checked at <time dateTime={healthCheckedAt || undefined}>{healthCheckedAt || "—"}</time>
           </p>
+          <button
+            type="button"
+            className="mt-1 inline-flex items-center rounded border border-cosmos-200/40 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cosmos-200/60 transition-colors hover:border-neon-cyan/70 hover:text-neon-cyan"
+            onClick={() => {
+              setManualRefreshLabel("Refreshing");
+              void load();
+            }}
+            aria-label="Refresh health check"
+          >
+            {manualRefreshLabel}
+          </button>
         </div>
       </div>
     </footer>
