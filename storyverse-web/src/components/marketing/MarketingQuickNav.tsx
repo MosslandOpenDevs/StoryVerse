@@ -1469,8 +1469,21 @@ export function MarketingQuickNav() {
               }}
               placeholder="Filter sections (/ to focus, ↑/↓ choose, Enter to jump, Esc to clear)"
               aria-label="Filter marketing sections"
+              aria-describedby="marketing-quick-nav-filter-help marketing-quick-nav-filter-status"
               className="w-full rounded-full border border-cosmos-200/10 bg-cosmos-900/70 py-2 pl-9 pr-3 text-xs text-cosmos-100 outline-none transition-colors placeholder:text-cosmos-200/35 focus:border-neon-cyan/45"
             />
+            <p id="marketing-quick-nav-filter-help" className="sr-only">
+              Use slash to focus this filter, arrow keys to move through matches, Enter to jump, Command or Control plus Enter to open the selected match in a new tab, and Escape to clear the filter.
+            </p>
+            <p id="marketing-quick-nav-filter-status" className="sr-only" role="status" aria-live="polite">
+              {normalizedSearchQuery
+                ? filteredSectionMatches.length
+                  ? selectedFilteredSection
+                    ? `${filteredSectionMatches.length} matching sections. Selected ${selectedFilteredIndex + 1} of ${filteredSectionMatches.length}: ${selectedFilteredSection.label}.`
+                    : `${filteredSectionMatches.length} matching sections.`
+                  : "No matching sections."
+                : `Showing all ${SECTIONS.length} sections.`}
+            </p>
           </div>
           <span className="inline-flex items-center rounded-full border border-cosmos-200/10 bg-cosmos-900/70 px-3 py-1.5 text-xs font-medium text-cosmos-200/70">
             Matches {filteredSections.length}/{SECTIONS.length}
