@@ -85,12 +85,43 @@ export function Footer() {
     return "degraded";
   }, [health, isHealthLoading]);
 
+  const hasHealthyTimestamp = Boolean(health?.timestamp);
+  const statusAgeSeconds = useMemo(() => {
+    if (!health?.timestamp) {
+      return null;
+    }
+
+    const parsed = new Date(health.timestamp);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    const diffMs = Date.now() - parsed.getTime();
+    if (!Number.isFinite(diffMs) || diffMs < 0) {
+      return null;
+    }
+
+    return Math.round(diffMs / 1000);
+  }, [health]);
+
+  const healthStatusLabel = useMemo(() => {
+    if (statusAgeSeconds === null) {
+      return statusText;
+    }
+
+    if (statusAgeSeconds <= 20) {
+      return `${statusText} · fresh`;
+    }
+
+    return `${statusText} · stale ${statusAgeSeconds}s`;
+  }, [statusAgeSeconds, statusText]);
+
   const statusAriaLabel =
     statusText === "live"
-      ? "Service healthy"
+      ? `Service healthy, ${healthStatusLabel}`
       : statusText === "checking"
         ? "Service health check in progress"
-        : "Service health degraded";
+        : `Service health degraded, ${healthStatusLabel}`;
 
   return (
     <footer className="border-t border-cosmos-200/10 bg-cosmos-950/60 backdrop-blur-sm">
@@ -109,12 +140,15 @@ export function Footer() {
             aria-live="polite"
             aria-label={statusAriaLabel}
           >
-            © {now.getFullYear()} · API status: <span aria-hidden="true">{statusText}</span>
+            © {now.getFullYear()} · API status: <span aria-hidden="true">{healthStatusLabel}</span>
           </p>
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
             {health
               ? `${health.service}@${health.version} · ${health.nodeEnv} · ${formatStatusTime(health.timestamp)}`
               : "Waiting for health snapshot"}
+            {hasHealthyTimestamp && statusAgeSeconds !== null
+              ? ` · ${statusAgeSeconds <= 20 ? "within SLA" : "over SLA"}`
+              : ""}
           </p>
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
             checked at <time dateTime={healthCheckedAt || undefined}>{healthCheckedAt || "—"}</time>
