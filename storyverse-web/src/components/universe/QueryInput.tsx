@@ -69,6 +69,8 @@ export function QueryInput({
       : uiLocale === "ko"
         ? "쿼리 실행"
         : "Submit query";
+  const queryInputLabel =
+    uiLocale === "ko" ? "스토리 브리지 질의 입력" : "Universe bridge query";
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -362,7 +364,7 @@ export function QueryInput({
           }}
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
-          aria-label="Universe command query"
+          aria-label={queryInputLabel}
           aria-describedby={`${charCounterId} ${shortcutHelpId} ${historyStatusId}`}
           maxLength={MAX_QUERY_LENGTH}
           className="flex-1"
@@ -505,6 +507,11 @@ export function QueryInput({
                     onClick={() => onRunQuery(prompt)}
                     disabled={isPending}
                     title={prompt}
+                    aria-label={
+                      uiLocale === "ko"
+                        ? `최근 실행 ${index + 1}/${recentQueries.length} 다시 실행: ${prompt}`
+                        : `Rerun recent query ${index + 1} of ${recentQueries.length}: ${prompt}`
+                    }
                   >
                     <span className="block max-w-[min(70vw,24rem)] truncate">{prompt}</span>
                   </button>
