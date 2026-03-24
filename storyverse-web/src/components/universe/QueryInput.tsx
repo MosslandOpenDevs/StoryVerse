@@ -46,6 +46,8 @@ export function QueryInput({
   const isLimitReached = remainingChars === 0;
   const isNearLimit = remainingChars > 0 && remainingChars < 20;
   const charCounterId = useId();
+  const shortcutHelpId = useId();
+  const historyStatusId = useId();
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyDraft, setHistoryDraft] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -361,7 +363,7 @@ export function QueryInput({
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
           aria-label="Universe command query"
-          aria-describedby={charCounterId}
+          aria-describedby={`${charCounterId} ${shortcutHelpId} ${historyStatusId}`}
           maxLength={MAX_QUERY_LENGTH}
           className="flex-1"
         />
@@ -415,6 +417,22 @@ export function QueryInput({
           : isLimitReached
             ? `Character limit reached (${MAX_QUERY_LENGTH}).`
             : `Remaining characters: ${remainingChars}`}
+      </p>
+
+      <p id={shortcutHelpId} className="sr-only">
+        {uiLocale === "ko"
+          ? "슬래시 또는 Ctrl/Command+K로 입력에 포커스하고, Ctrl 또는 Command+Enter로 즉시 실행할 수 있습니다. 입력 맨앞과 맨뒤에서는 위아래 화살표 또는 Ctrl/Command+P,N으로 최근 실행을 탐색하고, Escape로 히스토리를 종료하거나 입력을 지울 수 있습니다."
+          : "Press slash or Control/Command+K to focus the input, and Control or Command plus Enter to submit immediately. At the start or end of the field, use the up and down arrows or Control/Command plus P and N to browse recent queries, and press Escape to exit history or clear the input."}
+      </p>
+
+      <p id={historyStatusId} className="sr-only" aria-live="polite">
+        {historyIndex !== null && recentQueries.length > 0
+          ? uiLocale === "ko"
+            ? `최근 실행 히스토리 ${historyIndex + 1} / ${recentQueries.length}번째를 탐색 중입니다.`
+            : `Browsing recent query history item ${historyIndex + 1} of ${recentQueries.length}.`
+          : uiLocale === "ko"
+            ? "히스토리 탐색이 비활성화되어 있습니다."
+            : "History browsing is inactive."}
       </p>
 
       {historyIndex !== null && recentQueries.length > 0 && (
