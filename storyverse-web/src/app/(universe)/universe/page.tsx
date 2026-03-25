@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, Copy, ExternalLink, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
@@ -232,6 +232,8 @@ function UniverseContent() {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const [promptCopyFeedback, setPromptCopyFeedback] = useState<"idle" | "success" | "error">("idle");
   const [filterLinkCopyFeedback, setFilterLinkCopyFeedback] = useState<"idle" | "success" | "error">("idle");
+  const searchHelpId = useId();
+  const searchShortcutHelpId = useId();
   const state = useUniverseState(catalog, initialSourceId, initialTargetId);
 
   const loadCatalog = useCallback(async () => {
@@ -865,6 +867,7 @@ function UniverseContent() {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={copy.searchPlaceholder}
+                    aria-describedby={`${searchHelpId} ${searchShortcutHelpId}`}
                     className="w-full bg-transparent px-2.5 py-1.5 text-sm text-cosmos-100 placeholder:text-cosmos-400/50 focus:outline-none"
                   />
                   {searchQuery.length > 0 ? (
@@ -883,7 +886,7 @@ function UniverseContent() {
                   ) : null}
                 </div>
               </label>
-              <p className="text-[11px] text-cosmos-300/70">
+              <p id={searchHelpId} className="text-[11px] text-cosmos-300/70">
                 {copy.searchHelp}
               </p>
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-cosmos-300/80">
@@ -912,7 +915,7 @@ function UniverseContent() {
                   );
                 })}
               </div>
-              <p className="text-[11px] text-cosmos-400/70">
+              <p id={searchShortcutHelpId} className="text-[11px] text-cosmos-400/70">
                 {copy.searchShortcutHelp}
               </p>
             </div>
@@ -929,6 +932,7 @@ function UniverseContent() {
                     onClick={() => setMediumFilter(medium)}
                     disabled={isDisabled}
                     aria-label={`${copy.mediumLabels[medium]} · ${availableCount} ${copy.mediumCountLabel}`}
+                    aria-pressed={mediumFilter === medium}
                     className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${mediumFilter === medium ? "border-cyan-300 bg-cyan-300/15 text-cyan-100" : "border-cosmos-700 text-cosmos-200/80 hover:border-cosmos-400 hover:text-cosmos-100"} ${isDisabled ? "cursor-not-allowed opacity-40 hover:border-cosmos-700 hover:text-cosmos-200/80" : ""}`}
                   >
                     {copy.mediumLabels[medium]} <span className="opacity-70">({availableCount})</span>
