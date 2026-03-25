@@ -131,7 +131,7 @@ const COPY = {
     recentPairsLabel: "최근 페어",
     recentPairsEmpty: "아직 최근 페어가 없어요. 브리지를 한 번 생성하면 여기에 고정돼요.",
     recentPairsResume: "이어보기",
-    recentPairsActive: "Active",
+    recentPairsActive: "활성",
     recentPairsRemove: "페어 제거",
     copyRecentPairsBundle: "최근 페어 묶음 복사",
     recentPairsBundleCopied: "최근 페어 복사됨",
@@ -609,6 +609,7 @@ function UniverseContent() {
     [catalog, state.selectedTargetId, visibleStoryIds],
   );
   const hasHiddenSelection = hiddenSourceStory !== null || hiddenTargetStory !== null;
+  const resultsStatusText = `${copy.showingPrefix} ${filteredCatalog.length} / ${catalog.length} ${copy.storiesCountSuffix}${hasActiveFilters ? ` · ${copy.filtersActive}` : ""}${hasHiddenSelection ? ` · ${copy.selectedStoriesPreserved}` : ""}`;
   const selectedSourceStory = useMemo(
     () => (state.selectedSourceId ? catalog.find((story) => story.id === state.selectedSourceId) ?? null : null),
     [catalog, state.selectedSourceId],
@@ -1236,10 +1237,8 @@ function UniverseContent() {
               setMediumFilter("All");
             }}
           />
-          <p className="mt-2 text-[10px] text-cosmos-300/70">
-            {copy.showingPrefix} {filteredCatalog.length} / {catalog.length} {copy.storiesCountSuffix}
-            {hasActiveFilters ? ` · ${copy.filtersActive}` : ""}
-            {hasHiddenSelection ? ` · ${copy.selectedStoriesPreserved}` : ""}
+          <p className="mt-2 text-[10px] text-cosmos-300/70" aria-live="polite" role="status">
+            {resultsStatusText}
           </p>
         </section>
 
