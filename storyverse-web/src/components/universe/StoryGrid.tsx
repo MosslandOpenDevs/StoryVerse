@@ -35,6 +35,8 @@ const COPY = {
     clearSearch: "Clear search",
     clearMedium: "Show all mediums",
     clearAll: "Reset all filters",
+    applyMediumSuggestion: "Filter stories by medium",
+    applyQuickRecoveryTerm: "Search stories using quick recovery term",
   },
   ko: {
     selectSource: "스토리를 눌러 출발 노드로 선택하세요",
@@ -49,6 +51,8 @@ const COPY = {
     clearSearch: "검색 지우기",
     clearMedium: "매체 전체 보기",
     clearAll: "필터 모두 초기화",
+    applyMediumSuggestion: "매체로 스토리 필터 적용",
+    applyQuickRecoveryTerm: "빠른 복구 검색어로 스토리 검색",
   },
 } as const;
 
@@ -147,6 +151,7 @@ export function StoryGrid({
                   key={medium}
                   type="button"
                   onClick={() => onApplyMediumSuggestion(medium)}
+                  aria-label={`${copy.applyMediumSuggestion}: ${medium} (${count})`}
                   className="rounded-full border border-violet-300/25 bg-violet-300/10 px-3 py-1 text-[11px] font-medium text-violet-100 transition hover:border-violet-200/50 hover:bg-violet-300/15"
                 >
                   {medium} ({count})
@@ -164,6 +169,7 @@ export function StoryGrid({
                   key={term}
                   type="button"
                   onClick={() => onApplyQuickRecoveryTerm(term)}
+                  aria-label={`${copy.applyQuickRecoveryTerm}: ${term}`}
                   className="rounded-full border border-cosmos-300/20 bg-cosmos-950/40 px-3 py-1 text-[11px] font-medium text-cosmos-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
                 >
                   {term}
