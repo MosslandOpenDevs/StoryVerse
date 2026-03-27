@@ -136,7 +136,7 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
                   onClick={() => handleFilterChange(filter)}
                   disabled={isUnavailable}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-cosmos-950",
                     isActive
                       ? "border-neon-cyan/55 bg-neon-cyan/12 text-cosmos-100 shadow-[0_0_18px_rgba(34,211,238,0.18)]"
                       : "border-cosmos-200/10 bg-cosmos-900/60 text-cosmos-200/70 hover:border-neon-cyan/35 hover:text-cosmos-100",
@@ -158,7 +158,7 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
               <button
                 type="button"
                 onClick={() => handleFilterChange("All")}
-                className="inline-flex items-center rounded-full border border-cosmos-200/20 px-3 py-1.5 text-xs font-medium text-cosmos-200/80 transition-all hover:border-cosmos-200/45 hover:text-cosmos-100"
+                className="inline-flex items-center rounded-full border border-cosmos-200/20 px-3 py-1.5 text-xs font-medium text-cosmos-200/80 transition-all hover:border-cosmos-200/45 hover:text-cosmos-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-cosmos-950"
                 aria-label="Clear story catalog lane filter"
               >
                 Clear lane filter
@@ -173,7 +173,7 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
             <button
               type="button"
               onClick={() => handleFilterChange("All")}
-              className="mt-4 inline-flex items-center rounded-full border border-cosmos-200/20 px-4 py-2 text-xs font-medium text-cosmos-100 transition-colors hover:border-cosmos-200/45 hover:bg-cosmos-800/30"
+              className="mt-4 inline-flex items-center rounded-full border border-cosmos-200/20 px-4 py-2 text-xs font-medium text-cosmos-100 transition-colors hover:border-cosmos-200/45 hover:bg-cosmos-800/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-cosmos-950"
             >
               Clear lane filter
             </button>
@@ -186,7 +186,7 @@ export function CatalogPreviewSection({ catalog }: CatalogPreviewSectionProps) {
                 <Link
                   key={story.id}
                   href={`/universe?story=${story.id}`}
-                  className={`group relative overflow-hidden rounded-2xl border border-cosmos-200/10 bg-panel/50 p-5 backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] ${DOMAIN_HOVER_SHADOWS[story.medium]} ${DOMAIN_BG_RADIALS[story.medium]}`}
+                  className={`group relative overflow-hidden rounded-2xl border border-cosmos-200/10 bg-panel/50 p-5 backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-cosmos-950 ${DOMAIN_HOVER_SHADOWS[story.medium]} ${DOMAIN_BG_RADIALS[story.medium]}`}
                 >
                   <div
                     className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${DOMAIN_BORDER_COLORS[story.medium]}`}
