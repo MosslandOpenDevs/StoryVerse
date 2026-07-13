@@ -63,6 +63,16 @@ test("runs manual node-id command with deterministic metadata", async () => {
       "fallback suggestions must be real catalog stories",
     );
     assert.ok(result.suggestions.every((s) => s.id !== "dune"));
+    // Evidence-grounded: the bridge references a real related (neighbour) story,
+    // not just the source/target pair.
+    assert.ok(result.scenario);
+    const grounded = SEED_CATALOG.find(
+      (c) =>
+        c.id !== "dune" &&
+        c.id !== "roman-empire" &&
+        result.scenario!.bridge.includes(c.title),
+    );
+    assert.ok(grounded, "bridge should reference a related neighbour story");
   });
 });
 

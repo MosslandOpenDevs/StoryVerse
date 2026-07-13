@@ -136,19 +136,25 @@ async function runUniverseCommandFromResolved(
 ): Promise<UniverseCommandResult> {
   const model = resolveModel();
 
-  const [suggestions, scenario] = await Promise.all([
-    navigatorAgent({
-      currentNode: source,
-      limit: 4,
-      catalog,
-      ...(model ? { model } : {}),
-    }),
-    storytellerAgent({
-      source: toEndpoint(source),
-      target: toEndpoint(target),
-      ...(model ? { model } : {}),
-    }),
-  ]);
+  // Navigator first so its neighbours can ground the storyteller's bridge
+  // (evidence-based generation) rather than inventing an unrelated link.
+  const suggestions = await navigatorAgent({
+    currentNode: source,
+    limit: 4,
+    catalog,
+    ...(model ? { model } : {}),
+  });
+
+  const scenario = await storytellerAgent({
+    source: toEndpoint(source),
+    target: toEndpoint(target),
+    evidence: suggestions.slice(0, 3).map((suggestion) => ({
+      title: suggestion.title,
+      medium: suggestion.medium,
+      explanation: suggestion.explanation,
+    })),
+    ...(model ? { model } : {}),
+  });
 
   return {
     query,

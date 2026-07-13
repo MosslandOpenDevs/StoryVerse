@@ -10,10 +10,22 @@ export interface StoryEndpoint {
   summary: string;
 }
 
+export interface StoryEvidence {
+  title: string;
+  medium: StoryMedium;
+  explanation: string;
+}
+
 export interface StorytellerAgentInput {
   source: StoryEndpoint;
   target: StoryEndpoint;
   model?: LanguageModel;
+  /**
+   * Related stories surfaced by the navigator (graph neighbours or catalog
+   * fallbacks). The bridge is grounded in these rather than invented from
+   * nothing when they are available.
+   */
+  evidence?: StoryEvidence[];
 }
 
 export interface WhatIfScenario {
@@ -35,7 +47,11 @@ const DEFAULT_RISK =
 const createBridgeHypothesis = task(
   "create-bridge-hypothesis",
   async (input: StorytellerAgentInput): Promise<BridgeDraft> => {
-    const fallbackBridge = `A relic from ${input.source.title} is discovered in ${input.target.title}, forcing both worlds into a shared conflict economy.`;
+    const anchor =
+      input.evidence && input.evidence.length > 0 ? input.evidence[0] : null;
+    const fallbackBridge = anchor
+      ? `A narrative thread running through ${anchor.title} links ${input.source.title} and ${input.target.title}, forcing both worlds into a shared conflict economy.`
+      : `A relic from ${input.source.title} is discovered in ${input.target.title}, forcing both worlds into a shared conflict economy.`;
 
     if (!input.model) {
       return {
@@ -45,13 +61,18 @@ const createBridgeHypothesis = task(
       };
     }
 
+    const evidenceText = (input.evidence ?? [])
+      .map((item) => `- ${item.title} (${item.medium}): ${item.explanation}`)
+      .join("\n");
+
     const { text } = await generateText({
       model: input.model,
       system:
-        "You are StorytellerAgent. Produce one concise What-If bridge sentence connecting two unrelated story nodes.",
+        "You are StorytellerAgent. Produce one concise What-If bridge sentence connecting two unrelated story nodes. When related stories are provided, ground the bridge in at least one of them.",
       prompt: `
 Node A: ${input.source.title} (${input.source.medium}) - ${input.source.summary}
 Node B: ${input.target.title} (${input.target.medium}) - ${input.target.summary}
+${evidenceText ? `\nRelated stories (evidence):\n${evidenceText}` : ""}
       `.trim(),
     });
 
