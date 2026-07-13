@@ -13,6 +13,7 @@ import { NeighborSuggestions } from "./NeighborSuggestions";
 import { ClarificationPanel } from "./ClarificationPanel";
 import { ChatHistory } from "./ChatHistory";
 import type { useUniverseState } from "./useUniverseState";
+import { areShortcutsEnabled, useShortcutsEnabled } from "@/lib/shortcuts";
 
 type UniverseState = ReturnType<typeof useUniverseState>;
 
@@ -246,6 +247,10 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
         return;
       }
 
+      if (!areShortcutsEnabled()) {
+        return;
+      }
+
       // Derive the slot from event.code so Shift/Alt combos work on every layout:
       // with a modifier held, event.key is the shifted symbol ("!", "¡"), not the digit.
       const digitFromCode = /^Digit([1-9])$/.exec(event.code);
@@ -298,6 +303,24 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [state, validRecentPairs]);
+
+  const [shortcutsEnabled, setShortcutsEnabled] = useShortcutsEnabled();
+  const shortcutsOffLabel =
+    state.uiLocale === "ko"
+      ? shortcutsEnabled
+        ? "단축키 켜짐"
+        : "단축키 꺼짐"
+      : shortcutsEnabled
+        ? "Keyboard shortcuts on"
+        : "Keyboard shortcuts off";
+  const shortcutsToggleLabel =
+    state.uiLocale === "ko"
+      ? shortcutsEnabled
+        ? "끄기"
+        : "켜기"
+      : shortcutsEnabled
+        ? "Disable"
+        : "Enable";
 
   return (
     <div className="flex h-full flex-col overflow-y-auto max-h-[calc(100dvh-5rem)]">
@@ -371,6 +394,23 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
                 <li><span className="text-cosmos-100">Alt+Shift+1-5</span> — {shortcutCopy.openRecentPair}</li>
               </ul>
             </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between border-t border-cosmos-200/10 pt-2">
+            <span className="text-[11px] text-cosmos-200/70">{shortcutsOffLabel}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={shortcutsEnabled}
+              onClick={() => setShortcutsEnabled(!shortcutsEnabled)}
+              aria-label={
+                shortcutsEnabled
+                  ? "Disable keyboard shortcuts"
+                  : "Enable keyboard shortcuts"
+              }
+              className="inline-flex items-center rounded border border-cosmos-200/40 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cosmos-200/70 transition-colors hover:border-neon-cyan/70 hover:text-neon-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan"
+            >
+              {shortcutsToggleLabel}
+            </button>
           </div>
         </details>
 

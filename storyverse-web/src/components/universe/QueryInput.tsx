@@ -12,6 +12,7 @@ import { SendHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_QUERY_LENGTH, STARTER_PROMPTS } from "./useUniverseState";
+import { areShortcutsEnabled } from "@/lib/shortcuts";
 
 interface QueryInputProps {
   query: string;
@@ -85,6 +86,7 @@ export function QueryInput({
         !event.shiftKey &&
         !event.altKey;
       const isSlashFocusShortcut =
+        areShortcutsEnabled() &&
         event.key === "/" &&
         !event.metaKey &&
         !event.ctrlKey &&

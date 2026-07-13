@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LatestResult } from "./useUniverseState";
+import { areShortcutsEnabled } from "@/lib/shortcuts";
 
 interface BridgeResultCardProps {
   result: LatestResult;
@@ -156,7 +157,13 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
         target?.tagName === "SELECT" ||
         target?.isContentEditable;
 
-      if (isEditable || event.metaKey || event.ctrlKey || event.altKey) {
+      if (
+        isEditable ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        !areShortcutsEnabled()
+      ) {
         return;
       }
 

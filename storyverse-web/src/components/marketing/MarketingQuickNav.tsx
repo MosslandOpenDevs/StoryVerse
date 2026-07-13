@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ArrowLeft, ArrowRight, CircleHelp, Copy, ExternalLink, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { areShortcutsEnabled } from "@/lib/shortcuts";
 
 type MarketingSection = {
   id: string;
@@ -865,6 +866,12 @@ export function MarketingQuickNav() {
       if ((event.key === "?" || (event.key === "/" && event.shiftKey)) && !event.altKey && !event.metaKey && !event.ctrlKey && !isTypingTarget) {
         event.preventDefault();
         setShortcutGuideOpen((current) => !current);
+        return;
+      }
+
+      // Respect the global character-key shortcut toggle (WCAG 2.1.4). The guide
+      // toggle above stays reachable so users can re-enable shortcuts.
+      if (!areShortcutsEnabled()) {
         return;
       }
 

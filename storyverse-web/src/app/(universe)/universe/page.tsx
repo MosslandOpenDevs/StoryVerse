@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { StoryGrid } from "@/components/universe/StoryGrid";
 import { BridgePanel } from "@/components/universe/BridgePanel";
 import { useUniverseState } from "@/components/universe/useUniverseState";
+import { areShortcutsEnabled } from "@/lib/shortcuts";
 import { SEED_CATALOG, type StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import type { StoryMedium } from "@/lib/agents/navigatorAgent";
 import { fetchCatalogAction } from "./actions";
@@ -343,7 +344,13 @@ function UniverseContent() {
           activeTagName === "textarea" ||
           activeTagName === "select");
 
-      if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      if (
+        areShortcutsEnabled() &&
+        event.key === "/" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
         if (isEditable) {
           return;
         }
@@ -401,9 +408,28 @@ function UniverseContent() {
         return;
       }
 
+      // Character-key shortcuts below here honor the WCAG 2.1.4 disable toggle.
+      // (Escape/editable handling above stays active regardless.)
+      if (!areShortcutsEnabled()) {
+        return;
+      }
+
+      // Recent-pair slots owned by the Bridge Panel (digit = resume). Used to
+      // stop a single digit from both filtering the catalog and resuming a pair.
+      const validRecentPairCount = state.recentPairs.filter(
+        (pair) =>
+          pair.sourceId !== pair.targetId &&
+          catalog.some((item) => item.id === pair.sourceId) &&
+          catalog.some((item) => item.id === pair.targetId),
+      ).length;
+
       const quickFilterIndex = Number.parseInt(event.key, 10) - 1;
       const quickFilterTerm = QUICK_FILTERS[quickFilterIndex];
       if (quickFilterTerm) {
+        // Defer to the Bridge Panel when this slot has a recent pair to resume.
+        if (quickFilterIndex >= 0 && quickFilterIndex < validRecentPairCount) {
+          return;
+        }
         event.preventDefault();
         setSearchQuery(quickFilterTerm);
         setMediumFilter("All");
@@ -479,6 +505,11 @@ function UniverseContent() {
         !event.altKey &&
         !event.shiftKey;
       if (openFilteredViewShortcut) {
+        // When a pair is selected, the Selected Pair Bar owns "o" (open pair
+        // link); defer so one keypress doesn't open two tabs.
+        if (state.selectedSourceId && state.selectedTargetId) {
+          return;
+        }
         event.preventDefault();
 
         const params = new URLSearchParams();
@@ -516,6 +547,14 @@ function UniverseContent() {
       };
       const nextMediumFilter = mediumShortcutMap[event.key];
       if (nextMediumFilter) {
+        // When a bridge result is shown, "n"/"N" is owned by the result card
+        // (copy next hops); don't also switch the medium lane.
+        if (
+          (event.key === "n" || event.key === "N") &&
+          state.latestResult?.scenario
+        ) {
+          return;
+        }
         event.preventDefault();
         setMediumFilter(nextMediumFilter);
       }
@@ -526,12 +565,15 @@ function UniverseContent() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
+    catalog,
     hasActiveFilters,
     mediumFilter,
     pathname,
     searchQuery,
     state,
     state.clearSelection,
+    state.latestResult,
+    state.recentPairs,
     state.selectedSourceId,
     state.selectedTargetId
   ]);

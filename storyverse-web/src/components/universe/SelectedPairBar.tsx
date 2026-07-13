@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { StoryCatalogItem } from "@/lib/agents/catalogSeed";
 import { findCatalogNodeIn } from "./useUniverseState";
 import type { StoryMedium } from "@/lib/agents/navigatorAgent";
+import { areShortcutsEnabled } from "@/lib/shortcuts";
 
 const DOMAIN_DOT_COLORS: Record<StoryMedium, string> = {
   Movie: "bg-domain-movie",
@@ -107,7 +108,7 @@ export function SelectedPairBar({
           tagName === "textarea" ||
           tagName === "select");
 
-      if (isEditable) {
+      if (isEditable || !areShortcutsEnabled()) {
         return;
       }
 
