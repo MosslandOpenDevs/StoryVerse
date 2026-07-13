@@ -261,7 +261,7 @@ flowchart LR
   Ops --> Metrics[Route codes · fail ratios · latency · tunnel churn]
 ```
 
-Every external dependency degrades gracefully: without Neo4j the catalog serves the seed + file fallback and the navigator produces heuristic suggestions; without `OPENAI_API_KEY` the storyteller uses deterministic templates. The app boots and demos with **zero** external services configured.
+Every external dependency degrades gracefully: without Neo4j the catalog serves the seed + file fallback and the navigator suggests real catalog neighbours (never synthetic nodes, so every suggestion stays selectable); without `OPENAI_API_KEY` the storyteller uses deterministic templates. Low-confidence queries **abstain** — the parser returns a clarification instead of fabricating a bridge. The app boots and demos with **zero** external services configured.
 
 ## API Endpoints
 
@@ -316,7 +316,7 @@ Open `http://localhost:16100` — no external services are required for a degrad
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NEO4J_URI` | Optional | Neo4j connection URI — all three `NEO4J_*` vars must be set to enable graph mode; otherwise the app runs on the seed catalog with heuristic suggestions |
+| `NEO4J_URI` | Optional | Neo4j connection URI — all three `NEO4J_*` vars must be set to enable graph mode; otherwise the app runs on the seed catalog and the navigator suggests real catalog neighbours |
 | `NEO4J_USERNAME` | Optional | Neo4j username |
 | `NEO4J_PASSWORD` | Optional | Neo4j password |
 | `OPENAI_API_KEY` | Optional | Enables `gpt-4o-mini` bridge narration and suggestion re-ranking; deterministic templates otherwise |

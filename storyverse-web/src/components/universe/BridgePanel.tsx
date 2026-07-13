@@ -541,8 +541,10 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
           isPending={state.isPending}
         />
 
-        {/* Bridge result */}
-        {state.latestResult && (
+        {/* Bridge result — only when a scenario was actually generated.
+            Low-confidence commands abstain (scenario null) and surface the
+            ClarificationPanel above instead. */}
+        {state.latestResult?.scenario && (
           <>
             <BridgeResultCard result={state.latestResult} uiLocale={state.uiLocale} />
             <TimelineBeats beats={state.latestResult.scenario.timelineBeats} />

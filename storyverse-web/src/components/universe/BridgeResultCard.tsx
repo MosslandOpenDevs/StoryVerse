@@ -47,7 +47,7 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
   const [copyTimelineFeedback, setCopyTimelineFeedback] = useState<"idle" | "success" | "error">("idle");
   const [copyNeighborsFeedback, setCopyNeighborsFeedback] = useState<"idle" | "success" | "error">("idle");
   const labels = LABELS[uiLocale] ?? LABELS.en;
-  const shareText = result
+  const shareText = result?.scenario
     ? [
         result.scenario.title,
         `${result.source.title} → ${result.target.title}`,
@@ -55,14 +55,14 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
         result.scenario.bridge,
       ].join("\n")
     : "";
-  const timelineShareText = result
+  const timelineShareText = result?.scenario
     ? [
         result.scenario.title,
         `${labels.timeline}:`,
         ...result.scenario.timelineBeats.map((beat, index) => `${index + 1}. ${beat}`),
       ].join("\n")
     : "";
-  const neighborsShareText = result
+  const neighborsShareText = result?.scenario
     ? [
         result.scenario.title,
         `${labels.neighbors}:`,
@@ -71,7 +71,7 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
           : [labels.noNeighbors]),
       ].join("\n")
     : "";
-  const fullShareText = result
+  const fullShareText = result?.scenario
     ? [
         result.scenario.title,
         `${labels.sourceTarget}: ${result.source.title} → ${result.target.title}`,
@@ -182,7 +182,7 @@ export function BridgeResultCard({ result, uiLocale }: BridgeResultCardProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleCopyFull, handleCopyNeighbors, handleCopyTimeline]);
 
-  if (!result) return null;
+  if (!result?.scenario) return null;
 
   const copyLabel =
     copyFeedback === "success"

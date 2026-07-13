@@ -14,6 +14,12 @@ export interface NavigatorAgentInput {
   currentNode: StoryNodeContext;
   limit?: number;
   model?: LanguageModel;
+  /**
+   * Real catalog nodes used to build neighbour suggestions when the graph is
+   * unavailable or returns nothing. Every fallback suggestion references a real
+   * catalog id so it stays selectable/generatable in the UI.
+   */
+  catalog?: StoryNodeContext[];
 }
 
 export interface StorySuggestion {
@@ -103,19 +109,23 @@ async function fetchGraphNeighbors(
 function buildFallbackSuggestions(
   context: StoryNodeContext,
   limit: number,
+  catalog: StoryNodeContext[],
 ): StorySuggestion[] {
-  const templates = [
-    "Shared archetype and narrative stakes.",
-    "Common setting dynamics with different genre expression.",
-    "Parallel moral conflict with divergent outcomes.",
-    "Bridgeable through a recurring thematic motif.",
-  ];
+  // Suggest real catalog stories (never synthetic ids), so every suggestion is
+  // selectable and can be bridged. Lead with cross-medium picks for variety,
+  // then same-medium, preserving catalog order within each group.
+  const others = catalog.filter((item) => item.id !== context.id);
+  const crossMedium = others.filter((item) => item.medium !== context.medium);
+  const sameMedium = others.filter((item) => item.medium === context.medium);
 
-  return Array.from({ length: limit }, (_, index) => ({
-    id: `${context.id}-fallback-${index + 1}`,
-    title: `${context.title} :: Variant ${index + 1}`,
-    medium: context.medium,
-    explanation: templates[index % templates.length] ?? "Potentially connected node.",
+  return [...crossMedium, ...sameMedium].slice(0, limit).map((item, index) => ({
+    id: item.id,
+    title: item.title,
+    medium: item.medium,
+    explanation:
+      item.medium === context.medium
+        ? `Same medium (${item.medium}) — catalog suggestion while the graph is unavailable.`
+        : `Cross-medium (${context.medium} ↔ ${item.medium}) — catalog suggestion while the graph is unavailable.`,
     graphScore: Math.max(0.1, 1 - index * 0.15),
   }));
 }
@@ -145,7 +155,7 @@ export async function navigatorAgent(
   const candidates =
     graphCandidates.length > 0
       ? graphCandidates
-      : buildFallbackSuggestions(input.currentNode, limit);
+      : buildFallbackSuggestions(input.currentNode, limit, input.catalog ?? []);
 
   if (!input.model) {
     return candidates.slice(0, limit);

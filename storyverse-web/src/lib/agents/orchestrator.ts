@@ -27,7 +27,12 @@ export interface UniverseCommandResult {
   target: StoryNodeContext;
   resolution: ResolutionMetadata;
   suggestions: StorySuggestion[];
-  scenario: WhatIfScenario;
+  /**
+   * The generated bridge, or `null` when resolution was too uncertain and the
+   * command abstained (clarification only). Consumers must handle the null case
+   * rather than render a fabricated scenario.
+   */
+  scenario: WhatIfScenario | null;
 }
 
 function toEndpoint(node: StoryNodeContext): StoryEndpoint {
@@ -127,6 +132,7 @@ async function runUniverseCommandFromResolved(
   source: StoryNodeContext,
   target: StoryNodeContext,
   resolution: ResolutionMetadata,
+  catalog: StoryNodeContext[],
 ): Promise<UniverseCommandResult> {
   const model = resolveModel();
 
@@ -134,6 +140,7 @@ async function runUniverseCommandFromResolved(
     navigatorAgent({
       currentNode: source,
       limit: 4,
+      catalog,
       ...(model ? { model } : {}),
     }),
     storytellerAgent({
@@ -161,7 +168,14 @@ export async function runUniverseCommand(
   const resolved = resolveQueryNodes(query, catalog, parserOptions);
   const { source, target, ...resolution } = resolved;
 
-  return runUniverseCommandFromResolved(query, source, target, resolution);
+  // Abstain rather than fabricate: when the parser is unsure it returns a
+  // best-guess pair plus clarification, but we do not generate a bridge from a
+  // low-confidence guess. The caller shows the clarification instead.
+  if (resolution.needsClarification) {
+    return { query, source, target, resolution, suggestions: [], scenario: null };
+  }
+
+  return runUniverseCommandFromResolved(query, source, target, resolution, catalog);
 }
 
 export async function runUniverseCommandByNodeIds(
@@ -184,5 +198,5 @@ export async function runUniverseCommandByNodeIds(
     query?.trim() || `Connect ${source.title} to ${target.title}.`;
   const resolution = createManualResolutionMetadata(source, target, queryText);
 
-  return runUniverseCommandFromResolved(queryText, source, target, resolution);
+  return runUniverseCommandFromResolved(queryText, source, target, resolution, catalog);
 }

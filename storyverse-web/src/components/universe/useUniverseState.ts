@@ -109,6 +109,20 @@ function buildAssistantSummary(result: UniverseCommandActionResult): string {
 
   const r = result.result;
   const resolution = r.resolution;
+
+  // Abstained (too uncertain to bridge): report the clarification, not a bridge.
+  if (!r.scenario) {
+    const lines = [
+      `Needs clarification before bridging.`,
+      `Best guess: ${r.source.title} -> ${r.target.title}`,
+      `Resolution: ${formatResolutionLabel(resolution.strategy)} (${resolution.confidence}, ${resolution.locale})`,
+    ];
+    if (resolution.clarificationPrompt) {
+      lines.push(`Clarify: ${resolution.clarificationPrompt}`);
+    }
+    return lines.join("\n");
+  }
+
   const suggestionText = r.suggestions
     .map((s, i) => `${i + 1}. ${s.title}`)
     .join(" | ");
@@ -385,14 +399,17 @@ export function useUniverseState(
       setLatestResult(result.result);
       setSelectedSourceId(result.result.source.id);
       setSelectedTargetId(result.result.target.id);
-      pushRecentPair({
-        sourceId: result.result.source.id,
-        targetId: result.result.target.id,
-        sourceTitle: result.result.source.title,
-        targetTitle: result.result.target.title,
-        locale: result.result.resolution.locale,
-        savedAt: new Date().toISOString(),
-      });
+      // Only remember pairs that actually produced a bridge, not abstained guesses.
+      if (result.result.scenario) {
+        pushRecentPair({
+          sourceId: result.result.source.id,
+          targetId: result.result.target.id,
+          sourceTitle: result.result.source.title,
+          targetTitle: result.result.target.title,
+          locale: result.result.resolution.locale,
+          savedAt: new Date().toISOString(),
+        });
+      }
     }
 
     if (result.ok && result.result.resolution.needsClarification) {

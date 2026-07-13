@@ -4,6 +4,7 @@ import {
   runUniverseCommand,
   runUniverseCommandByNodeIds,
 } from "./orchestrator";
+import { SEED_CATALOG } from "./catalogSeed";
 
 const DISABLED_AGENT_ENV: Record<string, string | undefined> = {
   OPENAI_API_KEY: undefined,
@@ -51,7 +52,17 @@ test("runs manual node-id command with deterministic metadata", async () => {
     assert.equal(result.resolution.locale, "en");
     assert.equal(result.resolution.needsClarification, false);
     assert.equal(result.suggestions.length, 4);
+    assert.ok(result.scenario);
     assert.ok(result.scenario.bridge.length > 0);
+    // Without Neo4j, fallback suggestions must reference real catalog ids
+    // (never synthetic "-fallback-" nodes) so they stay selectable.
+    assert.ok(
+      result.suggestions.every((s) =>
+        SEED_CATALOG.some((c) => c.id === s.id),
+      ),
+      "fallback suggestions must be real catalog stories",
+    );
+    assert.ok(result.suggestions.every((s) => s.id !== "dune"));
   });
 });
 
@@ -80,8 +91,23 @@ test("runs explicit query orchestration without clarification", async () => {
     assert.equal(result.resolution.needsClarification, false);
     assert.equal(result.resolution.confidence, "high");
     assert.equal(result.suggestions.length, 4);
+    assert.ok(result.scenario);
     assert.ok(result.scenario.title.includes("Cleopatra"));
     assert.ok(result.scenario.title.includes("Blade Runner"));
+  });
+});
+
+test("abstains from generating a bridge when clarification is needed", async () => {
+  await withEnvOverrides(DISABLED_AGENT_ENV, async () => {
+    const result = await runUniverseCommand("zzz nonsense request");
+
+    assert.equal(result.resolution.needsClarification, true);
+    // No fabricated bridge for a low-confidence guess.
+    assert.equal(result.scenario, null);
+    assert.equal(result.suggestions.length, 0);
+    // Still returns a best-guess pair so the clarification UI has candidates.
+    assert.ok(result.source.id);
+    assert.ok(result.target.id);
   });
 });
 
@@ -97,6 +123,8 @@ test("applies parser policy environment for default fallback resolution", async 
 
       assert.equal(result.resolution.strategy, "default_fallback");
       assert.equal(result.resolution.needsClarification, true);
+      assert.equal(result.scenario, null);
+      assert.equal(result.suggestions.length, 0);
       assert.equal(result.source.medium, "History");
       assert.equal(result.target.medium, "History");
       assert.notEqual(result.source.id, result.target.id);

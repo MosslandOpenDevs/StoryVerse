@@ -19,7 +19,7 @@ StoryVerse is an Agentic AI web service where users explore an infinite story un
 - `src/components/marketing/`: Landing sections incl. `MarketingQuickNav.tsx` (sticky nav with filter/pins/trail/shortcuts)
 - `src/components/layout/`: `Header`, `Footer` (footer polls `/api/health`)
 - `src/lib/agents/queryParser.ts`: NL query parsing and source/target node resolution
-- `src/lib/agents/navigatorAgent.ts`: GraphRAG-style related-node suggestions (heuristic fallback without Neo4j)
+- `src/lib/agents/navigatorAgent.ts`: GraphRAG-style related-node suggestions; without Neo4j it suggests real catalog neighbours (cross-medium first) so suggestions stay selectable — never synthetic node ids
 - `src/lib/agents/storytellerAgent.ts`: "What If" scenario generation between nodes
 - `src/lib/agents/orchestrator.ts`: Multi-agent orchestration and result composition
 - `src/lib/agents/clarificationChoices.ts`: One-click clarification prompt builder (Korean particle-aware)
@@ -54,7 +54,8 @@ StoryVerse is an Agentic AI web service where users explore an infinite story un
 - correction prompts and clarification messages are localized using parser locale (`ko`/`en`)
 - corrected runs execute through node IDs to avoid reparsing drift
 - source/target selection happens via story-card clicks: first click sets source, second sets target, a third restarts with a new source (`useUniverseState.handleStoryCardClick`)
-- auto-run: whenever both `?source=<id>&target=<id>` are present in the URL and no result is shown, the pair executes once per pair; the page mirrors manual card selection into the URL, so freshly staged pairs auto-run too (`story` is a legacy alias for `source`; `q`/`medium` prefill search and filter)
+- auto-run: only the deep-link pair present in the URL **at page load** executes automatically (the page snapshots `?source=<id>&target=<id>` on mount, so manual card staging does NOT auto-run — Generate Bridge / Enter is required). `story` is a legacy alias for `source`; `q`/`medium` prefill search and filter
+- abstain: for free-text queries flagged `needsClarification`, the orchestrator returns clarification + a best-guess pair but no bridge (`scenario: null`) rather than fabricating one; manual/node-id runs (`manual_selection`) always generate
 - recent user queries are persisted locally on submit (before execution, regardless of success) for quick replay
 
 ## Action Error Codes

@@ -312,7 +312,7 @@ Mobile: vertical stack (Story Grid → Bridge Panel)
 | `NeighborSuggestions.tsx` | "NEIGHBOR STORIES" uppercase label. flex-wrap grid of buttons: rounded-lg, bg-cosmos-900/50. Per-domain border colors (30%→60% on hover) + domain glow shadow. Title (text-xs) + medium label (text-[10px]) |
 | `ClarificationPanel.tsx` | rounded-2xl, border-neon-cyan/20, bg-panel/60 backdrop-blur-xl. One-click clarification choice chips (up to 3 alternate source→target pairs built by `clarificationChoices.ts`) that immediately run the corrected pair; Korean prompts get the correct particles (을/를, 와/과) via final-consonant (batchim) detection. Source candidates: "SOURCE" label + chips (selected: border-neon-cyan, bg-neon-cyan/10, `aria-pressed`). Target candidates: "TARGET" label + chips (selected: border-neon-violet). Score display if > 0. "Run corrected query" button enabled once distinct source/target are chosen. Bilingual labels (EN/KO) |
 | `ChatHistory.tsx` | "Query Log" — collapsible (ChevronDown/Right toggle; open state and role filter persisted in localStorage) with message count in the header. Role filter chips (all/user/assistant with counts), text search over visible messages, `visible x/y` badge, and a copy-log button that copies the currently filtered view (copied/failed feedback). max-h-64 overflow-y-auto. User messages: bg-neon-violet/10, Sparkles icon (rose). Assistant messages: bg-cosmos-800/50, Bot icon (cyan). Role labels: text-[10px] tracking-wider uppercase |
-| `useUniverseState.ts` | Central state hook. Manages: messages[], query (normalized to 240 chars), clarificationChoices[], sourceCandidates[], targetCandidates[], selectedSourceId/TargetId, uiLocale (en/ko via Hangul detection), recentQueries (localStorage `storyverse:recent-queries`, limit 5), recentPairs (localStorage `storyverse:recent-pairs`, limit 5, deduped by source:target), latestResult, isPending. Persists the active selection to localStorage (`storyverse:active-selection`) and restores it on load when neither `source` nor `target` URL param is present. Auto-runs bridge generation once per pair whenever both `source` and `target` appear in the URL and no result is shown — this covers deep links and, because the page mirrors manual selection into the URL, freshly staged card pairs as well. Actions: runQuery, runNodeSelectionQuery, runCorrectedQuery, runClarificationChoice, handleStoryCardClick (sequential: 1st→source, 2nd→target, 3rd restarts with a new source), swapSelection, clearSelection, resumeRecentPair, removeRecentPairAt / clearRecentPairs, removeRecentQueryAt / clearRecentQueries, generateBridge, submitQuery |
+| `useUniverseState.ts` | Central state hook. Manages: messages[], query (normalized to 240 chars), clarificationChoices[], sourceCandidates[], targetCandidates[], selectedSourceId/TargetId, uiLocale (en/ko via Hangul detection), recentQueries (localStorage `storyverse:recent-queries`, limit 5), recentPairs (localStorage `storyverse:recent-pairs`, limit 5, deduped by source:target), latestResult, isPending. Persists the active selection to localStorage (`storyverse:active-selection`) and restores it on load when neither `source` nor `target` URL param is present. Auto-runs bridge generation once for a pair present in the URL **at page load** (a deep link); the initial pair is snapshotted on mount, so manually staged card pairs do NOT auto-run — the explicit Generate Bridge button (or Enter) triggers generation. Actions: runQuery, runNodeSelectionQuery, runCorrectedQuery, runClarificationChoice, handleStoryCardClick (sequential: 1st→source, 2nd→target, 3rd restarts with a new source), swapSelection, clearSelection, resumeRecentPair, removeRecentPairAt / clearRecentPairs, removeRecentQueryAt / clearRecentQueries, generateBridge, submitQuery |
 
 ---
 
@@ -406,7 +406,7 @@ Finds related neighbor stories via Neo4j graph traversal + optional LLM ranking.
 
 1. Queries Neo4j: `MATCH (origin:Story {id})-[:RELATED_TO]-(candidate:Story)` ordered by graphScore
 2. If graph returns results → use them
-3. If no graph results → synthetic fallback suggestions with thematic templates
+3. If no graph results → real catalog neighbours (cross-medium first, then same-medium), so every suggestion references a real story id and stays selectable
 4. If LLM available (GPT-4o-mini) → re-rank candidates by analyzing thematic fit
 
 Output: `StorySuggestion[]` — id, title, medium, explanation, graphScore
@@ -529,7 +529,7 @@ curl -X POST http://localhost:16100/api/catalog/generate \
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NEO4J_URI` | Optional | Neo4j connection URI (e.g. `bolt://localhost:7687`). If any of the three `NEO4J_*` values is missing, the app runs in graceful degraded mode: the catalog serves seed stories + the `data/generated-catalog.json` file fallback, and the navigator produces heuristic fallback suggestions instead of graph traversal |
+| `NEO4J_URI` | Optional | Neo4j connection URI (e.g. `bolt://localhost:7687`). If any of the three `NEO4J_*` values is missing, the app runs in graceful degraded mode: the catalog serves seed stories + the `data/generated-catalog.json` file fallback, and the navigator suggests real catalog neighbours instead of graph traversal |
 | `NEO4J_USERNAME` | Optional | Neo4j username (all three `NEO4J_*` values are needed to enable graph features) |
 | `NEO4J_PASSWORD` | Optional | Neo4j password (all three `NEO4J_*` values are needed to enable graph features) |
 | `OPENAI_API_KEY` | Optional | Enables GPT-4o-mini for enhanced bridge generation and navigator ranking |
@@ -549,7 +549,8 @@ curl -X POST http://localhost:16100/api/catalog/generate \
 - Query parser infers locale (`ko`/`en`) and localizes clarification prompts.
 - `useUniverseState` hook manages all universe page state: selection, queries, results, and actions.
 - Story cards support sequential selection: first click → Source (cyan glow), second click → Target (violet glow); a third click restarts with a new source.
-- Once both `source` and `target` are present in the URL and no result is displayed, the pair auto-runs once (per pair). Because the page mirrors manual card selection into the URL, staging a fresh pair effectively auto-generates too; the explicit "Generate Bridge" button (or Enter) covers re-runs and resumed pairs while a result is on screen.
+- The deep-link pair (`source`+`target` present in the URL **at page load**) auto-runs once. The initial pair is snapshotted on mount, so manually staging cards does NOT auto-generate — the explicit "Generate Bridge" button (or Enter) triggers generation. Card clicks only stage the selection.
+- Low-confidence free-text queries **abstain**: when the parser flags `needsClarification`, the orchestrator returns the clarification and a best-guess pair but no bridge (`scenario: null`), and the UI shows the ClarificationPanel instead of a fabricated result.
 - Recent queries and recent bridge pairs are stored in localStorage (up to 5 each) for quick reruns; the active pair selection also persists across reloads.
 - Server actions run with a 15s timeout, up to 2 attempts, and 150ms incremental retry backoff (timeouts are not retried).
 - Server action failures return explicit codes: `EMPTY_QUERY`, `INVALID_SELECTION`, `TIMEOUT`, `EXECUTION_FAILED`.

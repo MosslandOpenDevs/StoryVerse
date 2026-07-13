@@ -218,8 +218,16 @@ function UniverseContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const initialSourceId = searchParams.get(SOURCE_PARAM) ?? searchParams.get(LEGACY_STORY_PARAM) ?? undefined;
-  const initialTargetId = searchParams.get(TARGET_PARAM) ?? undefined;
+  // Snapshot the deep-link pair once on mount. The URL is later kept in sync with
+  // manual selection, so reading it live here would make card selection trip the
+  // auto-run effect and generate a bridge without an explicit action. Auto-run
+  // must only fire for a pair present in the URL at page load.
+  const [initialSourceId] = useState<string | undefined>(
+    () => searchParams.get(SOURCE_PARAM) ?? searchParams.get(LEGACY_STORY_PARAM) ?? undefined,
+  );
+  const [initialTargetId] = useState<string | undefined>(
+    () => searchParams.get(TARGET_PARAM) ?? undefined,
+  );
   const [catalog, setCatalog] = useState<StoryCatalogItem[]>(SEED_CATALOG);
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
