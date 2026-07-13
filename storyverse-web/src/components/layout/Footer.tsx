@@ -3,12 +3,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Orbit } from "lucide-react";
 
+type Neo4jCheck = {
+  status: "ok" | "down" | "skipped";
+  latencyMs?: number;
+  error?: string;
+};
+
 type ServiceHealth = {
   ok: boolean;
+  ready?: boolean;
   service: string;
   version: string;
   nodeEnv: string;
   timestamp: string;
+  checks?: { neo4j?: Neo4jCheck };
 };
 
 function formatStatusTime(value: string | null) {
@@ -78,12 +86,28 @@ export function Footer() {
       return "checking";
     }
 
-    if (health && health.ok) {
+    // "live" requires both liveness (ok) and readiness. `ready` is optional for
+    // backward compatibility with older health payloads that only had `ok`.
+    if (health && health.ok && health.ready !== false) {
       return "live";
     }
 
     return "degraded";
   }, [health, isHealthLoading]);
+
+  const neo4jCheck = health?.checks?.neo4j;
+  const dependencyLabel = useMemo(() => {
+    if (!neo4jCheck) {
+      return null;
+    }
+    if (neo4jCheck.status === "ok") {
+      return `neo4j ok${neo4jCheck.latencyMs != null ? ` ${neo4jCheck.latencyMs}ms` : ""}`;
+    }
+    if (neo4jCheck.status === "down") {
+      return "neo4j down";
+    }
+    return "neo4j not configured";
+  }, [neo4jCheck]);
 
   const hasHealthyTimestamp = Boolean(health?.timestamp);
   const statusAgeSeconds = useMemo(() => {
@@ -152,6 +176,7 @@ export function Footer() {
           </p>
           <p className="text-[10px] uppercase tracking-wider text-cosmos-200/50">
             checked at <time dateTime={healthCheckedAt || undefined}>{healthCheckedAt || "—"}</time>
+            {dependencyLabel ? ` · ${dependencyLabel}` : ""}
           </p>
           <button
             type="button"
