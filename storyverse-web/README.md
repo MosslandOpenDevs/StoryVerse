@@ -493,7 +493,7 @@ src/components/
 |----------|--------|-------------|
 | `/api/health` | GET | Liveness snapshot: `ok`, `service`, `version`, `nodeEnv`, `uptimeSec`, `timestamp`. Served with `Cache-Control: no-store`; polled by the footer every 15s |
 | `/api/catalog` | GET | Returns full dynamic catalog (seed + generated) as `{ count, catalog }` |
-| `/api/catalog/generate` | POST | Triggers AI story generation via Ollama. Auth: Bearer token, or localhost-only when no secret is configured |
+| `/api/catalog/generate` | POST | Triggers AI story generation via Ollama. Auth: Bearer token; required in production (refused when `NODE_ENV=production` and no secret is set), localhost-only in development |
 
 ---
 
@@ -535,7 +535,7 @@ curl -X POST http://localhost:16100/api/catalog/generate \
 | `OPENAI_API_KEY` | Optional | Enables GPT-4o-mini for enhanced bridge generation and navigator ranking |
 | `OLLAMA_BASE_URL` | Optional | OpenAI-compatible Ollama endpoint for catalog generation; the code default points at an internal lab host — set your own (e.g. `http://localhost:11434/v1`) |
 | `OLLAMA_MODEL` | Optional | Ollama model name (default: `qwen3:32b`) |
-| `CATALOG_GENERATE_SECRET` | Optional | Bearer token for the catalog generation API. When unset, `POST /api/catalog/generate` only accepts requests whose `Host` starts with `localhost` or `127.0.0.1` |
+| `CATALOG_GENERATE_SECRET` | Prod required | Bearer token for the catalog generation API. Required in production — `POST /api/catalog/generate` is refused when `NODE_ENV=production` and no secret is set. In development, requests whose `Host` is `localhost`/`127.0.0.1` are allowed without it (a convenience gate, not a security boundary) |
 | `QUERY_PREFERRED_MEDIA` | Optional | Comma list: `Movie,History,Novel` — affects fallback target and candidate ordering |
 | `QUERY_AMBIGUITY_MARGIN` | Optional | Integer `1..40` — max score gap between top candidates still treated as ambiguous (default 15) |
 

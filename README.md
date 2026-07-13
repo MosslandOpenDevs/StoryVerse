@@ -269,7 +269,7 @@ Every external dependency degrades gracefully: without Neo4j the catalog serves 
 |----------|--------|----------|
 | `/api/health` | GET | Liveness + metadata: `ok`, `service`, `version`, `nodeEnv`, `uptimeSec`, `timestamp`; served with `Cache-Control: no-store` |
 | `/api/catalog` | GET | Full story catalog `{ count, catalog[] }` (seed + generated), force-dynamic |
-| `/api/catalog/generate` | POST | AI catalog generation; body `{ countPerDomain }` (clamped 1–10, default 4); bearer auth if `CATALOG_GENERATE_SECRET` is set, otherwise limited to localhost requests (Host-header check); 60s max duration |
+| `/api/catalog/generate` | POST | AI catalog generation; body `{ countPerDomain }` (clamped 1–10, default 4); bearer auth if `CATALOG_GENERATE_SECRET` is set. Required in production — refused when `NODE_ENV=production` and no secret is set; in development, localhost requests are allowed (Host-header check). 60s max duration |
 
 Server actions wrap the agent pipeline with a 15s timeout (timeouts fail fast; other failures get one retry with 150ms backoff), returning explicit failure codes: `EMPTY_QUERY`, `INVALID_SELECTION`, `TIMEOUT`, `EXECUTION_FAILED`.
 
@@ -305,11 +305,12 @@ The project follows a **fallback-allowing operational policy** (Policy A) under 
 
 ```bash
 cd storyverse-web
+cp .env.example .env.local   # optional — every variable is optional
 npm ci
 npm run dev
 ```
 
-Open `http://localhost:16100` — no external services are required for a degraded-mode demo (seed catalog + deterministic agents).
+Open `http://localhost:16100` — no external services are required for a degraded-mode demo (seed catalog + deterministic agents). See [`storyverse-web/.env.example`](storyverse-web/.env.example) for the full configuration surface.
 
 ### Environment Variables
 
@@ -321,7 +322,7 @@ Open `http://localhost:16100` — no external services are required for a degrad
 | `OPENAI_API_KEY` | Optional | Enables `gpt-4o-mini` bridge narration and suggestion re-ranking; deterministic templates otherwise |
 | `OLLAMA_BASE_URL` | For generation | OpenAI-compatible Ollama endpoint, e.g. `http://localhost:11434/v1` (the code default points at an internal lab host — set your own) |
 | `OLLAMA_MODEL` | Optional | Ollama model name (default: `qwen3:32b`) |
-| `CATALOG_GENERATE_SECRET` | Optional | Bearer token for the generation API; if unset, generation is limited to localhost requests (Host-header check) |
+| `CATALOG_GENERATE_SECRET` | Prod required | Bearer token for the generation API. Required in production (generation is refused when `NODE_ENV=production` and it is unset); in development, localhost requests are allowed without it |
 | `QUERY_PREFERRED_MEDIA` | Optional | Comma list: `Movie,History,Novel` — steers ambiguous-query resolution |
 | `QUERY_AMBIGUITY_MARGIN` | Optional | Integer `1..40` (default 15) — clarification sensitivity |
 | `OPERATIONS_*` | Optional | `ops-check` tuning: base URLs, retries, report file, tunnel process name |
@@ -351,6 +352,10 @@ npm run ops:check   # live route/API diagnostics
 
 `test:parser` compiles the agent library and runs 68 tests (parser, orchestrator, clarification choices) on Node's built-in test runner.
 
+## Security
+
+Found a vulnerability? Please report it privately — see [SECURITY.md](SECURITY.md). Note that catalog generation must be locked down with `CATALOG_GENERATE_SECRET` in any deployed environment.
+
 ## License
 
-MIT
+Released under the [MIT License](LICENSE).

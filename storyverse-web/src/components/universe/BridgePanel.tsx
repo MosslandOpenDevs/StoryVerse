@@ -88,7 +88,7 @@ const RECENT_PAIR_COPY = {
   en: {
     title: "Recent bridge pairs",
     summary: "Resume a recent source → target pair without searching again.",
-    keyboardHint: "1-9 resume · Shift+1-9 remove · Alt+1-9 copy · Alt+Shift+1-9 open",
+    keyboardHint: "1-5 resume · Shift+1-5 remove · Alt+1-5 copy · Alt+Shift+1-5 open",
     clearAll: "Clear all",
     clearAllConfirm: (count: number) => `Clear all ${count} recent bridge pairs?`,
     remove: "Remove recent pair",
@@ -105,7 +105,7 @@ const RECENT_PAIR_COPY = {
   ko: {
     title: "최근 브리지 페어",
     summary: "방금 쓴 source → target 페어를 다시 검색하지 않고 바로 복구해요.",
-    keyboardHint: "1-9 복구 · Shift+1-9 삭제 · Alt+1-9 복사 · Alt+Shift+1-9 새 탭 열기",
+    keyboardHint: "1-5 복구 · Shift+1-5 삭제 · Alt+1-5 복사 · Alt+Shift+1-5 새 탭 열기",
     clearAll: "전체 지우기",
     clearAllConfirm: (count: number) => `최근 브리지 페어 ${count}개를 모두 지울까요?`,
     remove: "최근 페어 삭제",
@@ -246,7 +246,12 @@ export function BridgePanel({ state, onCopyLink, onOpenLink, onCopyPrompt, copyF
         return;
       }
 
-      const digit = Number.parseInt(event.key, 10);
+      // Derive the slot from event.code so Shift/Alt combos work on every layout:
+      // with a modifier held, event.key is the shifted symbol ("!", "¡"), not the digit.
+      const digitFromCode = /^Digit([1-9])$/.exec(event.code);
+      const digit = digitFromCode
+        ? Number(digitFromCode[1])
+        : Number.parseInt(event.key, 10);
       if (!Number.isNaN(digit) && digit >= 1 && digit <= validRecentPairs.length) {
         const pair = validRecentPairs[digit - 1];
         if (!pair) {

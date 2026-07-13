@@ -4,8 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-"${REPO_ROOT}/storyverse-web/scripts/ops-check.sh"
-code=$?
+# Capture the checker's exit code without letting `set -e` abort the wrapper,
+# so the Policy-A JSON summary is emitted on both success and failure.
+code=0
+"${REPO_ROOT}/storyverse-web/scripts/ops-check.sh" || code=$?
 
 if [[ "$code" -eq 0 ]]; then
   status="ok"
