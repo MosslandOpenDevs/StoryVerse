@@ -8,7 +8,15 @@ Last updated: 2026-07-13
 - Status: clean
 - Remote: `origin` uses HTTPS
   - `https://github.com/MosslandOpenDevs/StoryVerse.git`
-- Docs refresh (README/agents docs) done this session on branch `claude/readme-content-updates-76426e`.
+- Docs refresh + a v0.2 stabilization pass done this session on branch
+  `claude/readme-content-updates-76426e`:
+  - security: next 15.5.20 (CVE-2025-66478), generate API fail-closed in prod,
+    ops-check wrapper fix, MIT LICENSE, SECURITY.md, .env.example
+  - grounding: real catalog neighbours (no synthetic ids), abstain on
+    low confidence, evidence-grounded storyteller, deep-link-only auto-run
+  - /api/health readiness (Neo4j probe → ready/checks), footer reflects it
+  - shortcut collisions resolved + WCAG 2.1.4 disable toggle
+  - action command-runner extracted and tested
 
 ## What Was Completed
 - Bootstrapped `storyverse-web` app and CI.
@@ -52,8 +60,8 @@ Last updated: 2026-07-13
 - Latest full check passed:
   - `npm run check` in `storyverse-web`
   - includes lint + test:parser + build
-- Test count at last run: 68 passing via `node --test`
-  (62 queryParser / 4 orchestrator / 2 clarificationChoices)
+- Test count at last run: 79 passing via `node --test`
+  (62 queryParser / 5 orchestrator / 2 clarificationChoices / 10 commandRunner)
 
 ## Important Files
 - `storyverse-web/src/lib/agents/queryParser.ts`
@@ -73,11 +81,13 @@ Last updated: 2026-07-13
 - `storyverse-web/agents.md`
 
 ## Suggested Next Tasks
-1. Add dedicated action-level tests for `INVALID_SELECTION`, timeout, and retry
-   behavior (still missing — no `actions.test.ts`).
-2. Seed `RELATED_TO` graph edges for generated stories so navigator suggestions
-   work beyond the heuristic fallback.
-3. Add story detail pages.
+1. Provenance/review-state catalog schema + seed `RELATED_TO` graph edges for
+   generated stories (real GraphRAG grounding beyond the evidence pass).
+2. Neo4j driver singleton + indexes/migrations (currently per-call drivers).
+3. Structured storyteller output (title/timeline/risk still templated).
+4. Story detail pages.
+5. Major migrations as isolated PRs: Next 16, AI SDK 7.
+6. Ops (outside repo): restore sv.moss.land TLS + synthetic smoke checks.
 
 ## Resume Commands
 ```bash

@@ -21,10 +21,11 @@ npm run build
 npm run ops:check  # endpoint availability/latency probe (scripts/ops-check.sh)
 ```
 
-`test:parser` compiles and runs 68 agent tests via `node --test`:
+`test:parser` compiles and runs 79 agent tests via `node --test`:
 - `src/lib/agents/queryParser.test.ts` (62 tests)
-- `src/lib/agents/orchestrator.test.ts` (4 tests)
+- `src/lib/agents/orchestrator.test.ts` (5 tests)
 - `src/lib/agents/clarificationChoices.test.ts` (2 tests)
+- `src/lib/agents/commandRunner.test.ts` (10 tests — action timeout/retry + selection validation)
 
 ---
 
@@ -285,7 +286,7 @@ Mobile: vertical stack (Story Grid → Bridge Panel)
 | Component | Design Details |
 |-----------|---------------|
 | `Header.tsx` | Fixed z-50, h-14, `bg-cosmos-950/80 backdrop-blur-lg`, border-bottom cosmos-200/10. "Skip to main content" link (sr-only until focused) targeting `#main-content`. Orbit icon (neon-cyan) + "StoryVerse" (Orbitron, tracking-[0.2em]). Home + Universe nav links with icons; the active route (including nested paths) gets neon-cyan text and `aria-current="page"`. Hover: text transitions to neon-cyan |
-| `Footer.tsx` | Live health footer. `bg-cosmos-950/60 backdrop-blur-sm`, border-top cosmos-200/10. Brand + tagline at cosmos-200/40. Polls `GET /api/health` every 15s (`cache: "no-store"`) and shows live/degraded/checking status with `fresh` / `stale Ns` labeling once the health timestamp is older than 20s (also rendered as within/over SLA), `service@version · nodeEnv · snapshot time`, a "checked at" clock, and a manual Refresh button (disabled + `aria-busy` while loading). Status line uses `role="status"` with `aria-live="polite"` |
+| `Footer.tsx` | Live health footer. `bg-cosmos-950/60 backdrop-blur-sm`, border-top cosmos-200/10. Brand + tagline at cosmos-200/40. Polls `GET /api/health` every 15s (`cache: "no-store"`) and shows live/degraded/checking status with `fresh` / `stale Ns` labeling once the health timestamp is older than 20s (also rendered as within/over SLA), `service@version · nodeEnv · snapshot time`, a "checked at" clock (with the Neo4j readiness result), and a manual Refresh button (disabled + `aria-busy` while loading). Status reads `degraded` when the endpoint reports `ready: false`. Status line uses `role="status"` with `aria-live="polite"` |
 
 ### Marketing Components (`src/components/marketing/`)
 
@@ -491,7 +492,7 @@ src/components/
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/health` | GET | Liveness snapshot: `ok`, `service`, `version`, `nodeEnv`, `uptimeSec`, `timestamp`. Served with `Cache-Control: no-store`; polled by the footer every 15s |
+| `/api/health` | GET | Liveness + readiness: `ok`, `service`, `version`, `nodeEnv`, `uptimeSec`, `timestamp`, plus `ready` and `checks.neo4j` (`ok`/`down`/`skipped` from a cached, short-timeout Neo4j probe — unconfigured graph counts as ready). Served with `Cache-Control: no-store`; polled by the footer every 15s |
 | `/api/catalog` | GET | Returns full dynamic catalog (seed + generated) as `{ count, catalog }` |
 | `/api/catalog/generate` | POST | Triggers AI story generation via Ollama. Auth: Bearer token; required in production (refused when `NODE_ENV=production` and no secret is set), localhost-only in development |
 

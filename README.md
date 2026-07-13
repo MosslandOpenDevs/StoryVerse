@@ -233,6 +233,7 @@ The universe page is fully keyboard-operable. Highlights (press `?` in either su
 - `aria-pressed` selection state on filter chips, medium lanes, and clarification candidates
 - Labeled empty-state recovery actions and visible `focus-visible` rings on catalog controls
 - Decorative SVGs and spinners marked `aria-hidden`; IME-safe Enter handling for Korean input
+- **WCAG 2.2 SC 2.1.4**: single-character shortcuts can be turned off via a persisted toggle in the Bridge Panel shortcut guide (the `?` guide and Escape stay active so it's always reachable). Overlapping keys resolve by context — recent-pair slots own their digits, and the page yields `N`/`O` when a result card or selected pair is present, so one keypress never triggers two actions
 
 ---
 
@@ -261,13 +262,13 @@ flowchart LR
   Ops --> Metrics[Route codes · fail ratios · latency · tunnel churn]
 ```
 
-Every external dependency degrades gracefully: without Neo4j the catalog serves the seed + file fallback and the navigator suggests real catalog neighbours (never synthetic nodes, so every suggestion stays selectable); without `OPENAI_API_KEY` the storyteller uses deterministic templates. Low-confidence queries **abstain** — the parser returns a clarification instead of fabricating a bridge. The app boots and demos with **zero** external services configured.
+Every external dependency degrades gracefully: without Neo4j the catalog serves the seed + file fallback and the navigator suggests real catalog neighbours (never synthetic nodes, so every suggestion stays selectable); without `OPENAI_API_KEY` the storyteller uses deterministic templates. The storyteller is **grounded** in the navigator's neighbours — the bridge references a real related story rather than an invented one. Low-confidence queries **abstain** — the parser returns a clarification instead of fabricating a bridge. The app boots and demos with **zero** external services configured.
 
 ## API Endpoints
 
 | Endpoint | Method | Behavior |
 |----------|--------|----------|
-| `/api/health` | GET | Liveness + metadata: `ok`, `service`, `version`, `nodeEnv`, `uptimeSec`, `timestamp`; served with `Cache-Control: no-store` |
+| `/api/health` | GET | Liveness + readiness: `ok`, `service`, `version`, `nodeEnv`, `uptimeSec`, `timestamp`, plus `ready` and `checks.neo4j` (a cached, short-timeout Neo4j probe; unconfigured graph is `skipped` and still ready); served with `Cache-Control: no-store` |
 | `/api/catalog` | GET | Full story catalog `{ count, catalog[] }` (seed + generated), force-dynamic |
 | `/api/catalog/generate` | POST | AI catalog generation; body `{ countPerDomain }` (clamped 1–10, default 4); bearer auth if `CATALOG_GENERATE_SECRET` is set. Required in production — refused when `NODE_ENV=production` and no secret is set; in development, localhost requests are allowed (Host-header check). 60s max duration |
 
@@ -350,7 +351,7 @@ npm run check       # lint + test:parser + build
 npm run ops:check   # live route/API diagnostics
 ```
 
-`test:parser` compiles the agent library and runs 68 tests (parser, orchestrator, clarification choices) on Node's built-in test runner.
+`test:parser` compiles the agent library and runs 79 tests (parser, orchestrator, clarification choices, and the action command-runner) on Node's built-in test runner.
 
 ## Security
 
