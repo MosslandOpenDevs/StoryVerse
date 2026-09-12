@@ -1,11 +1,15 @@
 # StoryVerse Monorepo
 
+<!-- opendevs-badges:start -->
+[![CI](https://github.com/MosslandOpenDevs/StoryVerse/actions/workflows/ci.yml/badge.svg)](https://github.com/MosslandOpenDevs/StoryVerse/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-64748b?style=flat)](LICENSE)
+<!-- opendevs-badges:end -->
+
 > **Narrative universe interface where agentic storytelling, visual craft, and operational reliability are engineered together.**
 
-![Status](https://img.shields.io/badge/Status-Active_Development-0ea5e9)
-![Domain](https://img.shields.io/badge/Domain-Agentic_Narrative-black)
-![Stack](https://img.shields.io/badge/Stack-Next.js_·_Neo4j_·_Ollama-black)
-![License](https://img.shields.io/badge/License-MIT-black)
+![Status](https://img.shields.io/badge/Status-Active_Development-0ea5e9?style=flat)
+![Domain](https://img.shields.io/badge/Domain-Agentic_Narrative-black?style=flat)
+![Stack](https://img.shields.io/badge/Stack-Next.js_·_Neo4j_·_Ollama-black?style=flat)
 
 ---
 
